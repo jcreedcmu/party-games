@@ -53,17 +53,16 @@ all players are ready, the game transitions from "waiting" to
 The server then picks a random cyclic order in which to arrange the
 players.
 
-We can initialize one virtual "sheet" of paper for each player, and
-present it to them. The server can randomly choose, for each sheet,
-whether the initial move is a picture or text.
+We initialize one virtual "sheet" of paper for each player, and
+present it to them. For a given round, the server randomly picks what
+the initial move type is, either picture for everybody or text for
+everybody.
 
-Each player at any given time has a collection of sheets waiting for
-them. It might be fine for the server to share with all players how
-*many* sheets are waiting on each player, so that players can be aware
-if someone is being too slow.
+There is a timer allotting 1 minute per round. When a round is up,
+every sheet passes to the next player in the cyclic order in lockstep.
 
-When a sheet has passed through all players, then it is "done". When
-all sheets are "done", the server transitions to the "postgame" phase.
+When all the sheets have passed through all players, then server
+transitions to the "postgame" phase.
 
 Authentication
 --------------
@@ -82,12 +81,11 @@ Modal dialog boxes should happen inside react rather than using native
 apis for alerts, so that they can be styled consistently with the rest
 of the game.
 
-The set of sheets available to the player should be arranged in a row,
-scrollable if necessary. Each sheet should indicate clearly whether
-the player is meant to supply text or a drawing. If the sheet is not
-on its "first move" then the previous move should be displayed
-immediately above the area where the player is supposed to supply
-their move.
+When a player sees the sheet they need to fill out, it should indicate
+clearly whether the player is meant to supply text or a drawing. If
+the sheet is not on its "first move" then the previous move should be
+displayed immediately above the area where the player is supposed to
+supply their move.
 
 Text should be rendered centered in the available region.
 
