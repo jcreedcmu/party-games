@@ -18,3 +18,115 @@ body {
   margin: 0 auto;
   padding: 1rem;
 }
+
+h1 {
+  margin-bottom: 1.5rem;
+}
+
+h2 {
+  margin-bottom: 1rem;
+}
+
+/* Join Dialog */
+
+.join-dialog {
+  max-width: 360px;
+}
+
+.join-dialog form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.join-dialog label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.join-dialog input {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.join-dialog input:focus {
+  outline: 2px solid #4a90d9;
+  outline-offset: -1px;
+  border-color: #4a90d9;
+}
+
+.error-message {
+  color: #c00;
+  font-size: 0.875rem;
+  padding: 0.5rem;
+  background: #fee;
+  border-radius: 4px;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: #f0f0f0;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Waiting Room */
+
+.waiting-room {
+  max-width: 360px;
+}
+
+.player-list {
+  list-style: none;
+  margin-bottom: 1rem;
+}
+
+.player-list li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.player-list li.me {
+  font-weight: 600;
+}
+
+.ready-indicator {
+  color: #2a2;
+}
+
+/* Modal */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+}

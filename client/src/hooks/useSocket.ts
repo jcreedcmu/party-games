@@ -1,0 +1,64 @@
+import { useState, useCallback, useRef } from 'react';
+import type { ClientMessage, ServerMessage, ClientGameState } from '../types';
+
+type SocketState = {
+  gameState: ClientGameState | null;
+  playerId: string | null;
+  error: string | null;
+  connected: boolean;
+};
+
+export function useSocket() {
+  const [state, setState] = useState<SocketState>({
+    gameState: null,
+    playerId: null,
+    error: null,
+    connected: false,
+  });
+  const wsRef = useRef<WebSocket | null>(null);
+
+  const connect = useCallback((password: string, handle: string) => {
+    if (wsRef.current) return;
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      setState(s => ({ ...s, connected: true, error: null }));
+      ws.send(JSON.stringify({ type: 'join', password, handle } satisfies ClientMessage));
+    };
+
+    ws.onmessage = (e) => {
+      const msg: ServerMessage = JSON.parse(e.data);
+      switch (msg.type) {
+        case 'joined':
+          setState(s => ({ ...s, playerId: msg.playerId }));
+          break;
+        case 'state':
+          setState(s => ({ ...s, gameState: msg.state }));
+          break;
+        case 'error':
+          setState(s => ({ ...s, error: msg.message }));
+          break;
+      }
+    };
+
+    ws.onclose = () => {
+      setState(s => ({ ...s, connected: false }));
+      wsRef.current = null;
+    };
+  }, []);
+
+  const send = useCallback((msg: ClientMessage) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(msg));
+    }
+  }, []);
+
+  const clearError = useCallback(() => {
+    setState(s => ({ ...s, error: null }));
+  }, []);
+
+  return { ...state, connect, send, clearError };
+}

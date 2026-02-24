@@ -1,3 +1,4 @@
+import path from 'node:path';
 import http from 'node:http';
 import express from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
@@ -105,8 +106,11 @@ export function createServer(password: string) {
     });
   });
 
-  app.get('/health', (_req, res) => {
-    res.json({ ok: true });
+  // Serve built client files
+  const clientDir = path.resolve(import.meta.dirname, '..', 'dist', 'client');
+  app.use(express.static(clientDir));
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(clientDir, 'index.html'));
   });
 
   return server;
