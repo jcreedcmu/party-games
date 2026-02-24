@@ -17,6 +17,7 @@ export type Move = {
 
 export type Sheet = {
   originIndex: number;
+  firstMoveType: MoveType;
   moves: Move[];
 };
 
