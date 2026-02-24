@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback, type PointerEvent } from 'react';
+import { useRef, useState, useEffect, useCallback, type RefObject, type PointerEvent } from 'react';
 
 const COLORS = ['#000000', '#e74c3c', '#2ecc71', '#3498db', '#f39c12', '#9b59b6', '#ffffff'];
 const SIZES = [2, 5, 10, 20];
@@ -6,13 +6,13 @@ const CANVAS_WIDTH = 400;
 const CANVAS_HEIGHT = 300;
 
 type DrawingCanvasProps = {
+  canvasRef: RefObject<HTMLCanvasElement | null>;
   onSubmit: (dataUrl: string) => void;
 };
 
 type Tool = 'pen' | 'fill';
 
-export function DrawingCanvas({ onSubmit }: DrawingCanvasProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+export function DrawingCanvas({ canvasRef, onSubmit }: DrawingCanvasProps) {
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState(SIZES[1]);
   const [tool, setTool] = useState<Tool>('pen');

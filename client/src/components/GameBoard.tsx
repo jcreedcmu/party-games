@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { ClientUnderwayState, ClientMessage } from '../types';
 import { PreviousMove } from './PreviousMove';
 import { TextInput } from './TextInput';
@@ -13,25 +13,45 @@ type GameBoardProps = {
 export function GameBoard({ state, playerId, onSend }: GameBoardProps) {
   const [timeLeft, setTimeLeft] = useState('');
   const [urgent, setUrgent] = useState(false);
+  const [text, setText] = useState('');
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Reset text when the round changes
+  useEffect(() => {
+    setText('');
+  }, [state.currentRound]);
+
+  function submit() {
+    if (state.submitted) return;
+    if (state.expectedMoveType === 'text') {
+      const trimmed = text.trim();
+      if (trimmed) {
+        onSend({ type: 'submit', move: { type: 'text', content: trimmed } });
+      }
+    } else {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        onSend({ type: 'submit', move: { type: 'drawing', content: canvas.toDataURL('image/png') } });
+      }
+    }
+  }
 
   useEffect(() => {
+    let autoSubmitted = false;
     function tick() {
       const remaining = Math.max(0, Math.ceil((state.roundDeadline - Date.now()) / 1000));
       setTimeLeft(`${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`);
       setUrgent(remaining <= 10 && remaining > 0);
+
+      if (remaining === 0 && !autoSubmitted) {
+        autoSubmitted = true;
+        submit();
+      }
     }
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [state.roundDeadline]);
-
-  function handleTextSubmit(text: string) {
-    onSend({ type: 'submit', move: { type: 'text', content: text } });
-  }
-
-  function handleDrawingSubmit(dataUrl: string) {
-    onSend({ type: 'submit', move: { type: 'drawing', content: dataUrl } });
-  }
+  }, [state.roundDeadline, state.submitted]);
 
   const submittedCount = state.players.filter(p => p.submitted).length;
 
@@ -51,9 +71,9 @@ export function GameBoard({ state, playerId, onSend }: GameBoardProps) {
         <div className="sheet-card sheet-card-mine">
           {state.previousMove && <PreviousMove move={state.previousMove} />}
           {state.expectedMoveType === 'text' ? (
-            <TextInput onSubmit={handleTextSubmit} />
+            <TextInput value={text} onChange={setText} onSubmit={() => submit()} />
           ) : (
-            <DrawingCanvas onSubmit={handleDrawingSubmit} />
+            <DrawingCanvas canvasRef={canvasRef} onSubmit={() => submit()} />
           )}
         </div>
       )}
