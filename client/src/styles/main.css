@@ -242,6 +242,21 @@ button:disabled {
   margin-top: 0.5rem;
 }
 
+.tool-picker {
+  display: flex;
+  gap: 4px;
+}
+
+.tool-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.tool-btn.active {
+  border-color: #333;
+  background: #e8e8e8;
+}
+
 .color-palette {
   display: flex;
   gap: 4px;

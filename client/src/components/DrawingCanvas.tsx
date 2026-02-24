@@ -9,10 +9,13 @@ type DrawingCanvasProps = {
   onSubmit: (dataUrl: string) => void;
 };
 
+type Tool = 'pen' | 'fill';
+
 export function DrawingCanvas({ onSubmit }: DrawingCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState(SIZES[1]);
+  const [tool, setTool] = useState<Tool>('pen');
   const [drawing, setDrawing] = useState(false);
   const undoStack = useRef<ImageData[]>([]);
 
@@ -42,17 +45,82 @@ export function DrawingCanvas({ onSubmit }: DrawingCanvasProps) {
     }
   }
 
+  function floodFill(startX: number, startY: number, fillColor: string) {
+    const ctx = getCtx();
+    if (!ctx) return;
+    const imageData = ctx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    const data = imageData.data;
+
+    // Parse fill color
+    const tmp = document.createElement('canvas').getContext('2d')!;
+    tmp.fillStyle = fillColor;
+    tmp.fillRect(0, 0, 1, 1);
+    const [fr, fg, fb] = tmp.getImageData(0, 0, 1, 1).data;
+
+    const sx = Math.floor(startX);
+    const sy = Math.floor(startY);
+    if (sx < 0 || sx >= CANVAS_WIDTH || sy < 0 || sy >= CANVAS_HEIGHT) return;
+
+    const idx = (sy * CANVAS_WIDTH + sx) * 4;
+    const tr = data[idx], tg = data[idx + 1], tb = data[idx + 2], ta = data[idx + 3];
+
+    // Don't fill if target color is the same as fill color
+    if (tr === fr && tg === fg && tb === fb && ta === 255) return;
+
+    const tolerance = 32;
+    function matches(i: number) {
+      return Math.abs(data[i] - tr) <= tolerance &&
+        Math.abs(data[i + 1] - tg) <= tolerance &&
+        Math.abs(data[i + 2] - tb) <= tolerance &&
+        Math.abs(data[i + 3] - ta) <= tolerance;
+    }
+
+    const stack = [sx, sy];
+    const visited = new Uint8Array(CANVAS_WIDTH * CANVAS_HEIGHT);
+
+    while (stack.length > 0) {
+      const cy = stack.pop()!;
+      const cx = stack.pop()!;
+      const pi = cy * CANVAS_WIDTH + cx;
+      if (visited[pi]) continue;
+      visited[pi] = 1;
+
+      const di = pi * 4;
+      if (!matches(di)) continue;
+
+      data[di] = fr;
+      data[di + 1] = fg;
+      data[di + 2] = fb;
+      data[di + 3] = 255;
+
+      if (cx > 0) stack.push(cx - 1, cy);
+      if (cx < CANVAS_WIDTH - 1) stack.push(cx + 1, cy);
+      if (cy > 0) stack.push(cx, cy - 1);
+      if (cy < CANVAS_HEIGHT - 1) stack.push(cx, cy + 1);
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+    saveSnapshot();
+  }
+
   function handlePointerDown(e: PointerEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (CANVAS_WIDTH / rect.width);
+    const y = (e.clientY - rect.top) * (CANVAS_HEIGHT / rect.height);
+
+    if (tool === 'fill') {
+      floodFill(x, y, color);
+      return;
+    }
+
     canvas.setPointerCapture(e.pointerId);
     setDrawing(true);
 
     const ctx = getCtx();
     if (!ctx) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (CANVAS_WIDTH / rect.width);
-    const y = (e.clientY - rect.top) * (CANVAS_HEIGHT / rect.height);
 
     ctx.beginPath();
     ctx.moveTo(x, y);
@@ -116,6 +184,22 @@ export function DrawingCanvas({ onSubmit }: DrawingCanvasProps) {
         style={{ touchAction: 'none' }}
       />
       <div className="drawing-toolbar">
+        <div className="tool-picker">
+          <button
+            className={'tool-btn' + (tool === 'pen' ? ' active' : '')}
+            onClick={() => setTool('pen')}
+            title="Pen"
+          >
+            Pen
+          </button>
+          <button
+            className={'tool-btn' + (tool === 'fill' ? ' active' : '')}
+            onClick={() => setTool('fill')}
+            title="Fill"
+          >
+            Fill
+          </button>
+        </div>
         <div className="color-palette">
           {COLORS.map(c => (
             <button
@@ -127,7 +211,7 @@ export function DrawingCanvas({ onSubmit }: DrawingCanvasProps) {
             />
           ))}
         </div>
-        <div className="size-picker">
+        {tool === 'pen' && <div className="size-picker">
           {SIZES.map(s => (
             <button
               key={s}
@@ -137,7 +221,7 @@ export function DrawingCanvas({ onSubmit }: DrawingCanvasProps) {
               <span className="size-dot" style={{ width: s, height: s }} />
             </button>
           ))}
-        </div>
+        </div>}
         <div className="drawing-actions">
           <button onClick={handleUndo}>Undo</button>
           <button onClick={handleClear}>Clear</button>
