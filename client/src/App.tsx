@@ -1,6 +1,7 @@
 import { useSocket } from './hooks/useSocket';
 import { JoinDialog } from './components/JoinDialog';
 import { WaitingRoom } from './components/WaitingRoom';
+import { GameBoard } from './components/GameBoard';
 
 export function App() {
   const { gameState, playerId, error, connect, send, clearError } = useSocket();
@@ -37,7 +38,7 @@ export function App() {
       return (
         <div className="app">
           <h1>Eat Poop You Cat</h1>
-          <p>Game in progress...</p>
+          <GameBoard state={gameState} playerId={playerId} onSend={send} />
         </div>
       );
     case 'postgame':
