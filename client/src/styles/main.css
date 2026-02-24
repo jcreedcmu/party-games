@@ -300,6 +300,71 @@ button:disabled {
   padding: 2rem 0;
 }
 
+/* Postgame */
+
+.postgame {
+  max-width: 480px;
+}
+
+.sheet-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.sheet-tab {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.sheet-tab.active {
+  background: #4a90d9;
+  color: #fff;
+  border-color: #3a7bc8;
+}
+
+.sheet-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sheet-move {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.move-author {
+  padding: 0.375rem 0.75rem;
+  background: #f5f5f5;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #555;
+}
+
+.move-content {
+  padding: 0.75rem;
+}
+
+.move-text {
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.move-drawing img {
+  width: 100%;
+  display: block;
+  border-radius: 4px;
+}
+
+.move-skipped {
+  text-align: center;
+  color: #999;
+  font-style: italic;
+}
+
 /* Modal */
 
 .modal-backdrop {
