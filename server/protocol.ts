@@ -13,7 +13,6 @@ export type UnreadyMessage = { type: 'unready' };
 
 export type SubmitMessage = {
   type: 'submit';
-  sheetIndex: number;
   move: { type: MoveType; content: string };
 };
 
@@ -59,35 +58,22 @@ export type ClientWaitingState = {
   players: ClientPlayerInfo[];
 };
 
-export type ClientSheetAssigned = {
-  sheetIndex: number;
-  assignedToMe: true;
-  assignedToHandle: string;
-  expectedMoveType: MoveType;
-  previousMove: { type: MoveType; content: string } | null;
-  moveCount: number;
-  totalMoves: number;
-};
-
-export type ClientSheetOther = {
-  sheetIndex: number;
-  assignedToMe: false;
-  assignedToHandle: string;
-  moveCount: number;
-  totalMoves: number;
-};
-
-export type ClientSheetView = ClientSheetAssigned | ClientSheetOther;
+export type ClientUnderwayPlayer = ClientPlayerInfo & { submitted: boolean };
 
 export type ClientUnderwayState = {
   phase: 'underway';
-  players: ClientPlayerInfo[];
-  sheets: ClientSheetView[];
+  players: ClientUnderwayPlayer[];
+  currentRound: number;
+  totalRounds: number;
+  expectedMoveType: MoveType;
+  roundDeadline: number;
+  submitted: boolean;
+  previousMove: { type: MoveType; content: string } | null;
 };
 
 export type ClientFullSheet = {
   sheetIndex: number;
-  moves: { type: MoveType; content: string; playerHandle: string }[];
+  moves: ({ type: MoveType; content: string; playerHandle: string } | null)[];
 };
 
 export type ClientPostgameState = {

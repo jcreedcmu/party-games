@@ -17,8 +17,7 @@ export type Move = {
 
 export type Sheet = {
   originIndex: number;
-  firstMoveType: MoveType;
-  moves: Move[];
+  moves: (Move | null)[]; // moves[r] = move from round r, null if not submitted
 };
 
 export type WaitingState = {
@@ -32,6 +31,10 @@ export type UnderwayState = {
   players: Map<PlayerId, PlayerInfo>;
   sheets: Sheet[];
   order: PlayerId[];
+  currentRound: number;
+  firstMoveType: MoveType;
+  roundDeadline: number;
+  submittedThisRound: Set<PlayerId>;
 };
 
 export type PostgameState = {

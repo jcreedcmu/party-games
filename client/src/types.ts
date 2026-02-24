@@ -12,11 +12,9 @@ export type {
   ClientGameState,
   ClientWaitingState,
   ClientUnderwayState,
+  ClientUnderwayPlayer,
   ClientPostgameState,
   ClientPlayerInfo,
-  ClientSheetView,
-  ClientSheetAssigned,
-  ClientSheetOther,
   ClientFullSheet,
 } from '../../server/protocol.js';
 

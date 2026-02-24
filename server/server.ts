@@ -11,6 +11,8 @@ import {
   setReady,
   checkAllReady,
   submitMove,
+  checkRoundComplete,
+  advanceRound,
   getClientState,
 } from './state.js';
 
@@ -21,6 +23,7 @@ export function createServer(password: string) {
 
   let state: GameState = createInitialState();
   const clients = new Map<WebSocket, PlayerId | null>();
+  let roundTimer: ReturnType<typeof setTimeout> | null = null;
 
   function send(ws: WebSocket, msg: ServerMessage) {
     if (ws.readyState === WebSocket.OPEN) {
@@ -34,6 +37,27 @@ export function createServer(password: string) {
         send(ws, { type: 'state', state: getClientState(state, playerId) });
       }
     }
+  }
+
+  function clearRoundTimer() {
+    if (roundTimer) {
+      clearTimeout(roundTimer);
+      roundTimer = null;
+    }
+  }
+
+  function startRoundTimer() {
+    clearRoundTimer();
+    if (state.phase !== 'underway') return;
+    const delay = Math.max(0, state.roundDeadline - Date.now());
+    roundTimer = setTimeout(() => {
+      if (state.phase !== 'underway') return;
+      state = advanceRound(state);
+      if (state.phase === 'underway') {
+        startRoundTimer();
+      }
+      broadcastState();
+    }, delay);
   }
 
   function handleMessage(ws: WebSocket, msg: ClientMessage) {
@@ -66,13 +90,22 @@ export function createServer(password: string) {
         if (!playerId || state.phase !== 'waiting') return;
         state = setReady(state, playerId, msg.type === 'ready');
         state = checkAllReady(state);
+        if (state.phase === 'underway') {
+          startRoundTimer();
+        }
         broadcastState();
         return;
       }
 
       case 'submit': {
         if (!playerId || state.phase !== 'underway') return;
-        state = submitMove(state, playerId, msg.sheetIndex, msg.move);
+        state = submitMove(state, playerId, msg.move);
+        state = checkRoundComplete(state);
+        if (state.phase === 'underway') {
+          startRoundTimer();
+        } else if (state.phase === 'postgame') {
+          clearRoundTimer();
+        }
         broadcastState();
         return;
       }
@@ -101,6 +134,14 @@ export function createServer(password: string) {
       clients.delete(ws);
       if (playerId) {
         state = removePlayer(state, playerId);
+        if (state.phase === 'underway') {
+          state = checkRoundComplete(state);
+          if (state.phase === 'underway') {
+            startRoundTimer();
+          } else {
+            clearRoundTimer();
+          }
+        }
         broadcastState();
       }
     });

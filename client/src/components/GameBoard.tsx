@@ -1,5 +1,8 @@
+import { useState, useEffect } from 'react';
 import type { ClientUnderwayState, ClientMessage } from '../types';
-import { SheetCard } from './SheetCard';
+import { PreviousMove } from './PreviousMove';
+import { TextInput } from './TextInput';
+import { DrawingCanvas } from './DrawingCanvas';
 
 type GameBoardProps = {
   state: ClientUnderwayState;
@@ -8,33 +11,58 @@ type GameBoardProps = {
 };
 
 export function GameBoard({ state, playerId, onSend }: GameBoardProps) {
-  const mySheets = state.sheets.filter(s => s.assignedToMe);
-  const otherSheets = state.sheets.filter(s => !s.assignedToMe);
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    function tick() {
+      const remaining = Math.max(0, Math.ceil((state.roundDeadline - Date.now()) / 1000));
+      setTimeLeft(`${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`);
+    }
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [state.roundDeadline]);
+
+  function handleTextSubmit(text: string) {
+    onSend({ type: 'submit', move: { type: 'text', content: text } });
+  }
+
+  function handleDrawingSubmit(dataUrl: string) {
+    onSend({ type: 'submit', move: { type: 'drawing', content: dataUrl } });
+  }
+
+  const submittedCount = state.players.filter(p => p.submitted).length;
 
   return (
     <div className="game-board">
-      {mySheets.length > 0 ? (
-        <>
-          <h2>Your Sheets</h2>
-          <div className="sheet-row">
-            {mySheets.map(sheet => (
-              <SheetCard key={sheet.sheetIndex} sheet={sheet} onSend={onSend} />
-            ))}
-          </div>
-        </>
+      <div className="round-info">
+        <span>Round {state.currentRound + 1} of {state.totalRounds}</span>
+        <span className="timer">{timeLeft}</span>
+        <span>{submittedCount} / {state.players.length} submitted</span>
+      </div>
+
+      {state.submitted ? (
+        <div className="submitted-message">
+          Submitted! Waiting for other players...
+        </div>
       ) : (
-        <p className="waiting-message">Waiting for other players to finish their sheets...</p>
+        <div className="sheet-card sheet-card-mine">
+          {state.previousMove && <PreviousMove move={state.previousMove} />}
+          {state.expectedMoveType === 'text' ? (
+            <TextInput onSubmit={handleTextSubmit} />
+          ) : (
+            <DrawingCanvas onSubmit={handleDrawingSubmit} />
+          )}
+        </div>
       )}
-      {otherSheets.length > 0 && (
-        <>
-          <h3>Other Sheets</h3>
-          <div className="sheet-row">
-            {otherSheets.map(sheet => (
-              <SheetCard key={sheet.sheetIndex} sheet={sheet} onSend={onSend} />
-            ))}
-          </div>
-        </>
-      )}
+
+      <div className="player-status">
+        {state.players.map(p => (
+          <span key={p.id} className={'player-chip' + (p.submitted ? ' done' : '') + (!p.connected ? ' disconnected' : '')}>
+            {p.handle}{p.submitted ? ' ✓' : ''}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }

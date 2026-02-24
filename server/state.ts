@@ -1,10 +1,10 @@
 import type {
-  PlayerId, PlayerInfo, Move, MoveType, Sheet,
+  PlayerId, Move, MoveType, Sheet,
   GameState, WaitingState, UnderwayState, PostgameState,
 } from './types.js';
-import type {
-  ClientGameState, ClientSheetView,
-} from './protocol.js';
+import type { ClientGameState } from './protocol.js';
+
+export const ROUND_DURATION_MS = 60_000;
 
 export function createInitialState(): WaitingState {
   return {
@@ -19,7 +19,7 @@ export function addPlayer(
   handle: string,
 ): { state: WaitingState; playerId: PlayerId } {
   const playerId = String(state.nextPlayerId);
-  const player: PlayerInfo = { id: playerId, handle, ready: false, connected: true };
+  const player = { id: playerId, handle, ready: false, connected: true };
   const players = new Map(state.players);
   players.set(playerId, player);
   return {
@@ -34,7 +34,6 @@ export function removePlayer(state: GameState, playerId: PlayerId): GameState {
     players.delete(playerId);
     return { ...state, players };
   }
-  // In underway/postgame, mark as disconnected
   const players = new Map(state.players);
   const player = players.get(playerId);
   if (player) {
@@ -66,11 +65,7 @@ export function checkAllReady(state: WaitingState): WaitingState | UnderwayState
 
   const sheets: Sheet[] = [];
   for (let i = 0; i < n; i++) {
-    sheets.push({
-      originIndex: i,
-      firstMoveType: Math.random() < 0.5 ? 'text' : 'drawing',
-      moves: [],
-    });
+    sheets.push({ originIndex: i, moves: [] });
   }
 
   const players = new Map(state.players);
@@ -83,42 +78,74 @@ export function checkAllReady(state: WaitingState): WaitingState | UnderwayState
     players,
     sheets,
     order,
+    currentRound: 0,
+    firstMoveType: Math.random() < 0.5 ? 'text' : 'drawing',
+    roundDeadline: Date.now() + ROUND_DURATION_MS,
+    submittedThisRound: new Set(),
   };
 }
 
 export function submitMove(
   state: UnderwayState,
   playerId: PlayerId,
-  sheetIndex: number,
   move: { type: MoveType; content: string },
-): UnderwayState | PostgameState {
-  const sheet = state.sheets[sheetIndex];
-  if (!sheet) return state;
+): UnderwayState {
+  if (state.submittedThisRound.has(playerId)) return state;
 
-  const n = state.order.length;
-  if (isSheetDone(sheet, n)) return state;
-
-  const assignee = getSheetAssignee(state.order, sheet);
-  if (assignee !== playerId) return state;
-
-  const expectedType = getExpectedMoveType(sheet);
+  const expectedType = getExpectedMoveType(state.firstMoveType, state.currentRound);
   if (move.type !== expectedType) return state;
 
+  const sheetIndex = getSheetIndexForPlayer(state.order, playerId, state.currentRound);
+  const sheet = state.sheets[sheetIndex];
   const newMove: Move = { type: move.type, content: move.content, playerId };
   const newSheet: Sheet = { ...sheet, moves: [...sheet.moves, newMove] };
   const newSheets = state.sheets.map((s, i) => i === sheetIndex ? newSheet : s);
 
-  const allDone = newSheets.every(s => isSheetDone(s, n));
-  if (allDone) {
+  const newSubmitted = new Set(state.submittedThisRound);
+  newSubmitted.add(playerId);
+
+  return { ...state, sheets: newSheets, submittedThisRound: newSubmitted };
+}
+
+/** Check if all connected players have submitted; if so, advance the round. */
+export function checkRoundComplete(state: UnderwayState): UnderwayState | PostgameState {
+  const allAccountedFor = Array.from(state.players.values()).every(
+    p => state.submittedThisRound.has(p.id) || !p.connected,
+  );
+  if (!allAccountedFor) return state;
+  return advanceRound(state);
+}
+
+/** Advance to the next round (or postgame). Fills null for missing submissions. */
+export function advanceRound(state: UnderwayState): UnderwayState | PostgameState {
+  // Fill null for players who didn't submit
+  let sheets = [...state.sheets];
+  for (const [, player] of state.players) {
+    if (!state.submittedThisRound.has(player.id)) {
+      const si = getSheetIndexForPlayer(state.order, player.id, state.currentRound);
+      sheets = sheets.map((s, i) => i === si ? { ...s, moves: [...s.moves, null] } : s);
+    }
+  }
+
+  const nextRound = state.currentRound + 1;
+  const n = state.order.length;
+
+  if (nextRound >= n) {
     return {
       phase: 'postgame',
       players: state.players,
-      sheets: newSheets,
+      sheets,
       order: state.order,
     };
   }
 
-  return { ...state, sheets: newSheets };
+  return {
+    ...state,
+    sheets,
+    currentRound: nextRound,
+    roundDeadline: Date.now() + ROUND_DURATION_MS,
+    submittedThisRound: new Set(),
+  };
 }
 
 export function getClientState(state: GameState, playerId: PlayerId): ClientGameState {
@@ -127,60 +154,30 @@ export function getClientState(state: GameState, playerId: PlayerId): ClientGame
       return {
         phase: 'waiting',
         players: Array.from(state.players.values()).map(p => ({
-          id: p.id,
-          handle: p.handle,
-          ready: p.ready,
-          connected: p.connected,
+          id: p.id, handle: p.handle, ready: p.ready, connected: p.connected,
         })),
       };
 
     case 'underway': {
-      const n = state.order.length;
-      const sheets: ClientSheetView[] = [];
-
-      for (let i = 0; i < state.sheets.length; i++) {
-        const sheet = state.sheets[i];
-        if (isSheetDone(sheet, n)) continue;
-
-        const assignee = getSheetAssignee(state.order, sheet);
-        const assigneePlayer = state.players.get(assignee);
-        const handle = assigneePlayer?.handle ?? '';
-
-        if (assignee === playerId) {
-          const lastMove = sheet.moves.length > 0
-            ? sheet.moves[sheet.moves.length - 1]
-            : null;
-          sheets.push({
-            sheetIndex: i,
-            assignedToMe: true,
-            assignedToHandle: handle,
-            expectedMoveType: getExpectedMoveType(sheet),
-            previousMove: lastMove
-              ? { type: lastMove.type, content: lastMove.content }
-              : null,
-            moveCount: sheet.moves.length,
-            totalMoves: n,
-          });
-        } else {
-          sheets.push({
-            sheetIndex: i,
-            assignedToMe: false,
-            assignedToHandle: handle,
-            moveCount: sheet.moves.length,
-            totalMoves: n,
-          });
-        }
-      }
+      const sheetIndex = getSheetIndexForPlayer(state.order, playerId, state.currentRound);
+      const sheet = state.sheets[sheetIndex];
+      const lastEntry = sheet.moves.length > 0 ? sheet.moves[sheet.moves.length - 1] : null;
+      const previousMove = lastEntry
+        ? { type: lastEntry.type, content: lastEntry.content }
+        : null;
 
       return {
         phase: 'underway',
         players: Array.from(state.players.values()).map(p => ({
-          id: p.id,
-          handle: p.handle,
-          ready: p.ready,
-          connected: p.connected,
+          id: p.id, handle: p.handle, ready: false, connected: p.connected,
+          submitted: state.submittedThisRound.has(p.id),
         })),
-        sheets,
+        currentRound: state.currentRound,
+        totalRounds: state.order.length,
+        expectedMoveType: getExpectedMoveType(state.firstMoveType, state.currentRound),
+        roundDeadline: state.roundDeadline,
+        submitted: state.submittedThisRound.has(playerId),
+        previousMove,
       };
     }
 
@@ -188,16 +185,14 @@ export function getClientState(state: GameState, playerId: PlayerId): ClientGame
       return {
         phase: 'postgame',
         players: Array.from(state.players.values()).map(p => ({
-          id: p.id,
-          handle: p.handle,
+          id: p.id, handle: p.handle,
         })),
         sheets: state.sheets.map((sheet, i) => ({
           sheetIndex: i,
-          moves: sheet.moves.map(m => ({
-            type: m.type,
-            content: m.content,
-            playerHandle: state.players.get(m.playerId)?.handle ?? 'Unknown',
-          })),
+          moves: sheet.moves.map(m =>
+            m ? { type: m.type, content: m.content, playerHandle: state.players.get(m.playerId)?.handle ?? 'Unknown' }
+              : null
+          ),
         })),
       };
   }
@@ -205,21 +200,18 @@ export function getClientState(state: GameState, playerId: PlayerId): ClientGame
 
 // --- Helpers ---
 
-export function getSheetAssignee(order: PlayerId[], sheet: Sheet): PlayerId {
+export function getExpectedMoveType(firstMoveType: MoveType, round: number): MoveType {
+  if (round % 2 === 0) return firstMoveType;
+  return firstMoveType === 'text' ? 'drawing' : 'text';
+}
+
+/** In round r, player order[i] works on sheet (i - r + n) % n. */
+export function getSheetIndexForPlayer(order: PlayerId[], playerId: PlayerId, round: number): number {
+  const i = order.indexOf(playerId);
   const n = order.length;
-  return order[(sheet.originIndex + sheet.moves.length) % n];
+  return ((i - round) % n + n) % n;
 }
 
-export function getExpectedMoveType(sheet: Sheet): MoveType {
-  if (sheet.moves.length % 2 === 0) return sheet.firstMoveType;
-  return sheet.firstMoveType === 'text' ? 'drawing' : 'text';
-}
-
-export function isSheetDone(sheet: Sheet, playerCount: number): boolean {
-  return sheet.moves.length >= playerCount;
-}
-
-// Fisher-Yates shuffle
 function shuffle<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));

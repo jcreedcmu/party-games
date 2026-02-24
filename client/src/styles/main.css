@@ -112,30 +112,33 @@ button:disabled {
 
 /* Game Board */
 
-.game-board h3 {
-  margin-top: 1.5rem;
-  margin-bottom: 0.75rem;
-  color: #666;
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.game-board {
+  max-width: 480px;
 }
 
-.sheet-row {
+.round-info {
   display: flex;
-  gap: 1rem;
-  overflow-x: auto;
-  padding-bottom: 0.5rem;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.timer {
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #1a1a1a;
 }
 
 .sheet-card {
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 1rem;
-  min-width: 280px;
-  max-width: 360px;
   background: #fff;
-  flex-shrink: 0;
+  margin-bottom: 1rem;
 }
 
 .sheet-card-mine {
@@ -143,21 +146,34 @@ button:disabled {
   border-width: 2px;
 }
 
-.sheet-card-other {
-  opacity: 0.7;
-}
-
-.sheet-status {
+.submitted-message {
   text-align: center;
-  padding: 1rem 0;
   color: #666;
+  padding: 2rem 0;
 }
 
-.sheet-progress {
-  text-align: right;
-  font-size: 0.75rem;
-  color: #999;
-  margin-top: 0.5rem;
+.player-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.player-chip {
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: #eee;
+  font-size: 0.8rem;
+}
+
+.player-chip.done {
+  background: #d4edda;
+  color: #155724;
+}
+
+.player-chip.disconnected {
+  opacity: 0.5;
+  text-decoration: line-through;
 }
 
 .previous-move {
@@ -198,12 +214,85 @@ button:disabled {
   border-color: #4a90d9;
 }
 
-.drawing-placeholder {
-  padding: 2rem;
-  text-align: center;
-  color: #999;
-  border: 2px dashed #ddd;
+/* Drawing Canvas */
+
+.drawing-canvas canvas {
+  width: 100%;
+  border: 1px solid #ccc;
   border-radius: 4px;
+  cursor: crosshair;
+}
+
+.drawing-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.color-palette {
+  display: flex;
+  gap: 4px;
+}
+
+.color-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #ccc;
+  padding: 0;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.color-swatch.active {
+  border-color: #333;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #333;
+}
+
+.size-picker {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.size-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  min-width: 0;
+}
+
+.size-btn.active {
+  border-color: #333;
+  background: #e8e8e8;
+}
+
+.size-dot {
+  display: block;
+  background: #333;
+  border-radius: 50%;
+}
+
+.drawing-actions {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.submit-btn {
+  background: #4a90d9;
+  color: #fff;
+  border-color: #3a7bc8;
+}
+
+.submit-btn:hover {
+  background: #3a7bc8;
 }
 
 .waiting-message {

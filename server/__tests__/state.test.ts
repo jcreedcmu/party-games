@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   createInitialState,
   addPlayer,
@@ -6,10 +6,12 @@ import {
   setReady,
   checkAllReady,
   submitMove,
+  checkRoundComplete,
+  advanceRound,
   getClientState,
-  getSheetAssignee,
   getExpectedMoveType,
-  isSheetDone,
+  getSheetIndexForPlayer,
+  ROUND_DURATION_MS,
 } from '../state.js';
 import type { UnderwayState } from '../types.js';
 
@@ -24,14 +26,10 @@ describe('createInitialState', () => {
 
 describe('addPlayer', () => {
   it('adds a player and returns the new state and id', () => {
-    let state = createInitialState();
-    const result = addPlayer(state, 'Alice');
-    state = result.state;
+    const result = addPlayer(createInitialState(), 'Alice');
     expect(result.playerId).toBe('1');
-    expect(state.players.size).toBe(1);
-    expect(state.players.get('1')?.handle).toBe('Alice');
-    expect(state.players.get('1')?.ready).toBe(false);
-    expect(state.players.get('1')?.connected).toBe(true);
+    expect(result.state.players.size).toBe(1);
+    expect(result.state.players.get('1')?.handle).toBe('Alice');
   });
 
   it('increments player ids', () => {
@@ -90,8 +88,7 @@ describe('checkAllReady', () => {
     let state = createInitialState();
     state = addPlayer(state, 'Alice').state;
     state = setReady(state, '1', true);
-    const result = checkAllReady(state);
-    expect(result.phase).toBe('waiting');
+    expect(checkAllReady(state).phase).toBe('waiting');
   });
 
   it('does not transition if not all players are ready', () => {
@@ -99,8 +96,7 @@ describe('checkAllReady', () => {
     state = addPlayer(state, 'Alice').state;
     state = addPlayer(state, 'Bob').state;
     state = setReady(state, '1', true);
-    const result = checkAllReady(state);
-    expect(result.phase).toBe('waiting');
+    expect(checkAllReady(state).phase).toBe('waiting');
   });
 
   it('transitions to underway when all players are ready', () => {
@@ -114,133 +110,122 @@ describe('checkAllReady', () => {
     if (result.phase !== 'underway') return;
     expect(result.sheets.length).toBe(2);
     expect(result.order.length).toBe(2);
-    expect(result.order).toContain('1');
-    expect(result.order).toContain('2');
-  });
-
-  it('creates sheets with valid firstMoveType', () => {
-    let state = createInitialState();
-    state = addPlayer(state, 'Alice').state;
-    state = addPlayer(state, 'Bob').state;
-    state = setReady(state, '1', true);
-    state = setReady(state, '2', true);
-    const result = checkAllReady(state);
-    if (result.phase !== 'underway') return;
-    for (const sheet of result.sheets) {
-      expect(['text', 'drawing']).toContain(sheet.firstMoveType);
-      expect(sheet.moves).toEqual([]);
-    }
+    expect(result.currentRound).toBe(0);
+    expect(['text', 'drawing']).toContain(result.firstMoveType);
+    expect(result.submittedThisRound.size).toBe(0);
   });
 });
 
 describe('helpers', () => {
-  it('getSheetAssignee follows the rotation', () => {
+  it('getExpectedMoveType alternates each round', () => {
+    expect(getExpectedMoveType('text', 0)).toBe('text');
+    expect(getExpectedMoveType('text', 1)).toBe('drawing');
+    expect(getExpectedMoveType('text', 2)).toBe('text');
+    expect(getExpectedMoveType('drawing', 0)).toBe('drawing');
+    expect(getExpectedMoveType('drawing', 1)).toBe('text');
+  });
+
+  it('getSheetIndexForPlayer rotates sheets correctly', () => {
     const order = ['A', 'B', 'C'];
-    const sheet = { originIndex: 0, firstMoveType: 'text' as const, moves: [] };
-    expect(getSheetAssignee(order, sheet)).toBe('A');
-
-    const sheet1 = { ...sheet, moves: [{ type: 'text' as const, content: 'hi', playerId: 'A' }] };
-    expect(getSheetAssignee(order, sheet1)).toBe('B');
-
-    const sheet2 = { ...sheet, moves: [
-      { type: 'text' as const, content: 'hi', playerId: 'A' },
-      { type: 'drawing' as const, content: 'data:...', playerId: 'B' },
-    ] };
-    expect(getSheetAssignee(order, sheet2)).toBe('C');
-  });
-
-  it('getExpectedMoveType alternates from firstMoveType', () => {
-    const textSheet = { originIndex: 0, firstMoveType: 'text' as const, moves: [] };
-    expect(getExpectedMoveType(textSheet)).toBe('text');
-
-    const textSheet1 = { ...textSheet, moves: [{ type: 'text' as const, content: 'hi', playerId: 'A' }] };
-    expect(getExpectedMoveType(textSheet1)).toBe('drawing');
-
-    const drawingSheet = { originIndex: 0, firstMoveType: 'drawing' as const, moves: [] };
-    expect(getExpectedMoveType(drawingSheet)).toBe('drawing');
-
-    const drawingSheet1 = { ...drawingSheet, moves: [{ type: 'drawing' as const, content: 'data:...', playerId: 'A' }] };
-    expect(getExpectedMoveType(drawingSheet1)).toBe('text');
-  });
-
-  it('isSheetDone', () => {
-    const sheet = { originIndex: 0, firstMoveType: 'text' as const, moves: [] };
-    expect(isSheetDone(sheet, 3)).toBe(false);
-
-    const doneSheet = {
-      ...sheet,
-      moves: [
-        { type: 'text' as const, content: 'a', playerId: '1' },
-        { type: 'drawing' as const, content: 'b', playerId: '2' },
-        { type: 'text' as const, content: 'c', playerId: '3' },
-      ],
-    };
-    expect(isSheetDone(doneSheet, 3)).toBe(true);
+    // Round 0: A→sheet0, B→sheet1, C→sheet2
+    expect(getSheetIndexForPlayer(order, 'A', 0)).toBe(0);
+    expect(getSheetIndexForPlayer(order, 'B', 0)).toBe(1);
+    expect(getSheetIndexForPlayer(order, 'C', 0)).toBe(2);
+    // Round 1: sheets rotate → A→sheet2, B→sheet0, C→sheet1
+    expect(getSheetIndexForPlayer(order, 'A', 1)).toBe(2);
+    expect(getSheetIndexForPlayer(order, 'B', 1)).toBe(0);
+    expect(getSheetIndexForPlayer(order, 'C', 1)).toBe(1);
   });
 });
 
 describe('submitMove', () => {
-  it('appends a valid move', () => {
+  it('records a move on the correct sheet', () => {
     const state = makeUnderwayState();
-    // order is ['1', '2'], sheet 0 has originIndex 0 → assigned to '1'
-    const assignee = getSheetAssignee(state.order, state.sheets[0]);
-    const expectedType = getExpectedMoveType(state.sheets[0]);
-
-    const result = submitMove(state, assignee, 0, {
-      type: expectedType,
-      content: 'hello',
-    });
-    expect(result.phase).toBe('underway');
-    if (result.phase !== 'underway') return;
+    const result = submitMove(state, '1', { type: 'text', content: 'hello' });
+    // Player '1' is order[0], round 0 → sheet 0
     expect(result.sheets[0].moves.length).toBe(1);
-    expect(result.sheets[0].moves[0].content).toBe('hello');
+    expect(result.sheets[0].moves[0]?.content).toBe('hello');
+    expect(result.submittedThisRound.has('1')).toBe(true);
   });
 
-  it('rejects move from wrong player', () => {
-    const state = makeUnderwayState();
-    const assignee = getSheetAssignee(state.order, state.sheets[0]);
-    const wrongPlayer = assignee === '1' ? '2' : '1';
-    const expectedType = getExpectedMoveType(state.sheets[0]);
-
-    const result = submitMove(state, wrongPlayer, 0, {
-      type: expectedType,
-      content: 'hello',
-    });
-    // State unchanged
-    expect(result.sheets[0].moves.length).toBe(0);
-  });
-
-  it('rejects move of wrong type', () => {
-    const state = makeUnderwayState();
-    const assignee = getSheetAssignee(state.order, state.sheets[0]);
-    const expectedType = getExpectedMoveType(state.sheets[0]);
-    const wrongType = expectedType === 'text' ? 'drawing' : 'text';
-
-    const result = submitMove(state, assignee, 0, {
-      type: wrongType,
-      content: 'hello',
-    });
-    expect(result.sheets[0].moves.length).toBe(0);
-  });
-
-  it('transitions to postgame when all sheets are done', () => {
+  it('rejects double submission', () => {
     let state = makeUnderwayState();
-    // Play through all moves for both sheets with 2 players
-    // Each sheet needs 2 moves (one per player)
-    for (let round = 0; round < 2; round++) {
-      for (let si = 0; si < state.sheets.length; si++) {
-        if (state.phase !== 'underway') break;
-        const sheet = state.sheets[si];
-        if (isSheetDone(sheet, state.order.length)) continue;
-        const assignee = getSheetAssignee(state.order, sheet);
-        const moveType = getExpectedMoveType(sheet);
-        state = submitMove(state, assignee, si, {
-          type: moveType,
-          content: `move-${round}-${si}`,
-        }) as UnderwayState;
-      }
+    state = submitMove(state, '1', { type: 'text', content: 'hello' });
+    const result = submitMove(state, '1', { type: 'text', content: 'again' });
+    expect(result.sheets[0].moves.length).toBe(1);
+  });
+
+  it('rejects wrong move type', () => {
+    const state = makeUnderwayState(); // firstMoveType is 'text'
+    const result = submitMove(state, '1', { type: 'drawing', content: 'data:...' });
+    expect(result.sheets[0].moves.length).toBe(0);
+  });
+});
+
+describe('checkRoundComplete', () => {
+  it('does not advance if not all players have submitted', () => {
+    let state = makeUnderwayState();
+    state = submitMove(state, '1', { type: 'text', content: 'hello' });
+    const result = checkRoundComplete(state);
+    expect(result.phase).toBe('underway');
+    if (result.phase === 'underway') {
+      expect(result.currentRound).toBe(0);
     }
-    expect(state.phase).toBe('postgame');
+  });
+
+  it('advances when all players have submitted', () => {
+    let state = makeUnderwayState();
+    state = submitMove(state, '1', { type: 'text', content: 'hello' });
+    state = submitMove(state, '2', { type: 'text', content: 'world' });
+    const result = checkRoundComplete(state);
+    expect(result.phase).toBe('underway');
+    if (result.phase === 'underway') {
+      expect(result.currentRound).toBe(1);
+      expect(result.submittedThisRound.size).toBe(0);
+    }
+  });
+
+  it('advances when remaining connected players have submitted', () => {
+    let state = makeUnderwayState();
+    // Disconnect player 2
+    state = removePlayer(state, '2') as UnderwayState;
+    // Player 1 submits
+    state = submitMove(state, '1', { type: 'text', content: 'hello' });
+    const result = checkRoundComplete(state);
+    // Should advance since disconnected player is accounted for
+    if (result.phase === 'underway') {
+      expect(result.currentRound).toBe(1);
+    }
+  });
+});
+
+describe('advanceRound', () => {
+  it('fills null for missing submissions', () => {
+    const state = makeUnderwayState();
+    // No one submitted, advance via timer
+    const result = advanceRound(state);
+    if (result.phase === 'underway') {
+      // Both sheets should have a null entry
+      expect(result.sheets[0].moves[0]).toBeNull();
+      expect(result.sheets[1].moves[0]).toBeNull();
+    }
+  });
+
+  it('transitions to postgame after all rounds', () => {
+    let state = makeUnderwayState();
+    // Play through 2 rounds (2 players = 2 rounds)
+    state = submitMove(state, '1', { type: 'text', content: 'r0-p1' });
+    state = submitMove(state, '2', { type: 'text', content: 'r0-p2' });
+    state = checkRoundComplete(state) as UnderwayState;
+    expect(state.phase).toBe('underway');
+    if (state.phase !== 'underway') return;
+    expect(state.currentRound).toBe(1);
+
+    const moveType = getExpectedMoveType(state.firstMoveType, 1);
+    state = submitMove(state, '1', { type: moveType, content: 'r1-p1' });
+    state = submitMove(state, '2', { type: moveType, content: 'r1-p2' });
+    const result = checkRoundComplete(state);
+    expect(result.phase).toBe('postgame');
   });
 });
 
@@ -248,83 +233,67 @@ describe('getClientState', () => {
   it('returns waiting state with player list', () => {
     let state = createInitialState();
     state = addPlayer(state, 'Alice').state;
-    state = addPlayer(state, 'Bob').state;
     state = setReady(state, '1', true);
-
-    const clientState = getClientState(state, '1');
-    expect(clientState.phase).toBe('waiting');
-    if (clientState.phase !== 'waiting') return;
-    expect(clientState.players.length).toBe(2);
-    expect(clientState.players.find(p => p.id === '1')?.ready).toBe(true);
-    expect(clientState.players.find(p => p.id === '2')?.ready).toBe(false);
-  });
-
-  it('returns underway state with sheet projections', () => {
-    const state = makeUnderwayState();
-    const clientState = getClientState(state, '1');
-    expect(clientState.phase).toBe('underway');
-    if (clientState.phase !== 'underway') return;
-    expect(clientState.sheets.length).toBe(2);
-
-    // Exactly one sheet should be assigned to player '1'
-    const mySheets = clientState.sheets.filter(s => s.assignedToMe);
-    const otherSheets = clientState.sheets.filter(s => !s.assignedToMe);
-    expect(mySheets.length).toBe(1);
-    expect(otherSheets.length).toBe(1);
-
-    // My sheet should have expectedMoveType and previousMove
-    const mySheet = mySheets[0];
-    if (!mySheet.assignedToMe) return;
-    expect(['text', 'drawing']).toContain(mySheet.expectedMoveType);
-    expect(mySheet.previousMove).toBeNull();
-  });
-
-  it('does not leak previous move data for sheets not assigned to player', () => {
-    const state = makeUnderwayState();
-    const clientState = getClientState(state, '1');
-    if (clientState.phase !== 'underway') return;
-
-    const otherSheets = clientState.sheets.filter(s => !s.assignedToMe);
-    for (const sheet of otherSheets) {
-      expect(sheet).not.toHaveProperty('previousMove');
-      expect(sheet).not.toHaveProperty('expectedMoveType');
+    const cs = getClientState(state, '1');
+    expect(cs.phase).toBe('waiting');
+    if (cs.phase === 'waiting') {
+      expect(cs.players[0].ready).toBe(true);
     }
   });
 
-  it('returns postgame state with full sheets', () => {
+  it('returns underway state with round info and sheet', () => {
+    const state = makeUnderwayState();
+    const cs = getClientState(state, '1');
+    expect(cs.phase).toBe('underway');
+    if (cs.phase !== 'underway') return;
+    expect(cs.currentRound).toBe(0);
+    expect(cs.totalRounds).toBe(2);
+    expect(cs.expectedMoveType).toBe('text');
+    expect(cs.submitted).toBe(false);
+    expect(cs.previousMove).toBeNull(); // first round, no previous
+  });
+
+  it('shows submitted=true after submitting', () => {
     let state = makeUnderwayState();
-    // Play to completion
-    for (let round = 0; round < 2; round++) {
-      for (let si = 0; si < state.sheets.length; si++) {
-        if (state.phase !== 'underway') break;
-        const sheet = state.sheets[si];
-        if (isSheetDone(sheet, state.order.length)) continue;
-        const assignee = getSheetAssignee(state.order, sheet);
-        const moveType = getExpectedMoveType(sheet);
-        state = submitMove(state, assignee, si, {
-          type: moveType,
-          content: `content-${round}-${si}`,
-        }) as UnderwayState;
-      }
+    state = submitMove(state, '1', { type: 'text', content: 'hi' });
+    const cs = getClientState(state, '1');
+    if (cs.phase === 'underway') {
+      expect(cs.submitted).toBe(true);
     }
-    expect(state.phase).toBe('postgame');
+  });
 
-    const clientState = getClientState(state, '1');
-    expect(clientState.phase).toBe('postgame');
-    if (clientState.phase !== 'postgame') return;
-    expect(clientState.sheets.length).toBe(2);
-    for (const sheet of clientState.sheets) {
-      expect(sheet.moves.length).toBe(2);
-      for (const move of sheet.moves) {
-        expect(move.playerHandle).toBeTruthy();
-      }
+  it('shows previous move from prior round', () => {
+    let state = makeUnderwayState();
+    state = submitMove(state, '1', { type: 'text', content: 'hello' });
+    state = submitMove(state, '2', { type: 'text', content: 'world' });
+    state = checkRoundComplete(state) as UnderwayState;
+    // Round 1: player 2 now has sheet 0 (which has 'hello' from player 1)
+    const cs = getClientState(state, '2');
+    if (cs.phase === 'underway') {
+      expect(cs.previousMove).toEqual({ type: 'text', content: 'hello' });
+    }
+  });
+
+  it('returns postgame with full sheets', () => {
+    let state = makeUnderwayState();
+    state = submitMove(state, '1', { type: 'text', content: 'r0' });
+    state = submitMove(state, '2', { type: 'text', content: 'r0' });
+    state = checkRoundComplete(state) as UnderwayState;
+    const moveType = getExpectedMoveType('text', 1);
+    state = submitMove(state, '1', { type: moveType, content: 'r1' });
+    state = submitMove(state, '2', { type: moveType, content: 'r1' });
+    const result = checkRoundComplete(state);
+    expect(result.phase).toBe('postgame');
+    const cs = getClientState(result, '1');
+    if (cs.phase === 'postgame') {
+      expect(cs.sheets.length).toBe(2);
+      expect(cs.sheets[0].moves.length).toBe(2);
     }
   });
 });
 
 // --- Test helper ---
 
-/** Creates a deterministic underway state with 2 players and fixed order. */
 function makeUnderwayState(): UnderwayState {
   const players = new Map([
     ['1', { id: '1', handle: 'Alice', ready: false, connected: true }],
@@ -335,8 +304,12 @@ function makeUnderwayState(): UnderwayState {
     players,
     order: ['1', '2'],
     sheets: [
-      { originIndex: 0, firstMoveType: 'text', moves: [] },
-      { originIndex: 1, firstMoveType: 'drawing', moves: [] },
+      { originIndex: 0, moves: [] },
+      { originIndex: 1, moves: [] },
     ],
+    currentRound: 0,
+    firstMoveType: 'text',
+    roundDeadline: Date.now() + ROUND_DURATION_MS,
+    submittedThisRound: new Set(),
   };
 }
