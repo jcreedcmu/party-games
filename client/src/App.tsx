@@ -3,8 +3,23 @@ import { JoinDialog } from './components/JoinDialog';
 import { WaitingRoom } from './components/WaitingRoom';
 import { GameBoard } from './components/GameBoard';
 import { PostGame } from './components/PostGame';
+import { DrawingCanvas } from './components/DrawingCanvas';
 
 export function App() {
+  // Debug route: /debug/draw shows just the drawing canvas
+  if (window.location.pathname === '/debug/draw') {
+    return (
+      <div className="app">
+        <h1>Drawing Canvas Debug</h1>
+        <div className="sheet-card" style={{ maxWidth: 480 }}>
+          <DrawingCanvas onSubmit={(dataUrl) => {
+            console.log('Submitted drawing, data URL length:', dataUrl.length);
+          }} />
+        </div>
+      </div>
+    );
+  }
+
   const { gameState, playerId, error, connected, connect, send, clearError } = useSocket();
 
   // Not connected/joined yet → show join dialog

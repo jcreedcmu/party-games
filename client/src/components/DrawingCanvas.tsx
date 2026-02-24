@@ -128,6 +128,11 @@ export function DrawingCanvas({ onSubmit }: DrawingCanvasProps) {
     ctx.lineJoin = 'round';
     ctx.strokeStyle = color;
     ctx.lineWidth = size;
+    // Draw a dot immediately so a click without drag leaves a mark
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
   }
 
   function handlePointerMove(e: PointerEvent<HTMLCanvasElement>) {
