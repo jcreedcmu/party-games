@@ -210,16 +210,15 @@ button:disabled {
   gap: 0.5rem;
 }
 
-.text-input textarea {
+.text-input input {
   padding: 0.5rem;
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 1rem;
   font-family: inherit;
-  resize: vertical;
 }
 
-.text-input textarea:focus {
+.text-input input:focus {
   outline: 2px solid #4a90d9;
   outline-offset: -1px;
   border-color: #4a90d9;

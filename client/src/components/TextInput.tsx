@@ -16,11 +16,11 @@ export function TextInput({ onSubmit }: TextInputProps) {
 
   return (
     <form className="text-input" onSubmit={handleSubmit}>
-      <textarea
+      <input
+        type="text"
         value={text}
         onChange={e => setText(e.target.value)}
         placeholder="Describe what you see..."
-        rows={3}
         autoFocus
       />
       <button type="submit" disabled={!text.trim()}>Submit</button>
