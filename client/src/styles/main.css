@@ -131,6 +131,17 @@ button:disabled {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: #1a1a1a;
+  transition: color 0.3s;
+}
+
+.timer-urgent {
+  color: #c00;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .sheet-card {
@@ -384,4 +395,24 @@ button:disabled {
   max-width: 480px;
   width: 90%;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* Disconnect Banner */
+
+.disconnect-banner {
+  background: #c00;
+  color: #fff;
+  text-align: center;
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* New Game Button */
+
+.new-game-btn {
+  margin-top: 1.5rem;
+  width: 100%;
 }

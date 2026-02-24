@@ -12,11 +12,13 @@ type GameBoardProps = {
 
 export function GameBoard({ state, playerId, onSend }: GameBoardProps) {
   const [timeLeft, setTimeLeft] = useState('');
+  const [urgent, setUrgent] = useState(false);
 
   useEffect(() => {
     function tick() {
       const remaining = Math.max(0, Math.ceil((state.roundDeadline - Date.now()) / 1000));
       setTimeLeft(`${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`);
+      setUrgent(remaining <= 10 && remaining > 0);
     }
     tick();
     const id = setInterval(tick, 1000);
@@ -37,7 +39,7 @@ export function GameBoard({ state, playerId, onSend }: GameBoardProps) {
     <div className="game-board">
       <div className="round-info">
         <span>Round {state.currentRound + 1} of {state.totalRounds}</span>
-        <span className="timer">{timeLeft}</span>
+        <span className={'timer' + (urgent ? ' timer-urgent' : '')}>{timeLeft}</span>
         <span>{submittedCount} / {state.players.length} submitted</span>
       </div>
 

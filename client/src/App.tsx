@@ -5,7 +5,7 @@ import { GameBoard } from './components/GameBoard';
 import { PostGame } from './components/PostGame';
 
 export function App() {
-  const { gameState, playerId, error, connect, send, clearError } = useSocket();
+  const { gameState, playerId, error, connected, connect, send, clearError } = useSocket();
 
   // Not connected/joined yet → show join dialog
   if (!playerId || !gameState) {
@@ -21,33 +21,35 @@ export function App() {
     );
   }
 
-  // Route by game phase
+  const disconnectBanner = !connected ? (
+    <div className="disconnect-banner">Connection lost. Trying to reconnect...</div>
+  ) : null;
+
+  let content;
   switch (gameState.phase) {
     case 'waiting':
-      return (
-        <div className="app">
-          <h1>Eat Poop You Cat</h1>
-          <WaitingRoom
-            state={gameState}
-            playerId={playerId}
-            onReady={() => send({ type: 'ready' })}
-            onUnready={() => send({ type: 'unready' })}
-          />
-        </div>
+      content = (
+        <WaitingRoom
+          state={gameState}
+          playerId={playerId}
+          onReady={() => send({ type: 'ready' })}
+          onUnready={() => send({ type: 'unready' })}
+        />
       );
+      break;
     case 'underway':
-      return (
-        <div className="app">
-          <h1>Eat Poop You Cat</h1>
-          <GameBoard state={gameState} playerId={playerId} onSend={send} />
-        </div>
-      );
+      content = <GameBoard state={gameState} playerId={playerId} onSend={send} />;
+      break;
     case 'postgame':
-      return (
-        <div className="app">
-          <h1>Eat Poop You Cat</h1>
-          <PostGame state={gameState} />
-        </div>
-      );
+      content = <PostGame state={gameState} onSend={send} />;
+      break;
   }
+
+  return (
+    <div className="app">
+      {disconnectBanner}
+      <h1>Eat Poop You Cat</h1>
+      {content}
+    </div>
+  );
 }

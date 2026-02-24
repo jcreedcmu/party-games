@@ -13,6 +13,7 @@ import {
   submitMove,
   checkRoundComplete,
   advanceRound,
+  resetGame,
   getClientState,
 } from './state.js';
 
@@ -111,7 +112,10 @@ export function createServer(password: string) {
       }
 
       case 'reset': {
-        // Implemented in Phase 8
+        if (state.phase !== 'postgame') return;
+        clearRoundTimer();
+        state = resetGame(state);
+        broadcastState();
         return;
       }
     }

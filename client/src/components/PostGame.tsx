@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import type { ClientPostgameState } from '../types';
+import type { ClientPostgameState, ClientMessage } from '../types';
 
 type PostGameProps = {
   state: ClientPostgameState;
+  onSend: (msg: ClientMessage) => void;
 };
 
-export function PostGame({ state }: PostGameProps) {
+export function PostGame({ state, onSend }: PostGameProps) {
   const [currentSheet, setCurrentSheet] = useState(0);
   const sheet = state.sheets[currentSheet];
 
@@ -41,6 +42,10 @@ export function PostGame({ state }: PostGameProps) {
           </div>
         ))}
       </div>
+
+      <button className="submit-btn new-game-btn" onClick={() => onSend({ type: 'reset' })}>
+        New Game
+      </button>
     </div>
   );
 }

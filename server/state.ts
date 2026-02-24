@@ -148,6 +148,19 @@ export function advanceRound(state: UnderwayState): UnderwayState | PostgameStat
   };
 }
 
+export function resetGame(state: GameState): WaitingState {
+  const players = new Map(
+    Array.from(state.players.entries())
+      .filter(([, p]) => p.connected)
+      .map(([id, p]) => [id, { ...p, ready: false }] as const),
+  );
+  return {
+    phase: 'waiting',
+    players: players as WaitingState['players'],
+    nextPlayerId: Math.max(0, ...Array.from(state.players.keys()).map(Number)) + 1,
+  };
+}
+
 export function getClientState(state: GameState, playerId: PlayerId): ClientGameState {
   switch (state.phase) {
     case 'waiting':

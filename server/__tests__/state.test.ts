@@ -8,6 +8,7 @@ import {
   submitMove,
   checkRoundComplete,
   advanceRound,
+  resetGame,
   getClientState,
   getExpectedMoveType,
   getSheetIndexForPlayer,
@@ -289,6 +290,25 @@ describe('getClientState', () => {
       expect(cs.sheets.length).toBe(2);
       expect(cs.sheets[0].moves.length).toBe(2);
     }
+  });
+});
+
+describe('resetGame', () => {
+  it('returns to waiting phase with connected players', () => {
+    let state = makeUnderwayState();
+    state = removePlayer(state, '2') as UnderwayState;
+    const result = resetGame(state);
+    expect(result.phase).toBe('waiting');
+    expect(result.players.size).toBe(1);
+    expect(result.players.has('1')).toBe(true);
+    expect(result.players.has('2')).toBe(false);
+    expect(result.players.get('1')?.ready).toBe(false);
+  });
+
+  it('sets nextPlayerId higher than existing ids', () => {
+    const state = makeUnderwayState();
+    const result = resetGame(state);
+    expect(result.nextPlayerId).toBe(3);
   });
 });
 
