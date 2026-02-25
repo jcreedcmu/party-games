@@ -1,232 +1,345 @@
 Implementation Plan
 ===================
 
-This plan breaks the project into incremental steps. Each step should
-result in something testable (either via unit tests or manual
-verification). Steps should be done in order.
+Phase 1: Single-Game EPYC
+--------------------------
 
-Step 1: Project Scaffolding
-----------------------------
+Steps 1-10 implemented the initial EPYC ("Eat Poop You Cat") game.
+See git history for details.
 
-Set up the monorepo-style directory structure:
+Phase 2: Multi-Game Generalization
+------------------------------------
 
-```
-poop-deli/
-  package.json          # root, with scripts for building/running
-  tsconfig.json         # base tsconfig
-  src/
-    common/
-      types.ts          # shared types between client and server
+Generalize the server to support multiple games selected via `--game`
+CLI flag. Add Pictionary as a second game.
+
+### Architecture
+
+Each game is a self-contained state machine with its own phases
+(including lobby/waiting). The server shell is thin: WebSocket
+management, password auth, JSON parsing, timer scheduling, relay
+forwarding, and static file serving. All types use discriminated
+unions — no `unknown` or `any`.
+
+Server state is a single discriminated union where `phase` narrows
+the type:
+
+    type ServerState =
+      | EpycWaitingState         // phase: 'epyc-waiting'
+      | EpycUnderwayState        // phase: 'epyc-underway'
+      | EpycPostgameState        // phase: 'epyc-postgame'
+      | PictionaryWaitingState   // phase: 'pictionary-waiting'
+      | PictionaryActiveState    // phase: 'pictionary-active'
+      | PictionaryPostgameState  // phase: 'pictionary-postgame'
+
+Each game fully owns its state machine (including lobby logic). Shared
+code is minimal: `PlayerId`, `PlayerInfo`, `HandleResult`, `TimerAction`,
+and utilities like `shuffle`.
+
+Server dispatch:
+
+    switch (state.phase) {
+      case 'epyc-waiting':
+      case 'epyc-underway':
+      case 'epyc-postgame':
+        return epycHandle(state, playerId, msg);
+      case 'pictionary-waiting':
+      case 'pictionary-active':
+      case 'pictionary-postgame':
+        return pictionaryHandle(state, playerId, msg);
+    }
+
+### Types
+
+Shared types:
+
+    type PlayerId = string;
+    type GameType = 'epyc' | 'pictionary';
+    type PlayerInfo = { id: PlayerId; handle: string; ready: boolean; connected: boolean };
+    type TimerAction = { kind: 'start'; deadline: number } | { kind: 'clear' } | { kind: 'none' };
+    type RelayMessage = { to: PlayerId[]; payload: RelayPayload };
+    type HandleResult = {
+      state: ServerState;
+      timer: TimerAction;
+      broadcast: boolean;
+      relay?: RelayMessage[];
+    };
+
+Drawing operations (used in Pictionary for real-time streaming):
+
+    type DrawStartOp = { type: 'draw-start'; color: string; size: number; x: number; y: number };
+    type DrawMoveOp = { type: 'draw-move'; points: Array<{ x: number; y: number }> };
+    type DrawEndOp = { type: 'draw-end' };
+    type DrawFillOp = { type: 'draw-fill'; x: number; y: number; color: string };
+    type DrawUndoOp = { type: 'draw-undo' };
+    type DrawClearOp = { type: 'draw-clear' };
+    type DrawOp = DrawStartOp | DrawMoveOp | DrawEndOp | DrawFillOp | DrawUndoOp | DrawClearOp;
+
+Client-to-server messages (flat union, discriminated by `type`):
+
+    type ClientMessage =
+      | { type: 'join'; password: string; handle: string }
+      | { type: 'ready' }
+      | { type: 'unready' }
+      | { type: 'reset' }
+      | { type: 'submit'; move: { type: MoveType; content: string } }      // EPYC
+      | DrawStartOp | DrawMoveOp | DrawEndOp | DrawFillOp | DrawUndoOp | DrawClearOp  // Pictionary draw
+      | { type: 'guess'; text: string }                                     // Pictionary guess
+      | { type: 'turn-snapshot'; dataUrl: string }                          // Pictionary bitmap
+
+Server-to-client messages:
+
+    type RelayPayload =
+      | DrawStartOp | DrawMoveOp | DrawEndOp | DrawFillOp | DrawUndoOp | DrawClearOp
+      | { type: 'guess-result'; handle: string; correct: boolean; text: string | null };
+
+    type ServerMessage =
+      | { type: 'joined'; playerId: string; gameType: GameType }
+      | { type: 'error'; message: string }
+      | { type: 'state'; state: ClientGameState }
+      | { type: 'relay'; payload: RelayPayload };
+
+Client state projections (discriminated union by `phase`):
+
+    type ClientGameState =
+      | EpycClientWaitingState          // phase: 'epyc-waiting'
+      | EpycClientUnderwayState         // phase: 'epyc-underway'
+      | EpycClientPostgameState         // phase: 'epyc-postgame'
+      | PictionaryClientWaitingState    // phase: 'pictionary-waiting'
+      | PictionaryClientActiveState     // phase: 'pictionary-active'
+      | PictionaryClientPostgameState   // phase: 'pictionary-postgame'
+
+EPYC client states (same as Phase 1, with prefixed phase names):
+
+    type EpycClientWaitingState = {
+      phase: 'epyc-waiting';
+      players: Array<{ id: string; handle: string; ready: boolean; connected: boolean }>;
+    };
+    type EpycClientUnderwayState = {
+      phase: 'epyc-underway';
+      players: Array<{ id: string; handle: string; connected: boolean; submitted: boolean }>;
+      currentRound: number;
+      totalRounds: number;
+      expectedMoveType: MoveType;
+      roundDeadline: number;
+      submitted: boolean;
+      previousMove: { type: MoveType; content: string } | null;
+    };
+    type EpycClientPostgameState = {
+      phase: 'epyc-postgame';
+      players: Array<{ id: string; handle: string }>;
+      sheets: Array<{
+        sheetIndex: number;
+        moves: Array<{ type: MoveType; content: string; playerHandle: string } | null>;
+      }>;
+    };
+
+Pictionary client states:
+
+    type PictionaryClientWaitingState = {
+      phase: 'pictionary-waiting';
+      players: Array<{ id: string; handle: string; ready: boolean; connected: boolean }>;
+    };
+    type PictionaryClientActiveState = {
+      phase: 'pictionary-active';
+      role: 'drawer' | 'guesser';
+      currentDrawerHandle: string;
+      turnNumber: number;
+      totalTurns: number;
+      turnDeadline: number;
+      word: string | null;           // non-null only for drawer
+      guessedCorrectly: boolean;     // whether this player already guessed right
+      correctGuessers: string[];     // handles of correct guessers
+      players: Array<{
+        id: string; handle: string; connected: boolean;
+        score: number; guessedThisTurn: boolean;
+      }>;
+    };
+    type PictionaryClientPostgameState = {
+      phase: 'pictionary-postgame';
+      players: Array<{ id: string; handle: string; score: number }>;
+      turns: Array<{
+        drawerHandle: string;
+        word: string;
+        drawingDataUrl: string | null;
+        guessers: Array<{ handle: string; timeMs: number }>;
+      }>;
+    };
+
+Pictionary server state:
+
+    type PictionaryWaitingState = {
+      phase: 'pictionary-waiting';
+      players: Map<PlayerId, PlayerInfo>;
+      nextPlayerId: number;
+    };
+    type PictionaryActiveState = {
+      phase: 'pictionary-active';
+      players: Map<PlayerId, PlayerInfo>;
+      order: PlayerId[];
+      currentTurnIndex: number;
+      word: string;
+      scores: Map<PlayerId, number>;
+      turnDeadline: number;
+      turnStartTime: number;
+      correctGuessers: PlayerId[];
+      completedTurns: TurnRecord[];
+    };
+    type PictionaryPostgameState = {
+      phase: 'pictionary-postgame';
+      players: Map<PlayerId, PlayerInfo>;
+      scores: Map<PlayerId, number>;
+      turns: TurnRecord[];
+    };
+    type TurnRecord = {
+      drawerId: PlayerId;
+      word: string;
+      drawingDataUrl: string | null;
+      correctGuessers: Array<{ playerId: PlayerId; timeMs: number }>;
+    };
+
+### Pictionary game rules
+
+- Players take turns as drawer (shuffled order, each draws once).
+- A random word is shown only to the drawer.
+- Drawer's pen strokes stream in real-time to all guessers via relay.
+- Guessers type text guesses; server checks against the word.
+- Scoring: drawer gets 1 point per correct guesser; guessers get
+  time-scaled points (max 10, scaled by remaining time).
+- 75-second turn timer. Turn ends on timer or all guessers correct.
+- At turn end, drawer's client auto-sends a bitmap snapshot
+  (`turn-snapshot`). Server stores it in TurnRecord for postgame.
+- If drawer disconnects, `drawingDataUrl` is null.
+- After all players have drawn, postgame shows scores and turn
+  summaries with drawing bitmaps.
+
+### Real-time stroke streaming
+
+Draw events flow: Drawer → `ClientMessage` → Server → `RelayPayload`
+→ all other players.
+
+Server does NOT store stroke point data — relay is fire-and-forget.
+The LiveCanvas component on guessers accumulates strokes locally for
+undo/clear replay. Fill operations are relayed as DrawFillOp and
+replayed on the guesser canvas using the same flood-fill algorithm.
+
+### File structure
+
     server/
-      tsconfig.json
-      index.ts          # entry point, sets up express + ws
-      game.ts           # game state machine
-    client/
-      tsconfig.json
-      index.html        # entry point HTML
-      index.tsx         # React root
+      index.ts
+      server.ts
+      types.ts
+      protocol.ts
+      games/
+        epyc/
+          types.ts
+          state.ts
+          client-state.ts
+        pictionary/
+          types.ts
+          state.ts
+          client-state.ts
+          words.ts
+      __tests__/
+        epyc-state.test.ts
+        server.test.ts
+        pictionary-state.test.ts
+    client/src/
       App.tsx
-      style.css
-```
+      hooks/useSocket.ts
+      types.ts
+      components/
+        JoinDialog.tsx
+        WaitingRoom.tsx
+        Modal.tsx
+        DrawingCanvas.tsx
+        epyc/
+          GameBoard.tsx
+          PostGame.tsx
+          TextInput.tsx
+          PreviousMove.tsx
+        pictionary/
+          PictionaryBoard.tsx
+          DrawerView.tsx
+          GuesserView.tsx
+          LiveCanvas.tsx
+          PictionaryPostGame.tsx
+      styles/main.css
 
-- Initialize `package.json` with dependencies:
-  - **Server:** express, ws, typescript, ts-node
-  - **Client:** react, react-dom, typescript
-  - **Build/dev:** esbuild (for bundling the client), @types packages
-- Set up tsconfig files. The base tsconfig enables strict mode. Server
-  and client extend it with appropriate module/target settings.
-- Add npm scripts: `build` (compile server + bundle client), `start`
-  (run server), `dev` (watch mode).
-- Verify: `npm run build` succeeds and `npm start` serves a "hello
-  world" page.
+### Steps
 
-Step 2: Shared Types
----------------------
+[ ] Step 11: Restructure EPYC into games/epyc/
 
-Define the core types in `src/common/types.ts`:
+    Move EPYC types to server/games/epyc/types.ts with prefixed phase
+    names (epyc-waiting, epyc-underway, epyc-postgame). Move EPYC
+    state functions to server/games/epyc/state.ts (self-contained:
+    lobby + gameplay). Move client projections to
+    server/games/epyc/client-state.ts. Update server/types.ts with
+    shared types and ServerState union. Update server/protocol.ts for
+    prefixed phase names. Update server/server.ts to dispatch by
+    state.phase and accept gameType parameter. Update server/index.ts
+    to parse --game flag. Move tests to __tests__/epyc-state.test.ts.
+    Move client EPYC components into components/epyc/. Update App.tsx.
 
-- `GamePhase`: `'waiting' | 'underway' | 'postgame'`
-- `MoveType`: `'text' | 'picture'`
-- `Move`: `{ type: MoveType; content: string; playerName: string }`
-  - For text moves, `content` is the text string.
-  - For picture moves, `content` is a data URL (PNG from the canvas).
-- `Sheet`: `{ moves: Move[] }`
-- `PlayerInfo`: `{ name: string }`
-- Messages from server to client (sent over WebSocket):
-  - `GameStateMsg`: full state sync (phase, players, ready statuses,
-    which sheet the player currently has, timer remaining, etc.)
-  - `PostgameMsg`: all sheets for browsing
-- Messages from client to server:
-  - `JoinMsg`: `{ type: 'join'; name: string; password: string }`
-  - `ReadyMsg`: `{ type: 'ready' }`
-  - `SubmitMoveMsg`: `{ type: 'submitMove'; content: string }`
+    Verify: vitest run passes, EPYC game works end-to-end.
 
-Verify: types compile cleanly.
+[ ] Step 12: Add relay infrastructure
 
-Step 3: Server — Game State Machine
--------------------------------------
+    Add RelayPayload type and { type: 'relay', payload: RelayPayload }
+    to ServerMessage. Add broadcast flag to HandleResult. Update
+    server.ts with relay forwarding logic: when a handler returns
+    relay messages, send { type: 'relay', payload } to specified
+    client PlayerId sets. Update useSocket.ts: handle relay messages,
+    expose onRelay callback registration for components to subscribe.
 
-Implement `src/server/game.ts` with a `Game` class:
+    Verify: EPYC still works, relay infrastructure compiles and is
+    ready for Pictionary.
 
-- Internal state:
-  - `phase: GamePhase`
-  - `players: Map<string, PlayerInfo>` (keyed by connection id)
-  - `readySet: Set<string>`
-  - `cyclicOrder: string[]` (player ids in shuffled order)
-  - `sheets: Sheet[]` (one per player)
-  - `currentRound: number`
-  - `initialMoveType: MoveType` (randomly chosen at game start)
-  - `roundTimer: NodeJS.Timeout | null`
-  - `roundEndTime: number` (timestamp)
-- Methods:
-  - `addPlayer(id, name)` — add player during waiting phase
-  - `removePlayer(id)` — remove player (handle mid-game gracefully)
-  - `setReady(id)` — mark player ready; if all ready, start game
-  - `startGame()` — shuffle players, create sheets, start first round
-  - `submitMove(id, content)` — record a move on the player's current sheet
-  - `advanceRound()` — called when timer fires; rotate sheets; if all
-    rounds done, transition to postgame
-  - `getStateForPlayer(id)` — return the view of state that a
-    specific player should see
-  - `getPostgameState()` — return all sheets for browsing
-- Helper: `currentMoveType(round)` — alternates starting from
-  `initialMoveType`.
-- Helper: `sheetIndexForPlayer(playerId, round)` — which sheet a
-  given player works on in a given round.
+[ ] Step 13: Add streaming mode to DrawingCanvas
 
-Write unit tests for the Game class:
-- Adding/removing players
-- Ready-up logic triggers game start
-- Cyclic rotation of sheets
-- Move type alternation
-- Postgame transition after all rounds
+    Add mode prop: 'submit' (existing EPYC behavior) or 'stream'
+    (Pictionary). In stream mode: on pointerDown emit onDrawStart
+    with color, size, x, y. During drag, batch points every ~50ms
+    and emit onDrawMove with point array. On pointerUp emit
+    onDrawEnd. For fill tool emit onFill with x, y, color. For undo
+    and clear emit onUndo and onClear. Hide Submit button in stream
+    mode. Submit mode is unchanged.
 
-Verify: `npm test` passes.
+    Verify: EPYC drawing works as before. Debug route /debug/draw
+    confirms stream callbacks fire correctly.
 
-Step 4: Server — HTTP and WebSocket Endpoints
------------------------------------------------
+[ ] Step 14: Implement Pictionary server
 
-Implement `src/server/index.ts`:
+    Create server/games/pictionary/types.ts with
+    PictionaryWaitingState, PictionaryActiveState,
+    PictionaryPostgameState, TurnRecord. Create state.ts with pure
+    functions: createInitialState, addPlayer, removePlayer, setReady,
+    checkAllReady, getCurrentDrawer, submitGuess, checkTurnComplete,
+    advanceTurn, storeTurnSnapshot, handleDisconnect, resetGame.
+    Create words.ts with ~200 common Pictionary words and pickWord().
+    Create client-state.ts with getClientState projections. Add
+    Pictionary phases to ServerState union and ClientGameState union.
+    Wire into server.ts dispatch for pictionary-* phases. Write unit
+    tests in __tests__/pictionary-state.test.ts.
 
-- Create an Express app.
-- Serve the client's bundled files from a `dist/client` directory (or
-  similar) as static assets.
-- Set up a `ws` WebSocket server attached to the HTTP server.
-- Accept a `--password` command-line argument (default: no password
-  required).
-- On WebSocket connection:
-  - Wait for a `JoinMsg`. Validate password. If invalid, send an
-    error and close. If valid, add player to the game.
-  - On subsequent messages, dispatch to the appropriate `Game` method.
-  - After each state change, broadcast updated `GameStateMsg` to all
-    connected players.
-  - On disconnect, remove player from game.
-- Timer management: when a round starts, set a 60-second timer. On
-  tick (every second), broadcast updated time remaining. On expiry,
-  call `advanceRound()`.
+    Verify: vitest run passes all tests. Can join and start a
+    Pictionary game via WebSocket.
 
-Verify: can connect with a WebSocket client (e.g. `wscat`) and send
-join/ready messages; see state change responses.
+[ ] Step 15: Implement Pictionary client
 
-Step 5: Client — Join Screen
-------------------------------
+    Create PictionaryBoard.tsx: routes to DrawerView or GuesserView
+    based on state.role. DrawerView.tsx: shows secret word,
+    DrawingCanvas in stream mode (sends draw ops as ClientMessage),
+    timer, list of correct guessers. Auto-sends turn-snapshot
+    message with canvas data URL when timer hits zero. GuesserView.tsx:
+    LiveCanvas rendering incoming DrawOp relays, text input for
+    guesses, feed showing guess attempts, timer. LiveCanvas.tsx:
+    read-only canvas that accumulates strokes from relay messages,
+    handles undo (pop last stroke and redraw) and clear (reset) from
+    its local stroke history. Flood fills are replayed using the same
+    algorithm. PictionaryPostGame.tsx: final scores sorted by points,
+    turn cards showing word + drawing bitmap (as <img> from
+    drawingDataUrl) + who guessed. Add Pictionary CSS to main.css.
+    Wire into App.tsx routing by phase.
 
-Implement the React app with a `JoinScreen` component:
-
-- A text input for the player's chosen handle.
-- A text input for the game password (if required).
-- A "Join" button.
-- On join, open a WebSocket connection to the server and send a
-  `JoinMsg`.
-- Show an error message (in a styled in-page modal/banner) if the
-  password is wrong or name is taken.
-
-Verify: can open the page in a browser, enter name/password, and join.
-
-Step 6: Client — Lobby / Waiting Screen
------------------------------------------
-
-Implement a `LobbyScreen` component:
-
-- Show the list of players who have joined.
-- Indicate which players are "ready" (e.g. a checkmark next to their
-  name).
-- A "Ready" button for the current player.
-- When all players are ready, the server starts the game and the
-  client transitions to the game screen.
-
-Verify: open multiple browser tabs, join with different names, click
-ready, and see the game start.
-
-Step 7: Client — Game Screen (Text Input)
--------------------------------------------
-
-Implement a `GameScreen` component for the "underway" phase:
-
-- Display a countdown timer for the current round.
-- Show whether the player needs to supply text or a picture.
-- If the sheet has a previous move, display it:
-  - Previous text: render centered.
-  - Previous picture: render as an image.
-- For text input rounds:
-  - Show a text input field.
-  - Show a "Submit" button.
-  - On submit, send a `SubmitMoveMsg` to the server.
-- After submitting, show a "waiting for round to end" message.
-
-Verify: start a game with text as the initial move type; type and
-submit text.
-
-Step 8: Client — Game Screen (Drawing Input)
-----------------------------------------------
-
-Add drawing support to `GameScreen`:
-
-- Implement a `DrawingCanvas` component using an HTML `<canvas>`:
-  - Mouse/touch event handlers for freehand drawing.
-  - A few basic controls: color picker (small palette), brush size,
-    clear button.
-  - Export the canvas content as a data URL (PNG) on submit.
-- On submit, send a `SubmitMoveMsg` with the data URL as content.
-
-Verify: start a game with picture as the initial move type; draw and
-submit.
-
-Step 9: Client — Postgame Screen
------------------------------------
-
-Implement a `PostgameScreen` component:
-
-- Show a list/tabs of all sheets (one per original player).
-- For each sheet, display the full sequence of moves top to bottom:
-  - Each move shows the player's name and their contribution (text
-    rendered centered, pictures rendered as images).
-- Allow scrolling/browsing through sheets.
-
-Verify: complete a full game and see the results displayed.
-
-Step 10: Polish and Edge Cases
--------------------------------
-
-- Handle player disconnection mid-game gracefully: if a player
-  disconnects, auto-submit a blank move for them when the round
-  timer expires.
-- Add a visual/audio cue when the timer is about to expire (e.g.
-  last 10 seconds).
-- Style the UI with CSS: make it look clean and playable. Use a
-  simple, fun aesthetic.
-- Ensure the in-page modal approach for errors/alerts (no native
-  `alert()`/`confirm()`).
-- Test with 3+ players across multiple browser windows to verify the
-  full flow end-to-end.
-
-Step 11: Final Testing
------------------------
-
-- Write integration tests that simulate a full game lifecycle:
-  connect multiple clients, join, ready up, submit moves across
-  rounds, verify postgame data.
-- Verify timer behavior in tests (use fake timers).
-- Test password authentication (correct and incorrect).
-- Test edge cases: player joins then disconnects, all players
-  disconnect, single-player game, etc.
+    Verify: full end-to-end Pictionary across multiple browser tabs.
