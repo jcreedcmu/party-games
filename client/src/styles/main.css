@@ -430,3 +430,133 @@ button:disabled {
   margin-top: 1.5rem;
   width: 100%;
 }
+
+/* Pictionary */
+
+.pictionary-board {
+  max-width: 480px;
+}
+
+.pic-secret-word {
+  text-align: center;
+  font-size: 1.25rem;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+}
+
+.pic-canvas-area {
+  margin-bottom: 0.75rem;
+}
+
+.live-canvas {
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.pic-guess-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.pic-guess-form input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.pic-guess-form input:focus {
+  outline: 2px solid #4a90d9;
+  outline-offset: -1px;
+  border-color: #4a90d9;
+}
+
+.pic-guessed-correct {
+  text-align: center;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  background: #d4edda;
+  color: #155724;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.pic-guess-feed {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 0.75rem;
+}
+
+.pic-guess-entry {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  border-bottom: 1px solid #eee;
+}
+
+.pic-guess-entry.correct {
+  color: #155724;
+  background: #d4edda;
+}
+
+/* Pictionary Postgame */
+
+.pic-scoreboard {
+  margin-bottom: 1.5rem;
+}
+
+.pic-score-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.pic-score-rank {
+  font-weight: 700;
+  color: #666;
+  min-width: 2rem;
+}
+
+.pic-score-name {
+  flex: 1;
+}
+
+.pic-score-points {
+  font-weight: 600;
+  color: #4a90d9;
+}
+
+.pic-turn-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.pic-turn-header {
+  padding: 0.5rem 0.75rem;
+  background: #f5f5f5;
+  font-size: 0.9rem;
+}
+
+.pic-turn-drawing {
+  padding: 0.5rem;
+}
+
+.pic-turn-drawing canvas {
+  width: 100%;
+}
+
+.pic-turn-guessers {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  color: #666;
+  border-top: 1px solid #eee;
+}

@@ -366,7 +366,7 @@ replayed on the guesser canvas using the same flood-fill algorithm.
     Verify: vitest run passes all tests. Can join and start a
     Pictionary game via WebSocket.
 
-[ ] Step 15: Implement Pictionary client
+[x] Step 15: Implement Pictionary client
 
     Create PictionaryBoard.tsx: routes to DrawerView or GuesserView
     based on state.role. DrawerView.tsx: shows secret word,

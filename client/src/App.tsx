@@ -4,6 +4,8 @@ import { JoinDialog } from './components/JoinDialog';
 import { WaitingRoom } from './components/WaitingRoom';
 import { GameBoard } from './components/epyc/GameBoard';
 import { PostGame } from './components/epyc/PostGame';
+import { PictionaryBoard } from './components/pictionary/PictionaryBoard';
+import { PictionaryPostGame } from './components/pictionary/PictionaryPostGame';
 import { DrawingCanvas } from './components/DrawingCanvas';
 
 function DebugDraw() {
@@ -43,13 +45,13 @@ export function App() {
     return <DebugStream />;
   }
 
-  const { gameState, playerId, error, connected, connect, send, clearError } = useSocket();
+  const { gameState, playerId, gameType, error, connected, connect, send, clearError, onRelay } = useSocket();
 
-  // Not connected/joined yet → show join dialog
+  // Not connected/joined yet -> show join dialog
   if (!playerId || !gameState) {
     return (
       <div className="app">
-        <h1>Eat Poop You Cat</h1>
+        <h1>Game Lobby</h1>
         <JoinDialog
           onJoin={connect}
           error={error}
@@ -63,9 +65,12 @@ export function App() {
     <div className="disconnect-banner">Connection lost. Trying to reconnect...</div>
   ) : null;
 
+  const title = gameType === 'pictionary' ? 'Pictionary' : 'Eat Poop You Cat';
+
   let content;
   switch (gameState.phase) {
     case 'epyc-waiting':
+    case 'pictionary-waiting':
       content = (
         <WaitingRoom
           state={gameState}
@@ -81,12 +86,18 @@ export function App() {
     case 'epyc-postgame':
       content = <PostGame state={gameState} onSend={send} />;
       break;
+    case 'pictionary-active':
+      content = <PictionaryBoard state={gameState} playerId={playerId} send={send} onRelay={onRelay} />;
+      break;
+    case 'pictionary-postgame':
+      content = <PictionaryPostGame state={gameState} onSend={send} />;
+      break;
   }
 
   return (
     <div className="app">
       {disconnectBanner}
-      <h1>Eat Poop You Cat</h1>
+      <h1>{title}</h1>
       {content}
     </div>
   );
