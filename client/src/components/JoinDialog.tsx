@@ -41,7 +41,7 @@ export function JoinDialog({ onJoin, error, onClearError }: JoinDialogProps) {
           />
         </label>
         {error && <div className="error-message">{error}</div>}
-        <button type="submit" disabled={!handle.trim() || !password.trim()}>
+        <button type="submit" className="btn-primary" disabled={!handle.trim() || !password.trim()}>
           Join
         </button>
       </form>

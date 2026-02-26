@@ -38,7 +38,7 @@ export function WaitingRoom({ state, playerId, onReady, onUnready, send, addWord
           </li>
         ))}
       </ul>
-      <button onClick={isReady ? onUnready : onReady}>
+      <button className="btn-primary" onClick={isReady ? onUnready : onReady}>
         {isReady ? 'Not Ready' : 'Ready'}
       </button>
 

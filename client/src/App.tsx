@@ -51,7 +51,7 @@ export function App() {
   if (!playerId || !gameState) {
     return (
       <div className="app">
-        <h1>Game Lobby</h1>
+        <img src="/drawplodocus.png" alt="Drawplodocus" className="logo" />
         <JoinDialog
           onJoin={connect}
           error={error}
@@ -65,7 +65,8 @@ export function App() {
     <div className="disconnect-banner">Connection lost. Trying to reconnect...</div>
   ) : null;
 
-  const title = gameType === 'pictionary' ? 'Pictionary' : 'Eat Poop You Cat';
+  const title = gameType === 'pictionary' ? 'Drawplodocus' : 'Eat Poop You Cat';
+  const showLogo = gameType === 'pictionary';
 
   let content;
   switch (gameState.phase) {
@@ -100,7 +101,8 @@ export function App() {
   return (
     <div className="app">
       {disconnectBanner}
-      <h1>{title}</h1>
+      {showLogo && <img src="/drawplodocus.png" alt="Drawplodocus" className="logo" />}
+      {!showLogo && <h1>{title}</h1>}
       {content}
     </div>
   );
