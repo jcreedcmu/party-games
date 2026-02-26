@@ -71,43 +71,47 @@ export function GuesserView({ state, playerId, send, onRelay }: GuesserViewProps
         <span>{state.currentDrawerHandle} is drawing</span>
       </div>
 
-      <div className="pic-canvas-area">
-        <LiveCanvas ops={drawOps} />
-      </div>
-
-      <div className="pic-word-hint">{hintRevealed ? state.wordHintRevealed : state.wordHint}</div>
-
-      {state.guessedCorrectly ? (
-        <div className="pic-guessed-correct">You guessed it!</div>
-      ) : (
-        <form className="pic-guess-form" onSubmit={(e) => { e.preventDefault(); submitGuess(); }}>
-          <input
-            ref={inputRef}
-            type="text"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Type your guess..."
-            autoFocus
-          />
-          <button type="submit">Guess</button>
-        </form>
-      )}
-
-      <div className="pic-guess-feed">
-        {[...guesses].reverse().map((g, i) => (
-          <div key={i} className={'pic-guess-entry' + (g.correct ? ' correct' : '')}>
-            <strong>{g.handle}</strong>
-            {g.correct ? ' guessed correctly!' : `: ${g.text}`}
+      <div className="pic-main-row">
+        <div className="pic-main-left">
+          <div className="pic-canvas-area">
+            <LiveCanvas ops={drawOps} />
           </div>
-        ))}
-      </div>
 
-      <div className="player-status">
-        {state.players.map(p => (
-          <span key={p.id} className={'player-chip' + (p.guessedThisTurn ? ' done' : '') + (!p.connected ? ' disconnected' : '')}>
-            {p.handle} ({p.score}){p.guessedThisTurn ? ' \u2713' : ''}
-          </span>
-        ))}
+          <div className="pic-word-hint">{hintRevealed ? state.wordHintRevealed : state.wordHint}</div>
+
+          {state.guessedCorrectly ? (
+            <div className="pic-guessed-correct">You guessed it!</div>
+          ) : (
+            <form className="pic-guess-form" onSubmit={(e) => { e.preventDefault(); submitGuess(); }}>
+              <input
+                ref={inputRef}
+                type="text"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="Type your guess..."
+                autoFocus
+              />
+              <button type="submit">Guess</button>
+            </form>
+          )}
+
+          <div className="player-status">
+            {state.players.map(p => (
+              <span key={p.id} className={'player-chip' + (p.guessedThisTurn ? ' done' : '') + (!p.connected ? ' disconnected' : '')}>
+                {p.handle} ({p.score}){p.guessedThisTurn ? ' \u2713' : ''}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="pic-guess-feed">
+          {[...guesses].reverse().map((g, i) => (
+            <div key={i} className={'pic-guess-entry' + (g.correct ? ' correct' : '')}>
+              <strong>{g.handle}</strong>
+              {g.correct ? ' guessed correctly!' : `: ${g.text}`}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

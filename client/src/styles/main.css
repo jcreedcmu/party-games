@@ -492,7 +492,23 @@ button:disabled {
 }
 
 .pictionary-board {
-  max-width: 480px;
+  max-width: 720px;
+}
+
+.pic-main-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.pic-main-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.pic-guess-feed {
+  width: 200px;
+  flex-shrink: 0;
+  overflow-y: auto;
 }
 
 .pic-secret-word {
@@ -554,11 +570,7 @@ button:disabled {
   font-weight: 600;
 }
 
-.pic-guess-feed {
-  max-height: 200px;
-  overflow-y: auto;
-  margin-bottom: 0.75rem;
-}
+
 
 .pic-guess-entry {
   padding: 0.25rem 0.5rem;
