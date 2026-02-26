@@ -85,7 +85,7 @@ Client-to-server messages (flat union, discriminated by `type`):
       | { type: 'submit'; move: { type: MoveType; content: string } }      // EPYC
       | DrawStartOp | DrawMoveOp | DrawEndOp | DrawFillOp | DrawUndoOp | DrawClearOp  // Pictionary draw
       | { type: 'guess'; text: string }                                     // Pictionary guess
-      | { type: 'turn-snapshot'; dataUrl: string }                          // Pictionary bitmap
+      // (no turn-snapshot needed — server records draw ops during the turn)
 
 Server-to-client messages:
 
@@ -161,7 +161,7 @@ Pictionary client states:
       turns: Array<{
         drawerHandle: string;
         word: string;
-        drawingDataUrl: string | null;
+        drawOps: DrawOp[];
         guessers: Array<{ handle: string; timeMs: number }>;
       }>;
     };
@@ -208,11 +208,13 @@ Pictionary server state:
 - Scoring: drawer gets 1 point per correct guesser; guessers get
   time-scaled points (max 10, scaled by remaining time).
 - 75-second turn timer. Turn ends on timer or all guessers correct.
-- At turn end, drawer's client auto-sends a bitmap snapshot
-  (`turn-snapshot`). Server stores it in TurnRecord for postgame.
-- If drawer disconnects, `drawingDataUrl` is null.
+- The server records all DrawOps during the turn. At turn end, the
+  accumulated op log is saved into the TurnRecord for postgame.
+- If drawer disconnects mid-turn, the op log contains whatever was
+  drawn up to that point (may be partial or empty).
 - After all players have drawn, postgame shows scores and turn
-  summaries with drawing bitmaps.
+  summaries. Each turn's drawing is replayed from its op log on the
+  client.
 
 ### Drawing recording and postgame display
 
@@ -351,8 +353,10 @@ replayed on the guesser canvas using the same flood-fill algorithm.
     PictionaryWaitingState, PictionaryActiveState,
     PictionaryPostgameState, TurnRecord. Create state.ts with pure
     functions: createInitialState, addPlayer, removePlayer, setReady,
-    checkAllReady, getCurrentDrawer, submitGuess, checkTurnComplete,
-    advanceTurn, storeTurnSnapshot, handleDisconnect, resetGame.
+    checkAllReady, getCurrentDrawer, recordDrawOp (appends a DrawOp
+    to currentTurnOps), submitGuess, checkTurnComplete,
+    advanceTurn (finalizes currentTurnOps into TurnRecord.drawOps),
+    handleDisconnect, resetGame.
     Create words.ts with ~200 common Pictionary words and pickWord().
     Create client-state.ts with getClientState projections. Add
     Pictionary phases to ServerState union and ClientGameState union.
@@ -367,16 +371,16 @@ replayed on the guesser canvas using the same flood-fill algorithm.
     Create PictionaryBoard.tsx: routes to DrawerView or GuesserView
     based on state.role. DrawerView.tsx: shows secret word,
     DrawingCanvas in stream mode (sends draw ops as ClientMessage),
-    timer, list of correct guessers. Auto-sends turn-snapshot
-    message with canvas data URL when timer hits zero. GuesserView.tsx:
-    LiveCanvas rendering incoming DrawOp relays, text input for
-    guesses, feed showing guess attempts, timer. LiveCanvas.tsx:
-    read-only canvas that accumulates strokes from relay messages,
-    handles undo (pop last stroke and redraw) and clear (reset) from
-    its local stroke history. Flood fills are replayed using the same
-    algorithm. PictionaryPostGame.tsx: final scores sorted by points,
-    turn cards showing word + drawing bitmap (as <img> from
-    drawingDataUrl) + who guessed. Add Pictionary CSS to main.css.
-    Wire into App.tsx routing by phase.
+    timer, list of correct guessers. GuesserView.tsx: LiveCanvas
+    rendering incoming DrawOp relays, text input for guesses, feed
+    showing guess attempts, timer. LiveCanvas.tsx: read-only canvas
+    that accumulates strokes from relay messages, handles undo (pop
+    last stroke and redraw) and clear (reset) from its local stroke
+    history. Flood fills are replayed using the same algorithm.
+    PictionaryPostGame.tsx: final scores sorted by points, turn cards
+    showing word + drawing replayed from DrawOp log (reuse
+    LiveCanvas or a similar replay component to render the op
+    sequence onto a canvas) + who guessed. Add Pictionary CSS to
+    main.css. Wire into App.tsx routing by phase.
 
     Verify: full end-to-end Pictionary across multiple browser tabs.
