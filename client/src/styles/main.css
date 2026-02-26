@@ -16,6 +16,9 @@ body {
 #root {
   max-width: 600px;
   margin: 1rem auto;
+}
+
+.card {
   padding: 1.5rem;
   background: #fff;
   border-radius: 16px;

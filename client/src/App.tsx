@@ -52,11 +52,13 @@ export function App() {
     return (
       <div className="app">
         <img src="/drawplodocus.png" alt="Drawplodocus" className="logo" />
-        <JoinDialog
-          onJoin={connect}
-          error={error}
-          onClearError={clearError}
-        />
+        <div className="card">
+          <JoinDialog
+            onJoin={connect}
+            error={error}
+            onClearError={clearError}
+          />
+        </div>
       </div>
     );
   }
@@ -100,10 +102,12 @@ export function App() {
 
   return (
     <div className="app">
-      {disconnectBanner}
       {showLogo && <img src="/drawplodocus.png" alt="Drawplodocus" className="logo" />}
-      {!showLogo && <h1>{title}</h1>}
-      {content}
+      <div className="card">
+        {disconnectBanner}
+        {!showLogo && <h1>{title}</h1>}
+        {content}
+      </div>
     </div>
   );
 }
