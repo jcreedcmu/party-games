@@ -85,7 +85,7 @@ export function GuesserView({ state, playerId, send, onRelay }: GuesserViewProps
       )}
 
       <div className="pic-guess-feed">
-        {guesses.map((g, i) => (
+        {[...guesses].reverse().map((g, i) => (
           <div key={i} className={'pic-guess-entry' + (g.correct ? ' correct' : '')}>
             <strong>{g.handle}</strong>
             {g.correct ? ' guessed correctly!' : `: ${g.text}`}
