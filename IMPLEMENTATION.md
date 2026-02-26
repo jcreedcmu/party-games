@@ -347,7 +347,7 @@ replayed on the guesser canvas using the same flood-fill algorithm.
     Verify: EPYC drawing works as before. Debug route /debug/draw
     confirms stream callbacks fire correctly.
 
-[ ] Step 14: Implement Pictionary server
+[x] Step 14: Implement Pictionary server
 
     Create server/games/pictionary/types.ts with
     PictionaryWaitingState, PictionaryActiveState,

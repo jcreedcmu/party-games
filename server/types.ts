@@ -18,6 +18,7 @@ export type RelayMessage = {
   payload: RelayPayload;
 };
 
-// ServerState is the union of all game states (will expand with Pictionary)
+// ServerState is the union of all game states
 import type { EpycState } from './games/epyc/types.js';
-export type ServerState = EpycState;
+import type { PictionaryState } from './games/pictionary/types.js';
+export type ServerState = EpycState | PictionaryState;

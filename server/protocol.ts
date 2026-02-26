@@ -11,7 +11,18 @@ export type {
   EpycClientState,
 } from './games/epyc/client-state.js';
 
+// Re-export Pictionary client state types
+export type {
+  PictionaryClientWaitingState,
+  PictionaryClientActivePlayer,
+  PictionaryClientActiveState,
+  PictionaryClientTurnSummary,
+  PictionaryClientPostgameState,
+  PictionaryClientState,
+} from './games/pictionary/client-state.js';
+
 import type { EpycClientState } from './games/epyc/client-state.js';
+import type { PictionaryClientState } from './games/pictionary/client-state.js';
 
 // --- Drawing operations (used in Pictionary for real-time streaming) ---
 
@@ -81,6 +92,6 @@ export type RelayResponse = {
 
 export type ServerMessage = JoinedResponse | ErrorResponse | StateResponse | RelayResponse;
 
-// --- Client game state union (will expand with Pictionary) ---
+// --- Client game state union ---
 
-export type ClientGameState = EpycClientState;
+export type ClientGameState = EpycClientState | PictionaryClientState;

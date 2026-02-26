@@ -2,7 +2,7 @@ import path from 'node:path';
 import http from 'node:http';
 import express from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
-import type { ClientMessage, ServerMessage, RelayPayload } from './protocol.js';
+import type { ClientMessage, ServerMessage, DrawOp, RelayPayload } from './protocol.js';
 import type { GameType, PlayerId, ServerState, RelayMessage } from './types.js';
 import {
   createInitialState as epycCreateInitialState,
@@ -16,11 +16,25 @@ import {
   resetGame as epycResetGame,
 } from './games/epyc/state.js';
 import { getClientState as epycGetClientState } from './games/epyc/client-state.js';
+import {
+  createInitialState as picCreateInitialState,
+  addPlayer as picAddPlayer,
+  removePlayer as picRemovePlayer,
+  setReady as picSetReady,
+  checkAllReady as picCheckAllReady,
+  getCurrentDrawer as picGetCurrentDrawer,
+  recordDrawOp as picRecordDrawOp,
+  submitGuess as picSubmitGuess,
+  checkTurnComplete as picCheckTurnComplete,
+  advanceTurn as picAdvanceTurn,
+  resetGame as picResetGame,
+} from './games/pictionary/state.js';
+import { getClientState as picGetClientState } from './games/pictionary/client-state.js';
 
 function createGameInitialState(gameType: GameType): ServerState {
   switch (gameType) {
     case 'epyc': return epycCreateInitialState();
-    case 'pictionary': throw new Error('Pictionary not yet implemented');
+    case 'pictionary': return picCreateInitialState();
   }
 }
 
@@ -30,6 +44,10 @@ function getClientState(state: ServerState, playerId: PlayerId) {
     case 'epyc-underway':
     case 'epyc-postgame':
       return epycGetClientState(state, playerId);
+    case 'pictionary-waiting':
+    case 'pictionary-active':
+    case 'pictionary-postgame':
+      return picGetClientState(state, playerId);
   }
 }
 
@@ -40,7 +58,7 @@ export function createServer(password: string, gameType: GameType = 'epyc') {
 
   let state: ServerState = createGameInitialState(gameType);
   const clients = new Map<WebSocket, PlayerId | null>();
-  let roundTimer: ReturnType<typeof setTimeout> | null = null;
+  let gameTimer: ReturnType<typeof setTimeout> | null = null;
 
   function send(ws: WebSocket, msg: ServerMessage) {
     if (ws.readyState === WebSocket.OPEN) {
@@ -69,22 +87,36 @@ export function createServer(password: string, gameType: GameType = 'epyc') {
     }
   }
 
-  function clearRoundTimer() {
-    if (roundTimer) {
-      clearTimeout(roundTimer);
-      roundTimer = null;
+  function clearGameTimer() {
+    if (gameTimer) {
+      clearTimeout(gameTimer);
+      gameTimer = null;
     }
   }
 
   function startRoundTimer() {
-    clearRoundTimer();
+    clearGameTimer();
     if (state.phase !== 'epyc-underway') return;
     const delay = Math.max(0, state.roundDeadline - Date.now());
-    roundTimer = setTimeout(() => {
+    gameTimer = setTimeout(() => {
       if (state.phase !== 'epyc-underway') return;
       state = epycAdvanceRound(state);
       if (state.phase === 'epyc-underway') {
         startRoundTimer();
+      }
+      broadcastState();
+    }, delay);
+  }
+
+  function startTurnTimer() {
+    clearGameTimer();
+    if (state.phase !== 'pictionary-active') return;
+    const delay = Math.max(0, state.turnDeadline - Date.now());
+    gameTimer = setTimeout(() => {
+      if (state.phase !== 'pictionary-active') return;
+      state = picAdvanceTurn(state);
+      if (state.phase === 'pictionary-active') {
+        startTurnTimer();
       }
       broadcastState();
     }, delay);
@@ -103,25 +135,41 @@ export function createServer(password: string, gameType: GameType = 'epyc') {
           send(ws, { type: 'error', message: 'Wrong password' });
           return;
         }
-        if (state.phase !== 'epyc-waiting') {
+        if (state.phase === 'epyc-waiting') {
+          const result = epycAddPlayer(state, msg.handle);
+          state = result.state;
+          clients.set(ws, result.playerId);
+          send(ws, { type: 'joined', playerId: result.playerId, gameType });
+        } else if (state.phase === 'pictionary-waiting') {
+          const result = picAddPlayer(state, msg.handle);
+          state = result.state;
+          clients.set(ws, result.playerId);
+          send(ws, { type: 'joined', playerId: result.playerId, gameType });
+        } else {
           send(ws, { type: 'error', message: 'Game already in progress' });
           return;
         }
-        const result = epycAddPlayer(state, msg.handle);
-        state = result.state;
-        clients.set(ws, result.playerId);
-        send(ws, { type: 'joined', playerId: result.playerId, gameType });
         broadcastState();
         return;
       }
 
       case 'ready':
       case 'unready': {
-        if (!playerId || state.phase !== 'epyc-waiting') return;
-        state = epycSetReady(state, playerId, msg.type === 'ready');
-        state = epycCheckAllReady(state);
-        if (state.phase === 'epyc-underway') {
-          startRoundTimer();
+        if (!playerId) return;
+        if (state.phase === 'epyc-waiting') {
+          state = epycSetReady(state, playerId, msg.type === 'ready');
+          state = epycCheckAllReady(state);
+          if (state.phase === 'epyc-underway') {
+            startRoundTimer();
+          }
+        } else if (state.phase === 'pictionary-waiting') {
+          state = picSetReady(state, playerId, msg.type === 'ready');
+          state = picCheckAllReady(state);
+          if (state.phase === 'pictionary-active') {
+            startTurnTimer();
+          }
+        } else {
+          return;
         }
         broadcastState();
         return;
@@ -134,16 +182,72 @@ export function createServer(password: string, gameType: GameType = 'epyc') {
         if (state.phase === 'epyc-underway') {
           startRoundTimer();
         } else if (state.phase === 'epyc-postgame') {
-          clearRoundTimer();
+          clearGameTimer();
         }
         broadcastState();
         return;
       }
 
       case 'reset': {
-        if (state.phase !== 'epyc-postgame') return;
-        clearRoundTimer();
-        state = epycResetGame(state);
+        if (state.phase === 'epyc-postgame') {
+          clearGameTimer();
+          state = epycResetGame(state);
+        } else if (state.phase === 'pictionary-postgame') {
+          clearGameTimer();
+          state = picResetGame(state);
+        } else {
+          return;
+        }
+        broadcastState();
+        return;
+      }
+
+      case 'draw-start':
+      case 'draw-move':
+      case 'draw-end':
+      case 'draw-fill':
+      case 'draw-undo':
+      case 'draw-clear': {
+        if (!playerId || state.phase !== 'pictionary-active') return;
+        const drawerId = picGetCurrentDrawer(state);
+        if (playerId !== drawerId) return;
+        state = picRecordDrawOp(state, msg as DrawOp);
+        const targets = Array.from(state.players.entries())
+          .filter(([id, p]) => id !== drawerId && p.connected)
+          .map(([id]) => id);
+        forwardRelays([{ to: targets, payload: msg as RelayPayload }]);
+        return;
+      }
+
+      case 'guess': {
+        if (!playerId || state.phase !== 'pictionary-active') return;
+        const guessResult = picSubmitGuess(state, playerId, msg.text);
+        state = guessResult.state;
+
+        // Relay guess result to all connected players
+        const handle = guessResult.state.players.get(playerId)!.handle;
+        const allConnected = Array.from(guessResult.state.players.entries())
+          .filter(([, p]) => p.connected)
+          .map(([id]) => id);
+        forwardRelays([{
+          to: allConnected,
+          payload: {
+            type: 'guess-result',
+            handle,
+            correct: guessResult.correct,
+            text: guessResult.correct ? null : msg.text,
+          },
+        }]);
+
+        // Check if turn is complete (all connected guessers guessed correctly)
+        if (guessResult.correct && picCheckTurnComplete(guessResult.state)) {
+          state = picAdvanceTurn(guessResult.state);
+          if (state.phase === 'pictionary-active') {
+            startTurnTimer();
+          } else {
+            clearGameTimer();
+          }
+        }
         broadcastState();
         return;
       }
@@ -165,18 +269,46 @@ export function createServer(password: string, gameType: GameType = 'epyc') {
     ws.on('close', () => {
       const playerId = clients.get(ws);
       clients.delete(ws);
-      if (playerId) {
-        state = epycRemovePlayer(state, playerId);
-        if (state.phase === 'epyc-underway') {
-          state = epycCheckRoundComplete(state);
+      if (!playerId) return;
+
+      // Dispatch disconnect by game phase
+      switch (state.phase) {
+        case 'epyc-waiting':
+        case 'epyc-underway':
+        case 'epyc-postgame': {
+          state = epycRemovePlayer(state, playerId);
           if (state.phase === 'epyc-underway') {
-            startRoundTimer();
-          } else {
-            clearRoundTimer();
+            state = epycCheckRoundComplete(state);
+            if (state.phase === 'epyc-underway') {
+              startRoundTimer();
+            } else {
+              clearGameTimer();
+            }
           }
+          break;
         }
-        broadcastState();
+        case 'pictionary-waiting':
+        case 'pictionary-postgame': {
+          state = picRemovePlayer(state, playerId);
+          break;
+        }
+        case 'pictionary-active': {
+          const wasDrawer = picGetCurrentDrawer(state) === playerId;
+          state = picRemovePlayer(state, playerId);
+          if (state.phase === 'pictionary-active') {
+            if (wasDrawer || picCheckTurnComplete(state)) {
+              state = picAdvanceTurn(state);
+              if (state.phase === 'pictionary-active') {
+                startTurnTimer();
+              } else {
+                clearGameTimer();
+              }
+            }
+          }
+          break;
+        }
       }
+      broadcastState();
     });
   });
 
