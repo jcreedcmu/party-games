@@ -138,9 +138,9 @@ button:disabled {
   font-size: 1rem;
 }
 
-.player-list li.me {
-  font-weight: 600;
-  background: #eef4ff;
+.me-star {
+  color: #4169e1;
+  margin-right: 0.35rem;
 }
 
 .ready-indicator {
