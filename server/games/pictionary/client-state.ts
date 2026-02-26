@@ -26,6 +26,7 @@ export type PictionaryClientActiveState = {
   totalTurns: number;
   turnDeadline: number;
   word: string | null;
+  wordHint: string;
   guessedCorrectly: boolean;
   correctGuessers: string[];
   players: PictionaryClientActivePlayer[];
@@ -58,6 +59,8 @@ function getActiveClientState(
   const isDrawer = playerId === drawerId;
   const guessedIds = new Set(state.correctGuessers.map(g => g.playerId));
 
+  const wordHint = state.word.replace(/[a-zA-Z]/g, '_');
+
   return {
     phase: 'pictionary-active',
     role: isDrawer ? 'drawer' : 'guesser',
@@ -65,6 +68,7 @@ function getActiveClientState(
     turnNumber: state.currentTurnIndex + 1,
     totalTurns: state.order.length,
     word: isDrawer ? state.word : null,
+    wordHint,
     turnDeadline: state.turnDeadline,
     guessedCorrectly: guessedIds.has(playerId),
     correctGuessers: state.correctGuessers.map(g => state.players.get(g.playerId)!.handle),

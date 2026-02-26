@@ -68,6 +68,8 @@ export function GuesserView({ state, playerId, send, onRelay }: GuesserViewProps
         <LiveCanvas ops={drawOps} />
       </div>
 
+      <div className="pic-word-hint">{state.wordHint}</div>
+
       {state.guessedCorrectly ? (
         <div className="pic-guessed-correct">You guessed it!</div>
       ) : (

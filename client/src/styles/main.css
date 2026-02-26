@@ -457,6 +457,15 @@ button:disabled {
   border-radius: 4px;
 }
 
+.pic-word-hint {
+  text-align: center;
+  font-family: monospace;
+  font-size: 1.25rem;
+  letter-spacing: 0.15em;
+  margin-bottom: 0.75rem;
+  color: #666;
+}
+
 .pic-guess-form {
   display: flex;
   gap: 0.5rem;
