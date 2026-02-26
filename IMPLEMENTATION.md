@@ -183,6 +183,7 @@ Pictionary server state:
       turnDeadline: number;
       turnStartTime: number;
       correctGuessers: PlayerId[];
+      currentTurnOps: DrawOp[];       // accumulated draw ops for current turn
       completedTurns: TurnRecord[];
     };
     type PictionaryPostgameState = {
@@ -194,7 +195,7 @@ Pictionary server state:
     type TurnRecord = {
       drawerId: PlayerId;
       word: string;
-      drawingDataUrl: string | null;
+      drawOps: DrawOp[];
       correctGuessers: Array<{ playerId: PlayerId; timeMs: number }>;
     };
 
@@ -213,12 +214,48 @@ Pictionary server state:
 - After all players have drawn, postgame shows scores and turn
   summaries with drawing bitmaps.
 
+### Drawing recording and postgame display
+
+The server MUST record each turn's drawing so it can display all
+drawings to all players at the end of the game. During gameplay, the
+server MUST stream first-class draw ops (DrawOp) to all players in
+real time — sending bitmaps on every mouse move would not be
+performant enough. The question is how the drawings are stored for
+postgame.
+
+Two strategies:
+
+(a) **First-class recording**: The server accumulates DrawOp events
+    into a log (e.g. `drawOps: DrawOp[]` on the active turn). At
+    postgame, the server sends these op sequences to all clients, and
+    each client renders them to canvas for display. This avoids any
+    server-side bitmap rendering but requires the client to replay
+    potentially long op sequences.
+
+(b) **Server-side bitmap bouncing**: The server eagerly converts
+    DrawOp streams into bitmap representations (e.g. using an
+    OffscreenCanvas or node-canvas). At postgame, the server sends
+    the final bitmaps (as data URLs) to all clients. This is simpler
+    for the client at postgame time but requires a bitmap rendering
+    capability on the server.
+
+**Chosen approach: (a) first-class recording.** The server logs every
+DrawOp into the current turn's state. At postgame the full op log is
+sent to clients, which replay the ops onto a canvas to produce the
+drawing. This avoids a server-side canvas dependency and reuses the
+existing client-side rendering code.
+
 ### Real-time stroke streaming
 
-Draw events flow: Drawer → `ClientMessage` → Server → `RelayPayload`
-→ all other players.
+Draw events flow: Drawer → `ClientMessage` → Server → Server records
+op into turn log → Server relays op via `RelayPayload` → all other
+players.
 
-Server does NOT store stroke point data — relay is fire-and-forget.
+The server stores every DrawOp in the current turn's op log
+(`currentTurnOps: DrawOp[]`) as it relays them. This log is
+transferred into the TurnRecord when the turn ends, and sent to all
+clients at postgame for replay.
+
 The LiveCanvas component on guessers accumulates strokes locally for
 undo/clear replay. Fill operations are relayed as DrawFillOp and
 replayed on the guesser canvas using the same flood-fill algorithm.
