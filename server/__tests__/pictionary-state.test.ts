@@ -158,6 +158,35 @@ describe('submitGuess', () => {
     expect(state.correctGuessers[0].playerId).toBe(guesserId);
   });
 
+  it('accepts a guess with one letter substituted', () => {
+    const active = makeTwoPlayerActive();
+    const drawerId = getCurrentDrawer(active);
+    const guesserId = active.order.find(id => id !== drawerId)!;
+    // Replace the first letter with something wrong
+    const typo = 'X' + active.word.slice(1);
+    const { correct } = submitGuess(active, guesserId, typo);
+    expect(correct).toBe(true);
+  });
+
+  it('accepts a guess with one letter missing', () => {
+    const active = makeTwoPlayerActive();
+    const drawerId = getCurrentDrawer(active);
+    const guesserId = active.order.find(id => id !== drawerId)!;
+    // Drop the last letter
+    const shortened = active.word.slice(0, -1);
+    const { correct } = submitGuess(active, guesserId, shortened);
+    expect(correct).toBe(true);
+  });
+
+  it('accepts a guess with one extra letter', () => {
+    const active = makeTwoPlayerActive();
+    const drawerId = getCurrentDrawer(active);
+    const guesserId = active.order.find(id => id !== drawerId)!;
+    const extra = active.word + 'z';
+    const { correct } = submitGuess(active, guesserId, extra);
+    expect(correct).toBe(true);
+  });
+
   it('returns correct=false for a wrong word', () => {
     const active = makeTwoPlayerActive();
     const drawerId = getCurrentDrawer(active);

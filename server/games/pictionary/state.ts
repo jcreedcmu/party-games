@@ -115,6 +115,37 @@ export function checkAllReady(
   };
 }
 
+function isCloseEnough(guess: string, answer: string): boolean {
+  if (guess === answer) return true;
+  const lenDiff = Math.abs(guess.length - answer.length);
+  if (lenDiff > 1) return false;
+
+  if (guess.length === answer.length) {
+    // Check for exactly one substitution
+    let diffs = 0;
+    for (let i = 0; i < guess.length; i++) {
+      if (guess[i] !== answer[i]) diffs++;
+      if (diffs > 1) return false;
+    }
+    return diffs === 1;
+  }
+
+  // Check for exactly one insertion/deletion
+  const [shorter, longer] = guess.length < answer.length ? [guess, answer] : [answer, guess];
+  let i = 0, j = 0, diffs = 0;
+  while (i < shorter.length && j < longer.length) {
+    if (shorter[i] !== longer[j]) {
+      diffs++;
+      if (diffs > 1) return false;
+      j++;
+    } else {
+      i++;
+      j++;
+    }
+  }
+  return true;
+}
+
 export function getCurrentDrawer(state: PictionaryActiveState): PlayerId {
   return state.order[state.currentTurnIndex];
 }
@@ -132,7 +163,7 @@ export function submitGuess(
   if (playerId === drawerId) return { state, correct: false };
   if (state.correctGuessers.some(g => g.playerId === playerId)) return { state, correct: false };
 
-  const correct = text.trim().toLowerCase() === state.word.toLowerCase();
+  const correct = isCloseEnough(text.trim().toLowerCase(), state.word.toLowerCase());
   if (!correct) return { state, correct: false };
 
   const timeMs = Date.now() - state.turnStartTime;
