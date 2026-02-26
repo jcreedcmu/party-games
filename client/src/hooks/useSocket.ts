@@ -2,12 +2,15 @@ import { useState, useCallback, useRef } from 'react';
 import type { ClientMessage, ServerMessage, ClientGameState, GameType } from '../types';
 import type { RelayPayload } from '../types';
 
+type AddWordResult = { success: boolean; message: string } | null;
+
 type SocketState = {
   gameState: ClientGameState | null;
   playerId: string | null;
   gameType: GameType | null;
   error: string | null;
   connected: boolean;
+  addWordResult: AddWordResult;
 };
 
 export function useSocket() {
@@ -17,6 +20,7 @@ export function useSocket() {
     gameType: null,
     error: null,
     connected: false,
+    addWordResult: null,
   });
   const wsRef = useRef<WebSocket | null>(null);
   const relayListenersRef = useRef<Set<(payload: RelayPayload) => void>>(new Set());
@@ -45,6 +49,9 @@ export function useSocket() {
         case 'error':
           setState(s => ({ ...s, error: msg.message }));
           break;
+        case 'add-word-result':
+          setState(s => ({ ...s, addWordResult: { success: msg.success, message: msg.message } }));
+          break;
         case 'relay':
           for (const listener of relayListenersRef.current) {
             listener(msg.payload);
@@ -69,10 +76,14 @@ export function useSocket() {
     setState(s => ({ ...s, error: null }));
   }, []);
 
+  const clearAddWordResult = useCallback(() => {
+    setState(s => ({ ...s, addWordResult: null }));
+  }, []);
+
   const onRelay = useCallback((listener: (payload: RelayPayload) => void) => {
     relayListenersRef.current.add(listener);
     return () => { relayListenersRef.current.delete(listener); };
   }, []);
 
-  return { ...state, connect, send, clearError, onRelay };
+  return { ...state, connect, send, clearError, clearAddWordResult, onRelay };
 }

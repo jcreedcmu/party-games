@@ -66,7 +66,8 @@ export type ClientMessage =
   | ResetMessage
   | DrawStartOp | DrawMoveOp | DrawEndOp | DrawFillOp | DrawUndoOp | DrawClearOp
   | { type: 'guess'; text: string }
-  | { type: 'turn-done' };
+  | { type: 'turn-done' }
+  | { type: 'add-word'; word: string };
 
 // --- Server -> Client messages ---
 
@@ -91,7 +92,13 @@ export type RelayResponse = {
   payload: RelayPayload;
 };
 
-export type ServerMessage = JoinedResponse | ErrorResponse | StateResponse | RelayResponse;
+export type AddWordResponse = {
+  type: 'add-word-result';
+  success: boolean;
+  message: string;
+};
+
+export type ServerMessage = JoinedResponse | ErrorResponse | StateResponse | RelayResponse | AddWordResponse;
 
 // --- Client game state union ---
 

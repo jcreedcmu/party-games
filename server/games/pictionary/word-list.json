@@ -1,46 +1,47 @@
 [
-  { "word": "cat" }, { "word": "dog" }, { "word": "elephant" }, { "word": "giraffe" },
-  { "word": "penguin" }, { "word": "butterfly" }, { "word": "dolphin" }, { "word": "octopus" },
-  { "word": "horse" }, { "word": "rabbit" }, { "word": "snake" }, { "word": "eagle" },
-  { "word": "whale" }, { "word": "tiger" }, { "word": "bear" }, { "word": "monkey" },
-  { "word": "pizza" }, { "word": "hamburger" }, { "word": "ice cream" }, { "word": "spaghetti" },
-  { "word": "banana" }, { "word": "apple" }, { "word": "cake" }, { "word": "cookie" },
-  { "word": "sandwich" }, { "word": "taco" }, { "word": "donut" }, { "word": "watermelon" },
-  { "word": "popcorn" }, { "word": "pancake" }, { "word": "sushi" }, { "word": "cheese" },
-  { "word": "umbrella" }, { "word": "telescope" }, { "word": "guitar" }, { "word": "bicycle" },
-  { "word": "airplane" }, { "word": "rocket" }, { "word": "camera" }, { "word": "clock" },
-  { "word": "diamond" }, { "word": "key" }, { "word": "lamp" }, { "word": "mirror" },
-  { "word": "phone" }, { "word": "scissors" }, { "word": "sword" }, { "word": "treasure" },
-  { "word": "mountain" }, { "word": "ocean" }, { "word": "volcano" }, { "word": "rainbow" },
-  { "word": "tornado" }, { "word": "waterfall" }, { "word": "forest" }, { "word": "desert" },
-  { "word": "island" }, { "word": "sunrise" }, { "word": "lightning" }, { "word": "snowflake" },
-  { "word": "cactus" }, { "word": "mushroom" }, { "word": "river" }, { "word": "cave" },
-  { "word": "castle" }, { "word": "hospital" }, { "word": "library" }, { "word": "museum" },
-  { "word": "pyramid" }, { "word": "lighthouse" }, { "word": "bridge" }, { "word": "barn" },
-  { "word": "church" }, { "word": "school" }, { "word": "airport" }, { "word": "stadium" },
-  { "word": "prison" }, { "word": "restaurant" }, { "word": "theater" }, { "word": "factory" },
-  { "word": "swimming" }, { "word": "dancing" }, { "word": "sleeping" }, { "word": "cooking" },
-  { "word": "fishing" }, { "word": "camping" }, { "word": "surfing" }, { "word": "skiing" },
-  { "word": "painting" }, { "word": "singing" }, { "word": "running" }, { "word": "flying" },
-  { "word": "climbing" }, { "word": "juggling" }, { "word": "boxing" }, { "word": "diving" },
-  { "word": "brain" }, { "word": "skeleton" }, { "word": "muscle" }, { "word": "heart" },
-  { "word": "lungs" }, { "word": "stomach" }, { "word": "eyeball" }, { "word": "tongue" },
-  { "word": "submarine" }, { "word": "helicopter" }, { "word": "spaceship" }, { "word": "sailboat" },
-  { "word": "motorcycle" }, { "word": "ambulance" }, { "word": "train" }, { "word": "canoe" },
-  { "word": "pirate" }, { "word": "wizard" }, { "word": "astronaut" }, { "word": "cowboy" },
-  { "word": "mermaid" }, { "word": "vampire" }, { "word": "ninja" }, { "word": "clown" },
-  { "word": "princess" }, { "word": "robot" }, { "word": "zombie" }, { "word": "knight" },
-  { "word": "alien" }, { "word": "detective" }, { "word": "superhero" }, { "word": "ghost" },
-  { "word": "comet" }, { "word": "planet" }, { "word": "constellation" }, { "word": "eclipse" },
-  { "word": "meteor" }, { "word": "satellite" }, { "word": "galaxy" }, { "word": "black hole" },
-  { "word": "bathtub" }, { "word": "fireplace" }, { "word": "staircase" }, { "word": "chandelier" },
-  { "word": "bookshelf" }, { "word": "television" }, { "word": "refrigerator" }, { "word": "toaster" },
-  { "word": "basketball" }, { "word": "soccer" }, { "word": "tennis" }, { "word": "bowling" },
-  { "word": "golf" }, { "word": "baseball" }, { "word": "hockey" }, { "word": "volleyball" },
-  { "word": "dragon" }, { "word": "unicorn" }, { "word": "dinosaur" }, { "word": "crown" },
-  { "word": "anchor" }, { "word": "compass" }, { "word": "feather" }, { "word": "puzzle" },
-  { "word": "balloon" }, { "word": "candle" }, { "word": "kite" }, { "word": "ladder" },
-  { "word": "magnet" }, { "word": "parachute" }, { "word": "trophy" }, { "word": "wheel" },
-  { "word": "scarecrow" }, { "word": "igloo" }, { "word": "hammock" }, { "word": "trampoline" },
-  { "word": "snowman" }, { "word": "maze" }, { "word": "fountain" }, { "word": "lantern" }
+  {
+    "word": "chonky",
+    "added_on": "2026-02-26T02:37:40.117Z",
+    "added_by": "J"
+  },
+  {
+    "word": "rocket ship",
+    "added_on": "2026-02-26T02:42:10.221Z",
+    "added_by": "Jason"
+  },
+  {
+    "word": "whale fall",
+    "added_on": "2026-02-26T02:42:12.033Z",
+    "added_by": "Jason"
+  },
+  {
+    "word": "nudibranch",
+    "added_on": "2026-02-26T02:42:26.787Z",
+    "added_by": "Jason"
+  },
+  {
+    "word": "pikachu",
+    "added_on": "2026-02-26T02:44:03.344Z",
+    "added_by": "K"
+  },
+  {
+    "word": "moth",
+    "added_on": "2026-02-26T02:44:09.895Z",
+    "added_by": "K"
+  },
+  {
+    "word": "poodle",
+    "added_on": "2026-02-26T02:44:19.054Z",
+    "added_by": "K"
+  },
+  {
+    "word": "carrot cake",
+    "added_on": "2026-02-26T02:44:25.766Z",
+    "added_by": "K"
+  },
+  {
+    "word": "pudding",
+    "added_on": "2026-02-26T02:44:29.760Z",
+    "added_by": "K"
+  }
 ]

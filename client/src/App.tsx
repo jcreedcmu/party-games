@@ -45,7 +45,7 @@ export function App() {
     return <DebugStream />;
   }
 
-  const { gameState, playerId, gameType, error, connected, connect, send, clearError, onRelay } = useSocket();
+  const { gameState, playerId, gameType, error, connected, connect, send, clearError, clearAddWordResult, addWordResult, onRelay } = useSocket();
 
   // Not connected/joined yet -> show join dialog
   if (!playerId || !gameState) {
@@ -77,6 +77,9 @@ export function App() {
           playerId={playerId}
           onReady={() => send({ type: 'ready' })}
           onUnready={() => send({ type: 'unready' })}
+          send={send}
+          addWordResult={addWordResult}
+          clearAddWordResult={clearAddWordResult}
         />
       );
       break;

@@ -30,6 +30,7 @@ import {
   advanceTurn as picAdvanceTurn,
   resetGame as picResetGame,
 } from './games/pictionary/state.js';
+import { addWord as picAddWord } from './games/pictionary/words.js';
 import { getClientState as picGetClientState } from './games/pictionary/client-state.js';
 
 function createGameInitialState(gameType: GameType): ServerState {
@@ -259,6 +260,19 @@ export function createServer(password: string, gameType: GameType = 'epyc') {
           clearGameTimer();
         }
         broadcastState();
+        return;
+      }
+
+      case 'add-word': {
+        if (!playerId) return;
+        const handle = state.players.get(playerId)?.handle ?? 'unknown';
+        const word = msg.word.trim().toLowerCase();
+        const added = picAddWord(msg.word, handle);
+        if (added) {
+          send(ws, { type: 'add-word-result', success: true, message: `"${word}" added!` });
+        } else {
+          send(ws, { type: 'add-word-result', success: false, message: word ? `"${word}" already exists.` : 'Word cannot be empty.' });
+        }
         return;
       }
     }
