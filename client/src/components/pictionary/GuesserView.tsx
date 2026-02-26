@@ -21,6 +21,7 @@ export function GuesserView({ state, playerId, send, onRelay }: GuesserViewProps
   const [text, setText] = useState('');
   const [timeLeft, setTimeLeft] = useState('');
   const [urgent, setUrgent] = useState(false);
+  const [hintRevealed, setHintRevealed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -39,9 +40,11 @@ export function GuesserView({ state, playerId, send, onRelay }: GuesserViewProps
 
   useEffect(() => {
     function tick() {
-      const remaining = Math.max(0, Math.ceil((state.turnDeadline - Date.now()) / 1000));
+      const now = Date.now();
+      const remaining = Math.max(0, Math.ceil((state.turnDeadline - now) / 1000));
       setTimeLeft(`${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`);
       setUrgent(remaining <= 10 && remaining > 0);
+      setHintRevealed(now >= state.hintRevealTime);
     }
     tick();
     const id = setInterval(tick, 1000);
@@ -68,7 +71,7 @@ export function GuesserView({ state, playerId, send, onRelay }: GuesserViewProps
         <LiveCanvas ops={drawOps} />
       </div>
 
-      <div className="pic-word-hint">{state.wordHint}</div>
+      <div className="pic-word-hint">{hintRevealed ? state.wordHintRevealed : state.wordHint}</div>
 
       {state.guessedCorrectly ? (
         <div className="pic-guessed-correct">You guessed it!</div>

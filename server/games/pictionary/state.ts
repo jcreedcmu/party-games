@@ -11,6 +11,15 @@ import { pickWord } from './words.js';
 
 export const TURN_DURATION_MS = 75_000;
 export const ALL_GUESSED_GRACE_MS = 10_000;
+export const HINT_REVEAL_MS = 20_000;
+
+function pickRandomLetterIndex(word: string): number {
+  const indices: number[] = [];
+  for (let i = 0; i < word.length; i++) {
+    if (/[a-zA-Z]/.test(word[i])) indices.push(i);
+  }
+  return indices[Math.floor(Math.random() * indices.length)];
+}
 
 function shuffle<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -89,16 +98,18 @@ export function checkAllReady(
   }
 
   const now = Date.now();
+  const word = pickWord();
   return {
     phase: 'pictionary-active',
     players,
     order,
     currentTurnIndex: 0,
-    word: pickWord(),
+    word,
     scores,
     turnDeadline: now + TURN_DURATION_MS,
     turnStartTime: now,
     correctGuessers: [],
+    hintLetterIndex: pickRandomLetterIndex(word),
     currentTurnOps: [],
     completedTurns: [],
   };
@@ -187,13 +198,15 @@ export function advanceTurn(
   }
 
   const now = Date.now();
+  const word = pickWord();
   return {
     ...state,
     currentTurnIndex: nextIndex,
-    word: pickWord(),
+    word,
     turnDeadline: now + TURN_DURATION_MS,
     turnStartTime: now,
     correctGuessers: [],
+    hintLetterIndex: pickRandomLetterIndex(word),
     currentTurnOps: [],
     completedTurns,
   };

@@ -4,6 +4,7 @@ import type {
   PictionaryState,
   PictionaryActiveState,
 } from './types.js';
+import { HINT_REVEAL_MS } from './state.js';
 
 export type PictionaryClientWaitingState = {
   phase: 'pictionary-waiting';
@@ -27,6 +28,8 @@ export type PictionaryClientActiveState = {
   turnDeadline: number;
   word: string | null;
   wordHint: string;
+  wordHintRevealed: string;
+  hintRevealTime: number;
   guessedCorrectly: boolean;
   correctGuessers: string[];
   players: PictionaryClientActivePlayer[];
@@ -60,6 +63,9 @@ function getActiveClientState(
   const guessedIds = new Set(state.correctGuessers.map(g => g.playerId));
 
   const wordHint = state.word.replace(/[a-zA-Z]/g, '_');
+  const hintChars = [...wordHint];
+  hintChars[state.hintLetterIndex] = state.word[state.hintLetterIndex];
+  const wordHintRevealed = hintChars.join('');
 
   return {
     phase: 'pictionary-active',
@@ -69,6 +75,8 @@ function getActiveClientState(
     totalTurns: state.order.length,
     word: isDrawer ? state.word : null,
     wordHint,
+    wordHintRevealed,
+    hintRevealTime: state.turnDeadline - HINT_REVEAL_MS,
     turnDeadline: state.turnDeadline,
     guessedCorrectly: guessedIds.has(playerId),
     correctGuessers: state.correctGuessers.map(g => state.players.get(g.playerId)!.handle),

@@ -24,6 +24,7 @@ export type PictionaryActiveState = {
   turnDeadline: number;
   turnStartTime: number;
   correctGuessers: Array<{ playerId: PlayerId; timeMs: number }>;
+  hintLetterIndex: number;
   currentTurnOps: DrawOp[];
   completedTurns: TurnRecord[];
 };
