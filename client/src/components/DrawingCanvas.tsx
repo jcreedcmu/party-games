@@ -1,23 +1,31 @@
 import { useRef, useState, useEffect, useCallback, type RefObject, type PointerEvent } from 'react';
+import type { DrawOp } from '../types';
 
 const COLORS = ['#000000', '#e74c3c', '#2ecc71', '#3498db', '#f39c12', '#9b59b6', '#ffffff'];
 const SIZES = [2, 5, 10, 20];
 const CANVAS_WIDTH = 400;
 const CANVAS_HEIGHT = 300;
+const BATCH_INTERVAL_MS = 50;
 
 type DrawingCanvasProps = {
   canvasRef: RefObject<HTMLCanvasElement | null>;
-  onSubmit: (dataUrl: string) => void;
+  mode?: 'submit' | 'stream';
+  onSubmit?: (dataUrl: string) => void;
+  onStreamOp?: (op: DrawOp) => void;
 };
 
 type Tool = 'pen' | 'fill';
 
-export function DrawingCanvas({ canvasRef, onSubmit }: DrawingCanvasProps) {
+export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp }: DrawingCanvasProps) {
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState(SIZES[1]);
   const [tool, setTool] = useState<Tool>('pen');
   const [drawing, setDrawing] = useState(false);
   const undoStack = useRef<ImageData[]>([]);
+  const pointBuffer = useRef<Array<{ x: number; y: number }>>([]);
+  const batchIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const isStream = mode === 'stream';
 
   const getCtx = useCallback(() => {
     const canvas = canvasRef.current;
@@ -43,6 +51,25 @@ export function DrawingCanvas({ canvasRef, onSubmit }: DrawingCanvasProps) {
     if (undoStack.current.length > 30) {
       undoStack.current.shift();
     }
+  }
+
+  function flushPointBuffer() {
+    if (pointBuffer.current.length > 0 && onStreamOp) {
+      onStreamOp({ type: 'draw-move', points: pointBuffer.current });
+      pointBuffer.current = [];
+    }
+  }
+
+  function startBatching() {
+    batchIntervalRef.current = setInterval(flushPointBuffer, BATCH_INTERVAL_MS);
+  }
+
+  function stopBatching() {
+    if (batchIntervalRef.current) {
+      clearInterval(batchIntervalRef.current);
+      batchIntervalRef.current = null;
+    }
+    flushPointBuffer();
   }
 
   function floodFill(startX: number, startY: number, fillColor: string) {
@@ -103,16 +130,25 @@ export function DrawingCanvas({ canvasRef, onSubmit }: DrawingCanvasProps) {
     saveSnapshot();
   }
 
+  function getCanvasXY(e: PointerEvent<HTMLCanvasElement>): { x: number; y: number } | null {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (e.clientX - rect.left) * (CANVAS_WIDTH / rect.width),
+      y: (e.clientY - rect.top) * (CANVAS_HEIGHT / rect.height),
+    };
+  }
+
   function handlePointerDown(e: PointerEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (CANVAS_WIDTH / rect.width);
-    const y = (e.clientY - rect.top) * (CANVAS_HEIGHT / rect.height);
+    const pt = getCanvasXY(e);
+    if (!pt) return;
 
     if (tool === 'fill') {
-      floodFill(x, y, color);
+      floodFill(pt.x, pt.y, color);
+      if (isStream) onStreamOp?.({ type: 'draw-fill', x: pt.x, y: pt.y, color });
       return;
     }
 
@@ -123,35 +159,47 @@ export function DrawingCanvas({ canvasRef, onSubmit }: DrawingCanvasProps) {
     if (!ctx) return;
 
     ctx.beginPath();
-    ctx.moveTo(x, y);
+    ctx.moveTo(pt.x, pt.y);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.strokeStyle = color;
     ctx.lineWidth = size;
     // Draw a dot immediately so a click without drag leaves a mark
-    ctx.lineTo(x, y);
+    ctx.lineTo(pt.x, pt.y);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(x, y);
+    ctx.moveTo(pt.x, pt.y);
+
+    if (isStream) {
+      onStreamOp?.({ type: 'draw-start', color, size, x: pt.x, y: pt.y });
+      startBatching();
+    }
   }
 
   function handlePointerMove(e: PointerEvent<HTMLCanvasElement>) {
     if (!drawing) return;
-    const canvas = canvasRef.current;
     const ctx = getCtx();
-    if (!canvas || !ctx) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (CANVAS_WIDTH / rect.width);
-    const y = (e.clientY - rect.top) * (CANVAS_HEIGHT / rect.height);
+    if (!ctx) return;
+    const pt = getCanvasXY(e);
+    if (!pt) return;
 
-    ctx.lineTo(x, y);
+    ctx.lineTo(pt.x, pt.y);
     ctx.stroke();
+
+    if (isStream) {
+      pointBuffer.current.push(pt);
+    }
   }
 
   function handlePointerUp() {
     if (!drawing) return;
     setDrawing(false);
     saveSnapshot();
+
+    if (isStream) {
+      stopBatching();
+      onStreamOp?.({ type: 'draw-end' });
+    }
   }
 
   function handleUndo() {
@@ -160,6 +208,8 @@ export function DrawingCanvas({ canvasRef, onSubmit }: DrawingCanvasProps) {
     undoStack.current.pop(); // remove current
     const prev = undoStack.current[undoStack.current.length - 1];
     ctx.putImageData(prev, 0, 0);
+
+    if (isStream) onStreamOp?.({ type: 'draw-undo' });
   }
 
   function handleClear() {
@@ -168,12 +218,14 @@ export function DrawingCanvas({ canvasRef, onSubmit }: DrawingCanvasProps) {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     saveSnapshot();
+
+    if (isStream) onStreamOp?.({ type: 'draw-clear' });
   }
 
   function handleSubmit() {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    onSubmit(canvas.toDataURL('image/png'));
+    onSubmit?.(canvas.toDataURL('image/png'));
   }
 
   return (
@@ -230,7 +282,7 @@ export function DrawingCanvas({ canvasRef, onSubmit }: DrawingCanvasProps) {
         <div className="drawing-actions">
           <button onClick={handleUndo}>Undo</button>
           <button onClick={handleClear}>Clear</button>
-          <button onClick={handleSubmit} className="submit-btn">Submit</button>
+          {!isStream && <button onClick={handleSubmit} className="submit-btn">Submit</button>}
         </div>
       </div>
     </div>

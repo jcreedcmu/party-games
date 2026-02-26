@@ -322,7 +322,7 @@ replayed on the guesser canvas using the same flood-fill algorithm.
 
     Verify: vitest run passes, EPYC game works end-to-end.
 
-[ ] Step 12: Add relay infrastructure
+[x] Step 12: Add relay infrastructure
 
     Add RelayPayload type and { type: 'relay', payload: RelayPayload }
     to ServerMessage. Add broadcast flag to HandleResult. Update
@@ -334,7 +334,7 @@ replayed on the guesser canvas using the same flood-fill algorithm.
     Verify: EPYC still works, relay infrastructure compiles and is
     ready for Pictionary.
 
-[ ] Step 13: Add streaming mode to DrawingCanvas
+[x] Step 13: Add streaming mode to DrawingCanvas
 
     Add mode prop: 'submit' (existing EPYC behavior) or 'stream'
     (Pictionary). In stream mode: on pointerDown emit onDrawStart

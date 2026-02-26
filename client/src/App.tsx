@@ -21,9 +21,26 @@ function DebugDraw() {
   );
 }
 
+function DebugStream() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  return (
+    <div className="app">
+      <h1>Stream Mode Debug</h1>
+      <div className="sheet-card" style={{ maxWidth: 480 }}>
+        <DrawingCanvas canvasRef={canvasRef} mode="stream" onStreamOp={(op) => {
+          console.log('stream op:', op.type, op);
+        }} />
+      </div>
+    </div>
+  );
+}
+
 export function App() {
   if (window.location.pathname === '/debug/draw') {
     return <DebugDraw />;
+  }
+  if (window.location.pathname === '/debug/stream') {
+    return <DebugStream />;
   }
 
   const { gameState, playerId, error, connected, connect, send, clearError } = useSocket();
