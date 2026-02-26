@@ -376,7 +376,7 @@ button:disabled {
 /* Postgame */
 
 .postgame {
-  max-width: 480px;
+  max-width: 720px;
 }
 
 .sheet-tabs {
@@ -643,12 +643,35 @@ button:disabled {
   color: #999;
 }
 
+.pic-turn-body {
+  display: flex;
+  gap: 0;
+}
+
 .pic-turn-drawing {
+  flex: 1;
+  min-width: 0;
   padding: 0.5rem;
 }
 
 .pic-turn-drawing canvas {
   width: 100%;
+}
+
+.pic-turn-guess-log {
+  width: 200px;
+  flex-shrink: 0;
+  max-height: 230px;
+  overflow-y: auto;
+  border-left: 1px solid #eee;
+  padding: 0.25rem 0;
+}
+
+.pic-turn-no-guesses {
+  padding: 0.5rem;
+  color: #999;
+  font-size: 0.85rem;
+  font-style: italic;
 }
 
 .pic-turn-guessers {

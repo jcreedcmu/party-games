@@ -111,6 +111,7 @@ export function checkAllReady(
     correctGuessers: [],
     hintLetterIndex: pickRandomLetterIndex(word),
     currentTurnOps: [],
+    currentTurnGuesses: [],
     completedTurns: [],
   };
 }
@@ -164,7 +165,10 @@ export function submitGuess(
   if (state.correctGuessers.some(g => g.playerId === playerId)) return { state, correct: false };
 
   const correct = isCloseEnough(text.trim().toLowerCase(), state.word.toLowerCase());
-  if (!correct) return { state, correct: false };
+  const guessRecord = { playerId, text: text.trim(), correct };
+  const currentTurnGuesses = [...state.currentTurnGuesses, guessRecord];
+
+  if (!correct) return { state: { ...state, currentTurnGuesses }, correct: false };
 
   const timeMs = Date.now() - state.turnStartTime;
   const remaining = Math.max(0, state.turnDeadline - Date.now());
@@ -177,7 +181,7 @@ export function submitGuess(
   const correctGuessers = [...state.correctGuessers, { playerId, timeMs }];
 
   return {
-    state: { ...state, scores, correctGuessers },
+    state: { ...state, scores, correctGuessers, currentTurnGuesses },
     correct: true,
   };
 }
@@ -207,6 +211,7 @@ export function advanceTurn(
     word: state.word,
     drawOps: state.currentTurnOps,
     correctGuessers: state.correctGuessers,
+    guessLog: state.currentTurnGuesses,
   };
   const completedTurns = [...state.completedTurns, turnRecord];
 
@@ -239,6 +244,7 @@ export function advanceTurn(
     correctGuessers: [],
     hintLetterIndex: pickRandomLetterIndex(word),
     currentTurnOps: [],
+    currentTurnGuesses: [],
     completedTurns,
   };
 }

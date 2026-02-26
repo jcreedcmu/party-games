@@ -37,6 +37,12 @@ export type PictionaryClientActiveState = {
   lastTurnWord: string | null;
 };
 
+export type PictionaryClientGuessRecord = {
+  handle: string;
+  text: string;
+  correct: boolean;
+};
+
 export type PictionaryClientTurnSummary = {
   drawerHandle: string;
   word: string;
@@ -44,6 +50,7 @@ export type PictionaryClientTurnSummary = {
   wordAddedOn?: string;
   drawOps: DrawOp[];
   guessers: Array<{ handle: string; timeMs: number }>;
+  guessLog: PictionaryClientGuessRecord[];
 };
 
 export type PictionaryClientPostgameState = {
@@ -135,6 +142,11 @@ export function getClientState(
             guessers: t.correctGuessers.map(g => ({
               handle: state.players.get(g.playerId)!.handle,
               timeMs: g.timeMs,
+            })),
+            guessLog: t.guessLog.map(g => ({
+              handle: state.players.get(g.playerId)?.handle ?? 'Unknown',
+              text: g.text,
+              correct: g.correct,
             })),
           };
         }),

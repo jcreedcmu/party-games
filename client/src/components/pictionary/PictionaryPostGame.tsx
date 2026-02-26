@@ -33,8 +33,21 @@ export function PictionaryPostGame({ state, onSend }: Props) {
               </span>
             )}
           </div>
-          <div className="pic-turn-drawing">
-            <LiveCanvas ops={turn.drawOps} />
+          <div className="pic-turn-body">
+            <div className="pic-turn-drawing">
+              <LiveCanvas ops={turn.drawOps} />
+            </div>
+            <div className="pic-turn-guess-log">
+              {turn.guessLog.map((g, j) => (
+                <div key={j} className={'pic-guess-entry' + (g.correct ? ' correct' : '')}>
+                  <strong>{g.handle}</strong>
+                  {g.correct ? ' guessed correctly!' : `: ${g.text}`}
+                </div>
+              ))}
+              {turn.guessLog.length === 0 && (
+                <div className="pic-turn-no-guesses">No guesses</div>
+              )}
+            </div>
           </div>
           {turn.guessers.length > 0 ? (
             <div className="pic-turn-guessers">

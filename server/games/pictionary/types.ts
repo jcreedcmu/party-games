@@ -1,11 +1,18 @@
 import type { PlayerId, PlayerInfo } from '../../types.js';
 import type { DrawOp } from '../../protocol.js';
 
+export type GuessRecord = {
+  playerId: PlayerId;
+  text: string;
+  correct: boolean;
+};
+
 export type TurnRecord = {
   drawerId: PlayerId;
   word: string;
   drawOps: DrawOp[];
   correctGuessers: Array<{ playerId: PlayerId; timeMs: number }>;
+  guessLog: GuessRecord[];
 };
 
 export type PictionaryWaitingState = {
@@ -26,6 +33,7 @@ export type PictionaryActiveState = {
   correctGuessers: Array<{ playerId: PlayerId; timeMs: number }>;
   hintLetterIndex: number;
   currentTurnOps: DrawOp[];
+  currentTurnGuesses: GuessRecord[];
   completedTurns: TurnRecord[];
 };
 
