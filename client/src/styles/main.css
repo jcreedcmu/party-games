@@ -312,6 +312,18 @@ button:disabled {
   box-shadow: 0 0 0 2px #fff, 0 0 0 4px #333;
 }
 
+.color-swatch-custom:not(.active) {
+  background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red) !important;
+}
+
+.color-input-hidden {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .size-picker {
   display: flex;
   gap: 4px;

@@ -1,7 +1,11 @@
 import { useRef, useState, useEffect, useCallback, type RefObject, type PointerEvent } from 'react';
 import type { DrawOp } from '../types';
 
-const COLORS = ['#000000', '#e74c3c', '#2ecc71', '#3498db', '#f39c12', '#9b59b6', '#ffffff'];
+const COLORS = [
+  '#000000', '#555555', '#e74c3c', '#f39c12', '#f1c40f',
+  '#2ecc71', '#3498db', '#9b59b6', '#e91e8f', '#8B4513',
+  '#ffffff',
+];
 const SIZES = [2, 5, 10, 20];
 const CANVAS_WIDTH = 400;
 const CANVAS_HEIGHT = 300;
@@ -18,12 +22,14 @@ type Tool = 'pen' | 'fill';
 
 export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp }: DrawingCanvasProps) {
   const [color, setColor] = useState(COLORS[0]);
+  const [customColor, setCustomColor] = useState<string | null>(null);
   const [size, setSize] = useState(SIZES[1]);
   const [tool, setTool] = useState<Tool>('pen');
   const [drawing, setDrawing] = useState(false);
   const undoStack = useRef<ImageData[]>([]);
   const pointBuffer = useRef<Array<{ x: number; y: number }>>([]);
   const batchIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const colorInputRef = useRef<HTMLInputElement>(null);
 
   const isStream = mode === 'stream';
 
@@ -261,12 +267,25 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
           {COLORS.map(c => (
             <button
               key={c}
-              className={'color-swatch' + (c === color ? ' active' : '')}
+              className={'color-swatch' + (c === color && !customColor ? ' active' : '')}
               style={{ background: c }}
-              onClick={() => setColor(c)}
+              onClick={() => { setColor(c); setCustomColor(null); }}
               aria-label={`Color ${c}`}
             />
           ))}
+          <button
+            className={'color-swatch color-swatch-custom' + (customColor ? ' active' : '')}
+            style={{ background: customColor ?? color }}
+            onClick={() => colorInputRef.current?.click()}
+            aria-label="Custom color"
+          />
+          <input
+            ref={colorInputRef}
+            type="color"
+            value={customColor ?? color}
+            onChange={(e) => { setCustomColor(e.target.value); setColor(e.target.value); }}
+            className="color-input-hidden"
+          />
         </div>
         {tool === 'pen' && <div className="size-picker">
           {SIZES.map(s => (
