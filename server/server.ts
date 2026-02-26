@@ -28,6 +28,7 @@ import {
   checkTurnComplete as picCheckTurnComplete,
   shortenDeadline as picShortenDeadline,
   advanceTurn as picAdvanceTurn,
+  selectWord as picSelectWord,
   resetGame as picResetGame,
 } from './games/pictionary/state.js';
 import { addWord as picAddWord } from './games/pictionary/words.js';
@@ -116,9 +117,16 @@ export function createServer(password: string, gameType: GameType = 'epyc') {
     const delay = Math.max(0, state.turnDeadline - Date.now());
     gameTimer = setTimeout(() => {
       if (state.phase !== 'pictionary-active') return;
-      state = picAdvanceTurn(state);
-      if (state.phase === 'pictionary-active') {
+      if (state.subPhase === 'picking') {
+        // Auto-pick a random word
+        const randomIndex = Math.floor(Math.random() * state.wordChoices.length);
+        state = picSelectWord(state, randomIndex);
         startTurnTimer();
+      } else {
+        state = picAdvanceTurn(state);
+        if (state.phase === 'pictionary-active') {
+          startTurnTimer();
+        }
       }
       broadcastState();
     }, delay);
@@ -211,6 +219,7 @@ export function createServer(password: string, gameType: GameType = 'epyc') {
       case 'draw-undo':
       case 'draw-clear': {
         if (!playerId || state.phase !== 'pictionary-active') return;
+        if (state.subPhase !== 'drawing') return;
         const drawerId = picGetCurrentDrawer(state);
         if (playerId !== drawerId) return;
         state = picRecordDrawOp(state, msg as DrawOp);
@@ -223,6 +232,7 @@ export function createServer(password: string, gameType: GameType = 'epyc') {
 
       case 'guess': {
         if (!playerId || state.phase !== 'pictionary-active') return;
+        if (state.subPhase !== 'drawing') return;
         const guessResult = picSubmitGuess(state, playerId, msg.text);
         state = guessResult.state;
 
@@ -250,8 +260,19 @@ export function createServer(password: string, gameType: GameType = 'epyc') {
         return;
       }
 
+      case 'pick-word': {
+        if (!playerId || state.phase !== 'pictionary-active') return;
+        if (state.subPhase !== 'picking') return;
+        if (playerId !== picGetCurrentDrawer(state)) return;
+        state = picSelectWord(state, msg.index);
+        startTurnTimer();
+        broadcastState();
+        return;
+      }
+
       case 'turn-done': {
         if (!playerId || state.phase !== 'pictionary-active') return;
+        if (state.subPhase !== 'drawing') return;
         if (playerId !== picGetCurrentDrawer(state)) return;
         state = picAdvanceTurn(state);
         if (state.phase === 'pictionary-active') {

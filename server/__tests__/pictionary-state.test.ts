@@ -12,8 +12,10 @@ import {
   advanceTurn,
   resetGame,
   shortenDeadline,
+  selectWord,
   TURN_DURATION_MS,
   ALL_GUESSED_GRACE_MS,
+  PICK_DURATION_MS,
 } from '../games/pictionary/state.js';
 import { getClientState } from '../games/pictionary/client-state.js';
 import type { PictionaryActiveState } from '../games/pictionary/types.js';
@@ -31,6 +33,11 @@ function makeTwoPlayerActive(): PictionaryActiveState {
   return active;
 }
 
+function makeTwoPlayerDrawing(): PictionaryActiveState {
+  const active = makeTwoPlayerActive();
+  return selectWord(active, 0);
+}
+
 function makeThreePlayerActive() {
   let state = createInitialState();
   const r1 = addPlayer(state, 'Alice');
@@ -45,6 +52,11 @@ function makeThreePlayerActive() {
   const active = checkAllReady(state);
   if (active.phase !== 'pictionary-active') throw new Error('Expected active');
   return { state: active, ids: [r1.playerId, r2.playerId, r3.playerId] };
+}
+
+function makeThreePlayerDrawing() {
+  const { state, ids } = makeThreePlayerActive();
+  return { state: selectWord(state, 0), ids };
 }
 
 describe('createInitialState', () => {
@@ -82,7 +94,7 @@ describe('removePlayer', () => {
   });
 
   it('marks the player as disconnected in active phase', () => {
-    const active = makeTwoPlayerActive();
+    const active = makeTwoPlayerDrawing();
     const drawerId = getCurrentDrawer(active);
     const result = removePlayer(active, drawerId);
     expect(result.players.get(drawerId)!.connected).toBe(false);
@@ -115,16 +127,52 @@ describe('checkAllReady', () => {
     expect(checkAllReady(state).phase).toBe('pictionary-waiting');
   });
 
-  it('starts the game when all players are ready', () => {
+  it('starts the game in picking sub-phase when all players are ready', () => {
     const active = makeTwoPlayerActive();
     expect(active.phase).toBe('pictionary-active');
+    expect(active.subPhase).toBe('picking');
     expect(active.order.length).toBe(2);
     expect(active.currentTurnIndex).toBe(0);
-    expect(active.word).toBeTruthy();
+    expect(active.wordChoices.length).toBe(3);
+    expect(active.word).toBe('');
     expect(active.scores.size).toBe(2);
     expect(active.correctGuessers).toEqual([]);
     expect(active.currentTurnOps).toEqual([]);
     expect(active.completedTurns).toEqual([]);
+  });
+});
+
+describe('selectWord', () => {
+  it('transitions from picking to drawing with chosen word', () => {
+    const active = makeTwoPlayerActive();
+    expect(active.subPhase).toBe('picking');
+    const chosenWord = active.wordChoices[1];
+    const result = selectWord(active, 1);
+    expect(result.subPhase).toBe('drawing');
+    expect(result.word).toBe(chosenWord);
+    expect(result.wordChoices).toEqual([]);
+  });
+
+  it('sets turnDeadline and turnStartTime for drawing phase', () => {
+    const active = makeTwoPlayerActive();
+    const before = Date.now();
+    const result = selectWord(active, 0);
+    const after = Date.now();
+    expect(result.turnDeadline).toBeGreaterThanOrEqual(before + TURN_DURATION_MS);
+    expect(result.turnDeadline).toBeLessThanOrEqual(after + TURN_DURATION_MS);
+    expect(result.turnStartTime).toBeGreaterThanOrEqual(before);
+    expect(result.turnStartTime).toBeLessThanOrEqual(after);
+  });
+
+  it('ignores invalid choice index', () => {
+    const active = makeTwoPlayerActive();
+    expect(selectWord(active, -1)).toBe(active);
+    expect(selectWord(active, 99)).toBe(active);
+  });
+
+  it('ignores if already in drawing sub-phase', () => {
+    const drawing = makeTwoPlayerDrawing();
+    expect(selectWord(drawing, 0)).toBe(drawing);
   });
 });
 
@@ -137,7 +185,7 @@ describe('getCurrentDrawer', () => {
 
 describe('recordDrawOp', () => {
   it('appends a draw op to currentTurnOps', () => {
-    const active = makeTwoPlayerActive();
+    const active = makeTwoPlayerDrawing();
     const op = { type: 'draw-start' as const, color: '#000', size: 5, x: 10, y: 20 };
     const result = recordDrawOp(active, op);
     expect(result.currentTurnOps).toEqual([op]);
@@ -149,7 +197,7 @@ describe('recordDrawOp', () => {
 
 describe('submitGuess', () => {
   it('returns correct=true for the right word (case-insensitive)', () => {
-    const active = makeTwoPlayerActive();
+    const active = makeTwoPlayerDrawing();
     const drawerId = getCurrentDrawer(active);
     const guesserId = active.order.find(id => id !== drawerId)!;
     const { state, correct } = submitGuess(active, guesserId, active.word.toUpperCase());
@@ -159,7 +207,7 @@ describe('submitGuess', () => {
   });
 
   it('accepts a guess with one letter substituted', () => {
-    const active = makeTwoPlayerActive();
+    const active = makeTwoPlayerDrawing();
     const drawerId = getCurrentDrawer(active);
     const guesserId = active.order.find(id => id !== drawerId)!;
     // Replace the first letter with something wrong
@@ -169,7 +217,7 @@ describe('submitGuess', () => {
   });
 
   it('accepts a guess with one letter missing', () => {
-    const active = makeTwoPlayerActive();
+    const active = makeTwoPlayerDrawing();
     const drawerId = getCurrentDrawer(active);
     const guesserId = active.order.find(id => id !== drawerId)!;
     // Drop the last letter
@@ -179,7 +227,7 @@ describe('submitGuess', () => {
   });
 
   it('accepts a guess with one extra letter', () => {
-    const active = makeTwoPlayerActive();
+    const active = makeTwoPlayerDrawing();
     const drawerId = getCurrentDrawer(active);
     const guesserId = active.order.find(id => id !== drawerId)!;
     const extra = active.word + 'z';
@@ -188,7 +236,7 @@ describe('submitGuess', () => {
   });
 
   it('returns correct=false for a wrong word', () => {
-    const active = makeTwoPlayerActive();
+    const active = makeTwoPlayerDrawing();
     const drawerId = getCurrentDrawer(active);
     const guesserId = active.order.find(id => id !== drawerId)!;
     const { state, correct } = submitGuess(active, guesserId, 'definitely-wrong-word-xyz');
@@ -197,14 +245,14 @@ describe('submitGuess', () => {
   });
 
   it('drawer cannot guess', () => {
-    const active = makeTwoPlayerActive();
+    const active = makeTwoPlayerDrawing();
     const drawerId = getCurrentDrawer(active);
     const { correct } = submitGuess(active, drawerId, active.word);
     expect(correct).toBe(false);
   });
 
   it('player cannot guess twice', () => {
-    const active = makeTwoPlayerActive();
+    const active = makeTwoPlayerDrawing();
     const drawerId = getCurrentDrawer(active);
     const guesserId = active.order.find(id => id !== drawerId)!;
     const { state } = submitGuess(active, guesserId, active.word);
@@ -214,7 +262,7 @@ describe('submitGuess', () => {
   });
 
   it('awards points to guesser and drawer', () => {
-    const active = makeTwoPlayerActive();
+    const active = makeTwoPlayerDrawing();
     const drawerId = getCurrentDrawer(active);
     const guesserId = active.order.find(id => id !== drawerId)!;
     const { state } = submitGuess(active, guesserId, active.word);
@@ -225,7 +273,7 @@ describe('submitGuess', () => {
 
 describe('checkTurnComplete', () => {
   it('returns false when not all guessers have guessed', () => {
-    const { state, ids } = makeThreePlayerActive();
+    const { state, ids } = makeThreePlayerDrawing();
     const drawerId = getCurrentDrawer(state);
     const guesserIds = ids.filter(id => id !== drawerId);
     const { state: afterGuess } = submitGuess(state, guesserIds[0], state.word);
@@ -233,7 +281,7 @@ describe('checkTurnComplete', () => {
   });
 
   it('returns true when all connected guessers have guessed', () => {
-    const active = makeTwoPlayerActive();
+    const active = makeTwoPlayerDrawing();
     const drawerId = getCurrentDrawer(active);
     const guesserId = active.order.find(id => id !== drawerId)!;
     const { state } = submitGuess(active, guesserId, active.word);
@@ -241,7 +289,7 @@ describe('checkTurnComplete', () => {
   });
 
   it('ignores disconnected guessers', () => {
-    const { state, ids } = makeThreePlayerActive();
+    const { state, ids } = makeThreePlayerDrawing();
     const drawerId = getCurrentDrawer(state);
     const guesserIds = ids.filter(id => id !== drawerId);
     // Disconnect one guesser
@@ -254,7 +302,7 @@ describe('checkTurnComplete', () => {
 
 describe('shortenDeadline', () => {
   it('shortens deadline when all guessers are correct', () => {
-    const { state, ids } = makeThreePlayerActive();
+    const { state, ids } = makeThreePlayerDrawing();
     const drawerId = getCurrentDrawer(state);
     const guesserIds = ids.filter(id => id !== drawerId);
     const originalDeadline = state.turnDeadline;
@@ -278,8 +326,8 @@ describe('shortenDeadline', () => {
 });
 
 describe('advanceTurn', () => {
-  it('saves the completed turn and starts a new turn', () => {
-    const active = makeTwoPlayerActive();
+  it('saves the completed turn and starts a new turn in picking', () => {
+    const active = makeTwoPlayerDrawing();
     const drawerId = getCurrentDrawer(active);
     const word = active.word;
     const result = advanceTurn(active);
@@ -288,23 +336,27 @@ describe('advanceTurn', () => {
     expect(result.completedTurns[0].drawerId).toBe(drawerId);
     expect(result.completedTurns[0].word).toBe(word);
     expect(result.currentTurnIndex).toBe(1);
-    expect(result.word).toBeTruthy();
+    expect(result.subPhase).toBe('picking');
+    expect(result.wordChoices.length).toBe(3);
+    expect(result.word).toBe('');
     expect(result.correctGuessers).toEqual([]);
     expect(result.currentTurnOps).toEqual([]);
   });
 
   it('goes to postgame after all turns', () => {
-    let active = makeTwoPlayerActive();
+    let active = makeTwoPlayerDrawing();
     // Advance through both turns
-    active = advanceTurn(active) as PictionaryActiveState;
-    const result = advanceTurn(active);
+    let next = advanceTurn(active);
+    if (next.phase !== 'pictionary-active') throw new Error('Expected active');
+    next = selectWord(next, 0);
+    const result = advanceTurn(next);
     expect(result.phase).toBe('pictionary-postgame');
     if (result.phase !== 'pictionary-postgame') throw new Error('Expected postgame');
     expect(result.turns.length).toBe(2);
   });
 
   it('skips disconnected drawers', () => {
-    const { state, ids } = makeThreePlayerActive();
+    const { state, ids } = makeThreePlayerDrawing();
     // Disconnect the player who would draw next
     const nextDrawerIndex = state.currentTurnIndex + 1;
     if (nextDrawerIndex >= state.order.length) throw new Error('Need at least 3 players');
@@ -321,8 +373,9 @@ describe('advanceTurn', () => {
 
 describe('resetGame', () => {
   it('returns to waiting with connected players', () => {
-    let active = makeTwoPlayerActive();
+    let active = makeTwoPlayerDrawing();
     active = advanceTurn(active) as PictionaryActiveState;
+    active = selectWord(active, 0);
     const postgame = advanceTurn(active);
     if (postgame.phase !== 'pictionary-postgame') throw new Error('Expected postgame');
     const waiting = resetGame(postgame);
@@ -334,10 +387,11 @@ describe('resetGame', () => {
   });
 
   it('excludes disconnected players on reset', () => {
-    let active = makeTwoPlayerActive();
+    let active = makeTwoPlayerDrawing();
     const drawerId = getCurrentDrawer(active);
     active = removePlayer(active, drawerId) as PictionaryActiveState;
     active = advanceTurn(active) as PictionaryActiveState;
+    active = selectWord(active, 0);
     const postgame = advanceTurn(active);
     if (postgame.phase !== 'pictionary-postgame') throw new Error('Expected postgame');
     const waiting = resetGame(postgame);
@@ -357,11 +411,35 @@ describe('getClientState', () => {
     expect(client.players[0].handle).toBe('Alice');
   });
 
-  it('projects active state for drawer (includes word)', () => {
+  it('projects picking state for drawer (includes wordChoices)', () => {
     const active = makeTwoPlayerActive();
     const drawerId = getCurrentDrawer(active);
     const client = getClientState(active, drawerId);
     if (client.phase !== 'pictionary-active') throw new Error();
+    expect(client.subPhase).toBe('picking');
+    expect(client.role).toBe('drawer');
+    expect(client.wordChoices).toHaveLength(3);
+    expect(client.word).toBeNull();
+  });
+
+  it('projects picking state for guesser (hides wordChoices)', () => {
+    const active = makeTwoPlayerActive();
+    const drawerId = getCurrentDrawer(active);
+    const guesserId = active.order.find(id => id !== drawerId)!;
+    const client = getClientState(active, guesserId);
+    if (client.phase !== 'pictionary-active') throw new Error();
+    expect(client.subPhase).toBe('picking');
+    expect(client.role).toBe('guesser');
+    expect(client.wordChoices).toBeNull();
+    expect(client.word).toBeNull();
+  });
+
+  it('projects drawing state for drawer (includes word)', () => {
+    const active = makeTwoPlayerDrawing();
+    const drawerId = getCurrentDrawer(active);
+    const client = getClientState(active, drawerId);
+    if (client.phase !== 'pictionary-active') throw new Error();
+    expect(client.subPhase).toBe('drawing');
     expect(client.role).toBe('drawer');
     expect(client.word).toBe(active.word);
     expect(client.currentDrawerHandle).toBeTruthy();
@@ -369,18 +447,19 @@ describe('getClientState', () => {
     expect(client.totalTurns).toBe(2);
   });
 
-  it('projects active state for guesser (hides word)', () => {
-    const active = makeTwoPlayerActive();
+  it('projects drawing state for guesser (hides word)', () => {
+    const active = makeTwoPlayerDrawing();
     const drawerId = getCurrentDrawer(active);
     const guesserId = active.order.find(id => id !== drawerId)!;
     const client = getClientState(active, guesserId);
     if (client.phase !== 'pictionary-active') throw new Error();
+    expect(client.subPhase).toBe('drawing');
     expect(client.role).toBe('guesser');
     expect(client.word).toBeNull();
   });
 
   it('projects postgame state with scores and turns', () => {
-    let active = makeTwoPlayerActive();
+    let active = makeTwoPlayerDrawing();
     const drawerId = getCurrentDrawer(active);
     const guesserId = active.order.find(id => id !== drawerId)!;
     // Guess correctly
@@ -388,6 +467,7 @@ describe('getClientState', () => {
     // Advance through all turns
     let next = advanceTurn(afterGuess);
     if (next.phase === 'pictionary-active') {
+      next = selectWord(next, 0);
       next = advanceTurn(next);
     }
     if (next.phase !== 'pictionary-postgame') throw new Error('Expected postgame');

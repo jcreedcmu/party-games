@@ -67,6 +67,7 @@ export type ClientMessage =
   | DrawStartOp | DrawMoveOp | DrawEndOp | DrawFillOp | DrawUndoOp | DrawClearOp
   | { type: 'guess'; text: string }
   | { type: 'turn-done' }
+  | { type: 'pick-word'; index: number }
   | { type: 'add-word'; word: string };
 
 // --- Server -> Client messages ---

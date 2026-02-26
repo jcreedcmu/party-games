@@ -14,6 +14,11 @@ export function pickWord(): string {
   return WORDS[Math.floor(Math.random() * WORDS.length)].word;
 }
 
+export function pickWords(n: number): string[] {
+  const shuffled = [...WORDS].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, n).map(w => w.word);
+}
+
 export function getWordEntry(word: string): WordEntry | undefined {
   return WORDS.find(w => w.word.toLowerCase() === word.toLowerCase());
 }

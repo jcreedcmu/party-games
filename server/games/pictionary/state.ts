@@ -7,11 +7,12 @@ import type {
   PictionaryActiveState,
   PictionaryPostgameState,
 } from './types.js';
-import { pickWord } from './words.js';
+import { pickWords } from './words.js';
 
 export const TURN_DURATION_MS = 75_000;
 export const ALL_GUESSED_GRACE_MS = 10_000;
 export const HINT_REVEAL_MS = 20_000;
+export const PICK_DURATION_MS = 15_000;
 
 function pickRandomLetterIndex(word: string): number {
   const indices: number[] = [];
@@ -98,18 +99,19 @@ export function checkAllReady(
   }
 
   const now = Date.now();
-  const word = pickWord();
   return {
-    phase: 'pictionary-active',
+    phase: 'pictionary-active' as const,
+    subPhase: 'picking' as const,
     players,
     order,
     currentTurnIndex: 0,
-    word,
+    word: '',
+    wordChoices: pickWords(3),
     scores,
-    turnDeadline: now + TURN_DURATION_MS,
+    turnDeadline: now + PICK_DURATION_MS,
     turnStartTime: now,
     correctGuessers: [],
-    hintLetterIndex: pickRandomLetterIndex(word),
+    hintLetterIndex: 0,
     currentTurnOps: [],
     currentTurnGuesses: [],
     completedTurns: [],
@@ -234,18 +236,39 @@ export function advanceTurn(
   }
 
   const now = Date.now();
-  const word = pickWord();
   return {
     ...state,
+    subPhase: 'picking' as const,
     currentTurnIndex: nextIndex,
-    word,
-    turnDeadline: now + TURN_DURATION_MS,
+    word: '',
+    wordChoices: pickWords(3),
+    turnDeadline: now + PICK_DURATION_MS,
     turnStartTime: now,
     correctGuessers: [],
-    hintLetterIndex: pickRandomLetterIndex(word),
+    hintLetterIndex: 0,
     currentTurnOps: [],
     currentTurnGuesses: [],
     completedTurns,
+  };
+}
+
+export function selectWord(
+  state: PictionaryActiveState,
+  choiceIndex: number,
+): PictionaryActiveState {
+  if (state.subPhase !== 'picking') return state;
+  if (choiceIndex < 0 || choiceIndex >= state.wordChoices.length) return state;
+
+  const word = state.wordChoices[choiceIndex];
+  const now = Date.now();
+  return {
+    ...state,
+    subPhase: 'drawing',
+    word,
+    wordChoices: [],
+    turnDeadline: now + TURN_DURATION_MS,
+    turnStartTime: now,
+    hintLetterIndex: pickRandomLetterIndex(word),
   };
 }
 

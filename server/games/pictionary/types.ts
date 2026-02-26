@@ -23,10 +23,12 @@ export type PictionaryWaitingState = {
 
 export type PictionaryActiveState = {
   phase: 'pictionary-active';
+  subPhase: 'picking' | 'drawing';
   players: Map<PlayerId, PlayerInfo>;
   order: PlayerId[];
   currentTurnIndex: number;
   word: string;
+  wordChoices: string[];
   scores: Map<PlayerId, number>;
   turnDeadline: number;
   turnStartTime: number;

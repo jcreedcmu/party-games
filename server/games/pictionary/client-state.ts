@@ -22,12 +22,14 @@ export type PictionaryClientActivePlayer = {
 
 export type PictionaryClientActiveState = {
   phase: 'pictionary-active';
+  subPhase: 'picking' | 'drawing';
   role: 'drawer' | 'guesser';
   currentDrawerHandle: string;
   turnNumber: number;
   totalTurns: number;
   turnDeadline: number;
   word: string | null;
+  wordChoices: string[] | null;
   wordHint: string;
   wordHintRevealed: string;
   hintRevealTime: number;
@@ -77,21 +79,27 @@ function getActiveClientState(
     ? state.completedTurns[state.completedTurns.length - 1]
     : null;
 
-  const wordHint = state.word.replace(/[a-zA-Z]/g, '_');
-  const hintChars = [...wordHint];
-  hintChars[state.hintLetterIndex] = state.word[state.hintLetterIndex];
-  const wordHintRevealed = hintChars.join('');
+  const isPicking = state.subPhase === 'picking';
+  const wordHint = isPicking ? '' : state.word.replace(/[a-zA-Z]/g, '_');
+  let wordHintRevealed = '';
+  if (!isPicking) {
+    const hintChars = [...wordHint];
+    hintChars[state.hintLetterIndex] = state.word[state.hintLetterIndex];
+    wordHintRevealed = hintChars.join('');
+  }
 
   return {
     phase: 'pictionary-active',
+    subPhase: state.subPhase,
     role: isDrawer ? 'drawer' : 'guesser',
     currentDrawerHandle: drawerInfo.handle,
     turnNumber: state.currentTurnIndex + 1,
     totalTurns: state.order.length,
-    word: isDrawer ? state.word : null,
+    word: (!isPicking && isDrawer) ? state.word : null,
+    wordChoices: (isPicking && isDrawer) ? state.wordChoices : null,
     wordHint,
     wordHintRevealed,
-    hintRevealTime: state.turnDeadline - HINT_REVEAL_MS,
+    hintRevealTime: isPicking ? Infinity : state.turnDeadline - HINT_REVEAL_MS,
     turnDeadline: state.turnDeadline,
     guessedCorrectly: guessedIds.has(playerId),
     correctGuessers: state.correctGuessers.map(g => state.players.get(g.playerId)!.handle),

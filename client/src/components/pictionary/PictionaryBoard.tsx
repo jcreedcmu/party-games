@@ -1,6 +1,7 @@
 import type { PictionaryClientActiveState, ClientMessage, RelayPayload } from '../../types';
 import { DrawerView } from './DrawerView';
 import { GuesserView } from './GuesserView';
+import { WordPicker } from './WordPicker';
 
 type PictionaryBoardProps = {
   state: PictionaryClientActiveState;
@@ -10,6 +11,22 @@ type PictionaryBoardProps = {
 };
 
 export function PictionaryBoard({ state, playerId, send, onRelay }: PictionaryBoardProps) {
+  if (state.subPhase === 'picking') {
+    if (state.role === 'drawer') {
+      return <WordPicker state={state} send={send} />;
+    }
+    return (
+      <div className="pictionary-board">
+        <div className="round-info">
+          <span>Turn {state.turnNumber} of {state.totalTurns}</span>
+        </div>
+        <div className="pic-picking-wait">
+          <p>{state.currentDrawerHandle} is picking a word...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (state.role === 'drawer') {
     return <DrawerView key={state.turnNumber} state={state} send={send} onRelay={onRelay} />;
   }
