@@ -61,6 +61,10 @@ export function GuesserView({ state, playerId, send, onRelay }: GuesserViewProps
 
   return (
     <div className="pictionary-board">
+      {state.lastTurnWord && (
+        <div className="pic-last-word">Last word was: <strong>{state.lastTurnWord}</strong></div>
+      )}
+
       <div className="round-info">
         <span>Turn {state.turnNumber} of {state.totalTurns}</span>
         <span className={'timer' + (urgent ? ' timer-urgent' : '')}>{timeLeft}</span>

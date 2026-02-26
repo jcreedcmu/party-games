@@ -33,6 +33,7 @@ export type PictionaryClientActiveState = {
   guessedCorrectly: boolean;
   correctGuessers: string[];
   players: PictionaryClientActivePlayer[];
+  lastTurnWord: string | null;
 };
 
 export type PictionaryClientTurnSummary = {
@@ -62,6 +63,10 @@ function getActiveClientState(
   const isDrawer = playerId === drawerId;
   const guessedIds = new Set(state.correctGuessers.map(g => g.playerId));
 
+  const lastTurn = state.completedTurns.length > 0
+    ? state.completedTurns[state.completedTurns.length - 1]
+    : null;
+
   const wordHint = state.word.replace(/[a-zA-Z]/g, '_');
   const hintChars = [...wordHint];
   hintChars[state.hintLetterIndex] = state.word[state.hintLetterIndex];
@@ -87,6 +92,7 @@ function getActiveClientState(
       score: state.scores.get(p.id) ?? 0,
       guessedThisTurn: guessedIds.has(p.id),
     })),
+    lastTurnWord: lastTurn?.word ?? null,
   };
 }
 

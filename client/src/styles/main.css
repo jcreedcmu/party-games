@@ -481,6 +481,16 @@ button:disabled {
 
 /* Pictionary */
 
+.pic-last-word {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+  background: #e8f4fd;
+  border: 1px solid #bee5eb;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #0c5460;
+}
+
 .pictionary-board {
   max-width: 480px;
 }
