@@ -1,9 +1,10 @@
 import { useState, useCallback, useRef } from 'react';
-import type { ClientMessage, ServerMessage, ClientGameState } from '../types';
+import type { ClientMessage, ServerMessage, ClientGameState, GameType } from '../types';
 
 type SocketState = {
   gameState: ClientGameState | null;
   playerId: string | null;
+  gameType: GameType | null;
   error: string | null;
   connected: boolean;
 };
@@ -12,6 +13,7 @@ export function useSocket() {
   const [state, setState] = useState<SocketState>({
     gameState: null,
     playerId: null,
+    gameType: null,
     error: null,
     connected: false,
   });
@@ -33,7 +35,7 @@ export function useSocket() {
       const msg: ServerMessage = JSON.parse(e.data);
       switch (msg.type) {
         case 'joined':
-          setState(s => ({ ...s, playerId: msg.playerId }));
+          setState(s => ({ ...s, playerId: msg.playerId, gameType: msg.gameType }));
           break;
         case 'state':
           setState(s => ({ ...s, gameState: msg.state }));

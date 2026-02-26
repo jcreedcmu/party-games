@@ -9,17 +9,17 @@ import {
   checkRoundComplete,
   advanceRound,
   resetGame,
-  getClientState,
   getExpectedMoveType,
   getSheetIndexForPlayer,
   ROUND_DURATION_MS,
-} from '../state.js';
-import type { UnderwayState } from '../types.js';
+} from '../games/epyc/state.js';
+import { getClientState } from '../games/epyc/client-state.js';
+import type { EpycUnderwayState } from '../games/epyc/types.js';
 
 describe('createInitialState', () => {
   it('returns a waiting state with no players', () => {
     const state = createInitialState();
-    expect(state.phase).toBe('waiting');
+    expect(state.phase).toBe('epyc-waiting');
     expect(state.players.size).toBe(0);
     expect(state.nextPlayerId).toBe(1);
   });
@@ -44,12 +44,12 @@ describe('addPlayer', () => {
 
 describe('removePlayer', () => {
   it('removes a player in waiting phase', () => {
-    let state = createInitialState();
-    state = addPlayer(state, 'Alice').state;
-    state = addPlayer(state, 'Bob').state;
-    state = removePlayer(state, '1');
-    expect(state.players.size).toBe(1);
-    expect(state.players.has('1')).toBe(false);
+    let waitState = createInitialState();
+    waitState = addPlayer(waitState, 'Alice').state;
+    waitState = addPlayer(waitState, 'Bob').state;
+    const result = removePlayer(waitState, '1');
+    expect(result.players.size).toBe(1);
+    expect(result.players.has('1')).toBe(false);
   });
 
   it('marks player as disconnected in underway phase', () => {
@@ -89,7 +89,7 @@ describe('checkAllReady', () => {
     let state = createInitialState();
     state = addPlayer(state, 'Alice').state;
     state = setReady(state, '1', true);
-    expect(checkAllReady(state).phase).toBe('waiting');
+    expect(checkAllReady(state).phase).toBe('epyc-waiting');
   });
 
   it('does not transition if not all players are ready', () => {
@@ -97,7 +97,7 @@ describe('checkAllReady', () => {
     state = addPlayer(state, 'Alice').state;
     state = addPlayer(state, 'Bob').state;
     state = setReady(state, '1', true);
-    expect(checkAllReady(state).phase).toBe('waiting');
+    expect(checkAllReady(state).phase).toBe('epyc-waiting');
   });
 
   it('transitions to underway when all players are ready', () => {
@@ -107,8 +107,8 @@ describe('checkAllReady', () => {
     state = setReady(state, '1', true);
     state = setReady(state, '2', true);
     const result = checkAllReady(state);
-    expect(result.phase).toBe('underway');
-    if (result.phase !== 'underway') return;
+    expect(result.phase).toBe('epyc-underway');
+    if (result.phase !== 'epyc-underway') return;
     expect(result.sheets.length).toBe(2);
     expect(result.order.length).toBe(2);
     expect(result.currentRound).toBe(0);
@@ -168,8 +168,8 @@ describe('checkRoundComplete', () => {
     let state = makeUnderwayState();
     state = submitMove(state, '1', { type: 'text', content: 'hello' });
     const result = checkRoundComplete(state);
-    expect(result.phase).toBe('underway');
-    if (result.phase === 'underway') {
+    expect(result.phase).toBe('epyc-underway');
+    if (result.phase === 'epyc-underway') {
       expect(result.currentRound).toBe(0);
     }
   });
@@ -179,8 +179,8 @@ describe('checkRoundComplete', () => {
     state = submitMove(state, '1', { type: 'text', content: 'hello' });
     state = submitMove(state, '2', { type: 'text', content: 'world' });
     const result = checkRoundComplete(state);
-    expect(result.phase).toBe('underway');
-    if (result.phase === 'underway') {
+    expect(result.phase).toBe('epyc-underway');
+    if (result.phase === 'epyc-underway') {
       expect(result.currentRound).toBe(1);
       expect(result.submittedThisRound.size).toBe(0);
     }
@@ -189,12 +189,12 @@ describe('checkRoundComplete', () => {
   it('advances when remaining connected players have submitted', () => {
     let state = makeUnderwayState();
     // Disconnect player 2
-    state = removePlayer(state, '2') as UnderwayState;
+    state = removePlayer(state, '2') as EpycUnderwayState;
     // Player 1 submits
     state = submitMove(state, '1', { type: 'text', content: 'hello' });
     const result = checkRoundComplete(state);
     // Should advance since disconnected player is accounted for
-    if (result.phase === 'underway') {
+    if (result.phase === 'epyc-underway') {
       expect(result.currentRound).toBe(1);
     }
   });
@@ -205,7 +205,7 @@ describe('advanceRound', () => {
     const state = makeUnderwayState();
     // No one submitted, advance via timer
     const result = advanceRound(state);
-    if (result.phase === 'underway') {
+    if (result.phase === 'epyc-underway') {
       // Both sheets should have a null entry
       expect(result.sheets[0].moves[0]).toBeNull();
       expect(result.sheets[1].moves[0]).toBeNull();
@@ -217,16 +217,16 @@ describe('advanceRound', () => {
     // Play through 2 rounds (2 players = 2 rounds)
     state = submitMove(state, '1', { type: 'text', content: 'r0-p1' });
     state = submitMove(state, '2', { type: 'text', content: 'r0-p2' });
-    state = checkRoundComplete(state) as UnderwayState;
-    expect(state.phase).toBe('underway');
-    if (state.phase !== 'underway') return;
+    state = checkRoundComplete(state) as EpycUnderwayState;
+    expect(state.phase).toBe('epyc-underway');
+    if (state.phase !== 'epyc-underway') return;
     expect(state.currentRound).toBe(1);
 
     const moveType = getExpectedMoveType(state.firstMoveType, 1);
     state = submitMove(state, '1', { type: moveType, content: 'r1-p1' });
     state = submitMove(state, '2', { type: moveType, content: 'r1-p2' });
     const result = checkRoundComplete(state);
-    expect(result.phase).toBe('postgame');
+    expect(result.phase).toBe('epyc-postgame');
   });
 });
 
@@ -236,8 +236,8 @@ describe('getClientState', () => {
     state = addPlayer(state, 'Alice').state;
     state = setReady(state, '1', true);
     const cs = getClientState(state, '1');
-    expect(cs.phase).toBe('waiting');
-    if (cs.phase === 'waiting') {
+    expect(cs.phase).toBe('epyc-waiting');
+    if (cs.phase === 'epyc-waiting') {
       expect(cs.players[0].ready).toBe(true);
     }
   });
@@ -245,8 +245,8 @@ describe('getClientState', () => {
   it('returns underway state with round info and sheet', () => {
     const state = makeUnderwayState();
     const cs = getClientState(state, '1');
-    expect(cs.phase).toBe('underway');
-    if (cs.phase !== 'underway') return;
+    expect(cs.phase).toBe('epyc-underway');
+    if (cs.phase !== 'epyc-underway') return;
     expect(cs.currentRound).toBe(0);
     expect(cs.totalRounds).toBe(2);
     expect(cs.expectedMoveType).toBe('text');
@@ -258,7 +258,7 @@ describe('getClientState', () => {
     let state = makeUnderwayState();
     state = submitMove(state, '1', { type: 'text', content: 'hi' });
     const cs = getClientState(state, '1');
-    if (cs.phase === 'underway') {
+    if (cs.phase === 'epyc-underway') {
       expect(cs.submitted).toBe(true);
     }
   });
@@ -267,10 +267,10 @@ describe('getClientState', () => {
     let state = makeUnderwayState();
     state = submitMove(state, '1', { type: 'text', content: 'hello' });
     state = submitMove(state, '2', { type: 'text', content: 'world' });
-    state = checkRoundComplete(state) as UnderwayState;
+    state = checkRoundComplete(state) as EpycUnderwayState;
     // Round 1: player 2 now has sheet 0 (which has 'hello' from player 1)
     const cs = getClientState(state, '2');
-    if (cs.phase === 'underway') {
+    if (cs.phase === 'epyc-underway') {
       expect(cs.previousMove).toEqual({ type: 'text', content: 'hello' });
     }
   });
@@ -279,14 +279,14 @@ describe('getClientState', () => {
     let state = makeUnderwayState();
     state = submitMove(state, '1', { type: 'text', content: 'r0' });
     state = submitMove(state, '2', { type: 'text', content: 'r0' });
-    state = checkRoundComplete(state) as UnderwayState;
+    state = checkRoundComplete(state) as EpycUnderwayState;
     const moveType = getExpectedMoveType('text', 1);
     state = submitMove(state, '1', { type: moveType, content: 'r1' });
     state = submitMove(state, '2', { type: moveType, content: 'r1' });
     const result = checkRoundComplete(state);
-    expect(result.phase).toBe('postgame');
+    expect(result.phase).toBe('epyc-postgame');
     const cs = getClientState(result, '1');
-    if (cs.phase === 'postgame') {
+    if (cs.phase === 'epyc-postgame') {
       expect(cs.sheets.length).toBe(2);
       expect(cs.sheets[0].moves.length).toBe(2);
     }
@@ -296,9 +296,9 @@ describe('getClientState', () => {
 describe('resetGame', () => {
   it('returns to waiting phase with connected players', () => {
     let state = makeUnderwayState();
-    state = removePlayer(state, '2') as UnderwayState;
+    state = removePlayer(state, '2') as EpycUnderwayState;
     const result = resetGame(state);
-    expect(result.phase).toBe('waiting');
+    expect(result.phase).toBe('epyc-waiting');
     expect(result.players.size).toBe(1);
     expect(result.players.has('1')).toBe(true);
     expect(result.players.has('2')).toBe(false);
@@ -314,13 +314,13 @@ describe('resetGame', () => {
 
 // --- Test helper ---
 
-function makeUnderwayState(): UnderwayState {
+function makeUnderwayState(): EpycUnderwayState {
   const players = new Map([
     ['1', { id: '1', handle: 'Alice', ready: false, connected: true }],
     ['2', { id: '2', handle: 'Bob', ready: false, connected: true }],
   ]);
   return {
-    phase: 'underway',
+    phase: 'epyc-underway',
     players,
     order: ['1', '2'],
     sheets: [

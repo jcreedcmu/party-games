@@ -179,7 +179,7 @@ export function DrawingCanvas({ canvasRef, onSubmit }: DrawingCanvasProps) {
   return (
     <div className="drawing-canvas">
       <canvas
-        ref={canvasRef}
+        ref={canvasRef as RefObject<HTMLCanvasElement>}
         width={CANVAS_WIDTH}
         height={CANVAS_HEIGHT}
         onPointerDown={handlePointerDown}

@@ -115,7 +115,7 @@ describe('server integration', () => {
     const stateMsg = await client.next();
     expect(stateMsg.type).toBe('state');
     if (stateMsg.type === 'state') {
-      expect(stateMsg.state.phase).toBe('waiting');
+      expect(stateMsg.state.phase).toBe('epyc-waiting');
     }
   });
 
@@ -152,7 +152,7 @@ describe('server integration', () => {
 
     expect(stateForBob.type).toBe('state');
     expect(stateForAlice.type).toBe('state');
-    if (stateForAlice.type === 'state' && stateForAlice.state.phase === 'waiting') {
+    if (stateForAlice.type === 'state' && stateForAlice.state.phase === 'epyc-waiting') {
       expect(stateForAlice.state.players.length).toBe(2);
     }
   });
@@ -172,11 +172,11 @@ describe('server integration', () => {
 
     expect(state1.type).toBe('state');
     if (state1.type === 'state') {
-      expect(state1.state.phase).toBe('underway');
+      expect(state1.state.phase).toBe('epyc-underway');
     }
     expect(state2.type).toBe('state');
     if (state2.type === 'state') {
-      expect(state2.state.phase).toBe('underway');
+      expect(state2.state.phase).toBe('epyc-underway');
     }
   });
 
@@ -192,7 +192,7 @@ describe('server integration', () => {
     c1.send({ type: 'unready' });
     const stateMsg = await c1.next();
     expect(stateMsg.type).toBe('state');
-    if (stateMsg.type === 'state' && stateMsg.state.phase === 'waiting') {
+    if (stateMsg.type === 'state' && stateMsg.state.phase === 'epyc-waiting') {
       const alice = stateMsg.state.players.find(p => p.handle === 'Alice');
       expect(alice?.ready).toBe(false);
     }
@@ -206,7 +206,7 @@ describe('server integration', () => {
     c2.ws.close();
     const stateMsg = await c1.next();
     expect(stateMsg.type).toBe('state');
-    if (stateMsg.type === 'state' && stateMsg.state.phase === 'waiting') {
+    if (stateMsg.type === 'state' && stateMsg.state.phase === 'epyc-waiting') {
       expect(stateMsg.state.players.length).toBe(1);
       expect(stateMsg.state.players[0].handle).toBe('Alice');
     }
@@ -229,7 +229,7 @@ describe('server integration', () => {
     c2.ws.close();
     const stateMsg = await c1.next();
     expect(stateMsg.type).toBe('state');
-    if (stateMsg.type === 'state' && stateMsg.state.phase === 'underway') {
+    if (stateMsg.type === 'state' && stateMsg.state.phase === 'epyc-underway') {
       const bob = stateMsg.state.players.find(p => p.handle === 'Bob');
       expect(bob?.connected).toBe(false);
     }

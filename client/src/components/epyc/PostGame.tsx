@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import type { ClientPostgameState, ClientMessage } from '../types';
+import type { EpycClientPostgameState, ClientMessage } from '../../types';
 
 type PostGameProps = {
-  state: ClientPostgameState;
+  state: EpycClientPostgameState;
   onSend: (msg: ClientMessage) => void;
 };
 

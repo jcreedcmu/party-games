@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import type { ClientUnderwayState, ClientMessage } from '../types';
+import type { EpycClientUnderwayState, ClientMessage } from '../../types';
 import { PreviousMove } from './PreviousMove';
 import { TextInput } from './TextInput';
-import { DrawingCanvas } from './DrawingCanvas';
+import { DrawingCanvas } from '../DrawingCanvas';
 
 type GameBoardProps = {
-  state: ClientUnderwayState;
+  state: EpycClientUnderwayState;
   playerId: string;
   onSend: (msg: ClientMessage) => void;
 };

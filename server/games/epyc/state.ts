@@ -1,23 +1,23 @@
+import type { PlayerId, MoveType } from '../../types.js';
 import type {
-  PlayerId, Move, MoveType, Sheet,
-  GameState, WaitingState, UnderwayState, PostgameState,
+  Move, Sheet,
+  EpycState, EpycWaitingState, EpycUnderwayState, EpycPostgameState,
 } from './types.js';
-import type { ClientGameState } from './protocol.js';
 
 export const ROUND_DURATION_MS = 60_000;
 
-export function createInitialState(): WaitingState {
+export function createInitialState(): EpycWaitingState {
   return {
-    phase: 'waiting',
+    phase: 'epyc-waiting',
     players: new Map(),
     nextPlayerId: 1,
   };
 }
 
 export function addPlayer(
-  state: WaitingState,
+  state: EpycWaitingState,
   handle: string,
-): { state: WaitingState; playerId: PlayerId } {
+): { state: EpycWaitingState; playerId: PlayerId } {
   const playerId = String(state.nextPlayerId);
   const player = { id: playerId, handle, ready: false, connected: true };
   const players = new Map(state.players);
@@ -28,8 +28,8 @@ export function addPlayer(
   };
 }
 
-export function removePlayer(state: GameState, playerId: PlayerId): GameState {
-  if (state.phase === 'waiting') {
+export function removePlayer(state: EpycState, playerId: PlayerId): EpycState {
+  if (state.phase === 'epyc-waiting') {
     const players = new Map(state.players);
     players.delete(playerId);
     return { ...state, players };
@@ -43,10 +43,10 @@ export function removePlayer(state: GameState, playerId: PlayerId): GameState {
 }
 
 export function setReady(
-  state: WaitingState,
+  state: EpycWaitingState,
   playerId: PlayerId,
   ready: boolean,
-): WaitingState {
+): EpycWaitingState {
   const players = new Map(state.players);
   const player = players.get(playerId);
   if (!player) return state;
@@ -54,7 +54,7 @@ export function setReady(
   return { ...state, players };
 }
 
-export function checkAllReady(state: WaitingState): WaitingState | UnderwayState {
+export function checkAllReady(state: EpycWaitingState): EpycWaitingState | EpycUnderwayState {
   const playerList = Array.from(state.players.values());
   if (playerList.length < 2) return state;
   if (!playerList.every(p => p.ready)) return state;
@@ -74,7 +74,7 @@ export function checkAllReady(state: WaitingState): WaitingState | UnderwayState
   }
 
   return {
-    phase: 'underway',
+    phase: 'epyc-underway',
     players,
     sheets,
     order,
@@ -86,10 +86,10 @@ export function checkAllReady(state: WaitingState): WaitingState | UnderwayState
 }
 
 export function submitMove(
-  state: UnderwayState,
+  state: EpycUnderwayState,
   playerId: PlayerId,
   move: { type: MoveType; content: string },
-): UnderwayState {
+): EpycUnderwayState {
   if (state.submittedThisRound.has(playerId)) return state;
 
   const expectedType = getExpectedMoveType(state.firstMoveType, state.currentRound);
@@ -108,7 +108,7 @@ export function submitMove(
 }
 
 /** Check if all connected players have submitted; if so, advance the round. */
-export function checkRoundComplete(state: UnderwayState): UnderwayState | PostgameState {
+export function checkRoundComplete(state: EpycUnderwayState): EpycUnderwayState | EpycPostgameState {
   const allAccountedFor = Array.from(state.players.values()).every(
     p => state.submittedThisRound.has(p.id) || !p.connected,
   );
@@ -117,7 +117,7 @@ export function checkRoundComplete(state: UnderwayState): UnderwayState | Postga
 }
 
 /** Advance to the next round (or postgame). Fills null for missing submissions. */
-export function advanceRound(state: UnderwayState): UnderwayState | PostgameState {
+export function advanceRound(state: EpycUnderwayState): EpycUnderwayState | EpycPostgameState {
   // Fill null for players who didn't submit
   let sheets = [...state.sheets];
   for (const [, player] of state.players) {
@@ -132,7 +132,7 @@ export function advanceRound(state: UnderwayState): UnderwayState | PostgameStat
 
   if (nextRound >= n) {
     return {
-      phase: 'postgame',
+      phase: 'epyc-postgame',
       players: state.players,
       sheets,
       order: state.order,
@@ -148,67 +148,17 @@ export function advanceRound(state: UnderwayState): UnderwayState | PostgameStat
   };
 }
 
-export function resetGame(state: GameState): WaitingState {
+export function resetGame(state: EpycState): EpycWaitingState {
   const players = new Map(
     Array.from(state.players.entries())
       .filter(([, p]) => p.connected)
       .map(([id, p]) => [id, { ...p, ready: false }] as const),
   );
   return {
-    phase: 'waiting',
-    players: players as WaitingState['players'],
+    phase: 'epyc-waiting',
+    players: players as EpycWaitingState['players'],
     nextPlayerId: Math.max(0, ...Array.from(state.players.keys()).map(Number)) + 1,
   };
-}
-
-export function getClientState(state: GameState, playerId: PlayerId): ClientGameState {
-  switch (state.phase) {
-    case 'waiting':
-      return {
-        phase: 'waiting',
-        players: Array.from(state.players.values()).map(p => ({
-          id: p.id, handle: p.handle, ready: p.ready, connected: p.connected,
-        })),
-      };
-
-    case 'underway': {
-      const sheetIndex = getSheetIndexForPlayer(state.order, playerId, state.currentRound);
-      const sheet = state.sheets[sheetIndex];
-      const lastEntry = sheet.moves.length > 0 ? sheet.moves[sheet.moves.length - 1] : null;
-      const previousMove = lastEntry
-        ? { type: lastEntry.type, content: lastEntry.content }
-        : null;
-
-      return {
-        phase: 'underway',
-        players: Array.from(state.players.values()).map(p => ({
-          id: p.id, handle: p.handle, ready: false, connected: p.connected,
-          submitted: state.submittedThisRound.has(p.id),
-        })),
-        currentRound: state.currentRound,
-        totalRounds: state.order.length,
-        expectedMoveType: getExpectedMoveType(state.firstMoveType, state.currentRound),
-        roundDeadline: state.roundDeadline,
-        submitted: state.submittedThisRound.has(playerId),
-        previousMove,
-      };
-    }
-
-    case 'postgame':
-      return {
-        phase: 'postgame',
-        players: Array.from(state.players.values()).map(p => ({
-          id: p.id, handle: p.handle,
-        })),
-        sheets: state.sheets.map((sheet, i) => ({
-          sheetIndex: i,
-          moves: sheet.moves.map(m =>
-            m ? { type: m.type, content: m.content, playerHandle: state.players.get(m.playerId)?.handle ?? 'Unknown' }
-              : null
-          ),
-        })),
-      };
-  }
 }
 
 // --- Helpers ---
@@ -225,7 +175,7 @@ export function getSheetIndexForPlayer(order: PlayerId[], playerId: PlayerId, ro
   return ((i - round) % n + n) % n;
 }
 
-function shuffle<T>(arr: T[]): T[] {
+export function shuffle<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];

@@ -1,4 +1,4 @@
-import type { MoveType } from '../types';
+import type { MoveType } from '../../types';
 
 type PreviousMoveProps = {
   move: { type: MoveType; content: string };

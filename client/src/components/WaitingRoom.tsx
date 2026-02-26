@@ -1,7 +1,7 @@
-import type { ClientWaitingState } from '../types';
+import type { EpycClientWaitingState } from '../types';
 
 type WaitingRoomProps = {
-  state: ClientWaitingState;
+  state: EpycClientWaitingState;
   playerId: string;
   onReady: () => void;
   onUnready: () => void;

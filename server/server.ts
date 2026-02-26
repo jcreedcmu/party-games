@@ -3,26 +3,42 @@ import http from 'node:http';
 import express from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
 import type { ClientMessage, ServerMessage } from './protocol.js';
-import type { GameState, PlayerId } from './types.js';
+import type { GameType, PlayerId, ServerState } from './types.js';
 import {
-  createInitialState,
-  addPlayer,
-  removePlayer,
-  setReady,
-  checkAllReady,
-  submitMove,
-  checkRoundComplete,
-  advanceRound,
-  resetGame,
-  getClientState,
-} from './state.js';
+  createInitialState as epycCreateInitialState,
+  addPlayer as epycAddPlayer,
+  removePlayer as epycRemovePlayer,
+  setReady as epycSetReady,
+  checkAllReady as epycCheckAllReady,
+  submitMove as epycSubmitMove,
+  checkRoundComplete as epycCheckRoundComplete,
+  advanceRound as epycAdvanceRound,
+  resetGame as epycResetGame,
+} from './games/epyc/state.js';
+import { getClientState as epycGetClientState } from './games/epyc/client-state.js';
 
-export function createServer(password: string) {
+function createGameInitialState(gameType: GameType): ServerState {
+  switch (gameType) {
+    case 'epyc': return epycCreateInitialState();
+    case 'pictionary': throw new Error('Pictionary not yet implemented');
+  }
+}
+
+function getClientState(state: ServerState, playerId: PlayerId) {
+  switch (state.phase) {
+    case 'epyc-waiting':
+    case 'epyc-underway':
+    case 'epyc-postgame':
+      return epycGetClientState(state, playerId);
+  }
+}
+
+export function createServer(password: string, gameType: GameType = 'epyc') {
   const app = express();
   const server = http.createServer(app);
   const wss = new WebSocketServer({ server, path: '/ws' });
 
-  let state: GameState = createInitialState();
+  let state: ServerState = createGameInitialState(gameType);
   const clients = new Map<WebSocket, PlayerId | null>();
   let roundTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -49,12 +65,12 @@ export function createServer(password: string) {
 
   function startRoundTimer() {
     clearRoundTimer();
-    if (state.phase !== 'underway') return;
+    if (state.phase !== 'epyc-underway') return;
     const delay = Math.max(0, state.roundDeadline - Date.now());
     roundTimer = setTimeout(() => {
-      if (state.phase !== 'underway') return;
-      state = advanceRound(state);
-      if (state.phase === 'underway') {
+      if (state.phase !== 'epyc-underway') return;
+      state = epycAdvanceRound(state);
+      if (state.phase === 'epyc-underway') {
         startRoundTimer();
       }
       broadcastState();
@@ -74,24 +90,24 @@ export function createServer(password: string) {
           send(ws, { type: 'error', message: 'Wrong password' });
           return;
         }
-        if (state.phase !== 'waiting') {
+        if (state.phase !== 'epyc-waiting') {
           send(ws, { type: 'error', message: 'Game already in progress' });
           return;
         }
-        const result = addPlayer(state, msg.handle);
+        const result = epycAddPlayer(state, msg.handle);
         state = result.state;
         clients.set(ws, result.playerId);
-        send(ws, { type: 'joined', playerId: result.playerId });
+        send(ws, { type: 'joined', playerId: result.playerId, gameType });
         broadcastState();
         return;
       }
 
       case 'ready':
       case 'unready': {
-        if (!playerId || state.phase !== 'waiting') return;
-        state = setReady(state, playerId, msg.type === 'ready');
-        state = checkAllReady(state);
-        if (state.phase === 'underway') {
+        if (!playerId || state.phase !== 'epyc-waiting') return;
+        state = epycSetReady(state, playerId, msg.type === 'ready');
+        state = epycCheckAllReady(state);
+        if (state.phase === 'epyc-underway') {
           startRoundTimer();
         }
         broadcastState();
@@ -99,12 +115,12 @@ export function createServer(password: string) {
       }
 
       case 'submit': {
-        if (!playerId || state.phase !== 'underway') return;
-        state = submitMove(state, playerId, msg.move);
-        state = checkRoundComplete(state);
-        if (state.phase === 'underway') {
+        if (!playerId || state.phase !== 'epyc-underway') return;
+        state = epycSubmitMove(state, playerId, msg.move);
+        state = epycCheckRoundComplete(state);
+        if (state.phase === 'epyc-underway') {
           startRoundTimer();
-        } else if (state.phase === 'postgame') {
+        } else if (state.phase === 'epyc-postgame') {
           clearRoundTimer();
         }
         broadcastState();
@@ -112,9 +128,9 @@ export function createServer(password: string) {
       }
 
       case 'reset': {
-        if (state.phase !== 'postgame') return;
+        if (state.phase !== 'epyc-postgame') return;
         clearRoundTimer();
-        state = resetGame(state);
+        state = epycResetGame(state);
         broadcastState();
         return;
       }
@@ -137,10 +153,10 @@ export function createServer(password: string) {
       const playerId = clients.get(ws);
       clients.delete(ws);
       if (playerId) {
-        state = removePlayer(state, playerId);
-        if (state.phase === 'underway') {
-          state = checkRoundComplete(state);
-          if (state.phase === 'underway') {
+        state = epycRemovePlayer(state, playerId);
+        if (state.phase === 'epyc-underway') {
+          state = epycCheckRoundComplete(state);
+          if (state.phase === 'epyc-underway') {
             startRoundTimer();
           } else {
             clearRoundTimer();

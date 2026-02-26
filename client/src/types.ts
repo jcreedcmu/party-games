@@ -10,12 +10,12 @@ export type {
   ErrorResponse,
   StateResponse,
   ClientGameState,
-  ClientWaitingState,
-  ClientUnderwayState,
-  ClientUnderwayPlayer,
-  ClientPostgameState,
-  ClientPlayerInfo,
-  ClientFullSheet,
+  EpycClientWaitingState,
+  EpycClientUnderwayState,
+  EpycClientUnderwayPlayer,
+  EpycClientPostgameState,
+  EpycClientPlayerInfo,
+  EpycClientFullSheet,
 } from '../../server/protocol.js';
 
-export type { MoveType } from '../../server/types.js';
+export type { MoveType, GameType } from '../../server/types.js';

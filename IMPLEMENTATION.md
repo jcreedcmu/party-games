@@ -307,7 +307,7 @@ replayed on the guesser canvas using the same flood-fill algorithm.
 
 ### Steps
 
-[ ] Step 11: Restructure EPYC into games/epyc/
+[x] Step 11: Restructure EPYC into games/epyc/
 
     Move EPYC types to server/games/epyc/types.ts with prefixed phase
     names (epyc-waiting, epyc-underway, epyc-postgame). Move EPYC

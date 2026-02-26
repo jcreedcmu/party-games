@@ -2,8 +2,8 @@ import { useRef } from 'react';
 import { useSocket } from './hooks/useSocket';
 import { JoinDialog } from './components/JoinDialog';
 import { WaitingRoom } from './components/WaitingRoom';
-import { GameBoard } from './components/GameBoard';
-import { PostGame } from './components/PostGame';
+import { GameBoard } from './components/epyc/GameBoard';
+import { PostGame } from './components/epyc/PostGame';
 import { DrawingCanvas } from './components/DrawingCanvas';
 
 function DebugDraw() {
@@ -48,7 +48,7 @@ export function App() {
 
   let content;
   switch (gameState.phase) {
-    case 'waiting':
+    case 'epyc-waiting':
       content = (
         <WaitingRoom
           state={gameState}
@@ -58,10 +58,10 @@ export function App() {
         />
       );
       break;
-    case 'underway':
+    case 'epyc-underway':
       content = <GameBoard state={gameState} playerId={playerId} onSend={send} />;
       break;
-    case 'postgame':
+    case 'epyc-postgame':
       content = <PostGame state={gameState} onSend={send} />;
       break;
   }

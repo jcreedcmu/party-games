@@ -1,4 +1,17 @@
-import type { MoveType } from './types.js';
+import type { MoveType, GameType } from './types.js';
+
+// Re-export EPYC client state types
+export type {
+  EpycClientPlayerInfo,
+  EpycClientWaitingState,
+  EpycClientUnderwayPlayer,
+  EpycClientUnderwayState,
+  EpycClientFullSheet,
+  EpycClientPostgameState,
+  EpycClientState,
+} from './games/epyc/client-state.js';
+
+import type { EpycClientState } from './games/epyc/client-state.js';
 
 // --- Client -> Server messages ---
 
@@ -30,6 +43,7 @@ export type ClientMessage =
 export type JoinedResponse = {
   type: 'joined';
   playerId: string;
+  gameType: GameType;
 };
 
 export type ErrorResponse = {
@@ -44,45 +58,6 @@ export type StateResponse = {
 
 export type ServerMessage = JoinedResponse | ErrorResponse | StateResponse;
 
-// --- Client-side game state projections ---
+// --- Client game state union (will expand with Pictionary) ---
 
-export type ClientPlayerInfo = {
-  id: string;
-  handle: string;
-  ready: boolean;
-  connected: boolean;
-};
-
-export type ClientWaitingState = {
-  phase: 'waiting';
-  players: ClientPlayerInfo[];
-};
-
-export type ClientUnderwayPlayer = ClientPlayerInfo & { submitted: boolean };
-
-export type ClientUnderwayState = {
-  phase: 'underway';
-  players: ClientUnderwayPlayer[];
-  currentRound: number;
-  totalRounds: number;
-  expectedMoveType: MoveType;
-  roundDeadline: number;
-  submitted: boolean;
-  previousMove: { type: MoveType; content: string } | null;
-};
-
-export type ClientFullSheet = {
-  sheetIndex: number;
-  moves: ({ type: MoveType; content: string; playerHandle: string } | null)[];
-};
-
-export type ClientPostgameState = {
-  phase: 'postgame';
-  players: { id: string; handle: string }[];
-  sheets: ClientFullSheet[];
-};
-
-export type ClientGameState =
-  | ClientWaitingState
-  | ClientUnderwayState
-  | ClientPostgameState;
+export type ClientGameState = EpycClientState;
