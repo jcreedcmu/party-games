@@ -1,3 +1,5 @@
+import type { RelayPayload } from './protocol.js';
+
 export type PlayerId = string;
 
 export type MoveType = 'text' | 'drawing';
@@ -9,6 +11,11 @@ export type PlayerInfo = {
   handle: string;
   ready: boolean;
   connected: boolean;
+};
+
+export type RelayMessage = {
+  to: PlayerId[];
+  payload: RelayPayload;
 };
 
 // ServerState is the union of all game states (will expand with Pictionary)

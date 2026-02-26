@@ -9,6 +9,7 @@ export type {
   JoinedResponse,
   ErrorResponse,
   StateResponse,
+  RelayResponse,
   ClientGameState,
   EpycClientWaitingState,
   EpycClientUnderwayState,
@@ -16,6 +17,14 @@ export type {
   EpycClientPostgameState,
   EpycClientPlayerInfo,
   EpycClientFullSheet,
+  DrawOp,
+  DrawStartOp,
+  DrawMoveOp,
+  DrawEndOp,
+  DrawFillOp,
+  DrawUndoOp,
+  DrawClearOp,
+  RelayPayload,
 } from '../../server/protocol.js';
 
 export type { MoveType, GameType } from '../../server/types.js';

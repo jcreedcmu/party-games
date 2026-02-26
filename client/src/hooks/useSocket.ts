@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import type { ClientMessage, ServerMessage, ClientGameState, GameType } from '../types';
+import type { RelayPayload } from '../types';
 
 type SocketState = {
   gameState: ClientGameState | null;
@@ -18,6 +19,7 @@ export function useSocket() {
     connected: false,
   });
   const wsRef = useRef<WebSocket | null>(null);
+  const relayListenersRef = useRef<Set<(payload: RelayPayload) => void>>(new Set());
 
   const connect = useCallback((password: string, handle: string) => {
     if (wsRef.current) return;
@@ -43,6 +45,11 @@ export function useSocket() {
         case 'error':
           setState(s => ({ ...s, error: msg.message }));
           break;
+        case 'relay':
+          for (const listener of relayListenersRef.current) {
+            listener(msg.payload);
+          }
+          break;
       }
     };
 
@@ -62,5 +69,10 @@ export function useSocket() {
     setState(s => ({ ...s, error: null }));
   }, []);
 
-  return { ...state, connect, send, clearError };
+  const onRelay = useCallback((listener: (payload: RelayPayload) => void) => {
+    relayListenersRef.current.add(listener);
+    return () => { relayListenersRef.current.delete(listener); };
+  }, []);
+
+  return { ...state, connect, send, clearError, onRelay };
 }

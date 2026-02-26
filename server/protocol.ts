@@ -13,6 +13,22 @@ export type {
 
 import type { EpycClientState } from './games/epyc/client-state.js';
 
+// --- Drawing operations (used in Pictionary for real-time streaming) ---
+
+export type DrawStartOp = { type: 'draw-start'; color: string; size: number; x: number; y: number };
+export type DrawMoveOp = { type: 'draw-move'; points: Array<{ x: number; y: number }> };
+export type DrawEndOp = { type: 'draw-end' };
+export type DrawFillOp = { type: 'draw-fill'; x: number; y: number; color: string };
+export type DrawUndoOp = { type: 'draw-undo' };
+export type DrawClearOp = { type: 'draw-clear' };
+export type DrawOp = DrawStartOp | DrawMoveOp | DrawEndOp | DrawFillOp | DrawUndoOp | DrawClearOp;
+
+// --- Relay payload (server -> specific clients) ---
+
+export type RelayPayload =
+  | DrawStartOp | DrawMoveOp | DrawEndOp | DrawFillOp | DrawUndoOp | DrawClearOp
+  | { type: 'guess-result'; handle: string; correct: boolean; text: string | null };
+
 // --- Client -> Server messages ---
 
 export type JoinMessage = {
@@ -36,7 +52,9 @@ export type ClientMessage =
   | ReadyMessage
   | UnreadyMessage
   | SubmitMessage
-  | ResetMessage;
+  | ResetMessage
+  | DrawStartOp | DrawMoveOp | DrawEndOp | DrawFillOp | DrawUndoOp | DrawClearOp
+  | { type: 'guess'; text: string };
 
 // --- Server -> Client messages ---
 
@@ -56,7 +74,12 @@ export type StateResponse = {
   state: ClientGameState;
 };
 
-export type ServerMessage = JoinedResponse | ErrorResponse | StateResponse;
+export type RelayResponse = {
+  type: 'relay';
+  payload: RelayPayload;
+};
+
+export type ServerMessage = JoinedResponse | ErrorResponse | StateResponse | RelayResponse;
 
 // --- Client game state union (will expand with Pictionary) ---
 

@@ -2,8 +2,8 @@ import path from 'node:path';
 import http from 'node:http';
 import express from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
-import type { ClientMessage, ServerMessage } from './protocol.js';
-import type { GameType, PlayerId, ServerState } from './types.js';
+import type { ClientMessage, ServerMessage, RelayPayload } from './protocol.js';
+import type { GameType, PlayerId, ServerState, RelayMessage } from './types.js';
 import {
   createInitialState as epycCreateInitialState,
   addPlayer as epycAddPlayer,
@@ -52,6 +52,19 @@ export function createServer(password: string, gameType: GameType = 'epyc') {
     for (const [ws, playerId] of clients) {
       if (playerId) {
         send(ws, { type: 'state', state: getClientState(state, playerId) });
+      }
+    }
+  }
+
+  function forwardRelays(relays: RelayMessage[]) {
+    for (const relay of relays) {
+      const msg: ServerMessage = { type: 'relay', payload: relay.payload };
+      for (const targetId of relay.to) {
+        for (const [ws, pid] of clients) {
+          if (pid === targetId) {
+            send(ws, msg);
+          }
+        }
       }
     }
   }
