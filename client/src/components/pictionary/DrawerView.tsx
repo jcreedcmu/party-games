@@ -43,6 +43,11 @@ export function DrawerView({ state, send, onRelay }: DrawerViewProps) {
     return () => clearInterval(id);
   }, [state.turnDeadline]);
 
+  const allGuessed = state.correctGuessers.length > 0 &&
+    state.players
+      .filter(p => p.connected && p.handle !== state.currentDrawerHandle)
+      .every(p => p.guessedThisTurn);
+
   return (
     <div className="pictionary-board">
       <div className="round-info">
@@ -60,8 +65,15 @@ export function DrawerView({ state, send, onRelay }: DrawerViewProps) {
         onStreamOp={(op: DrawOp) => send(op)}
       />
 
+      {allGuessed && (
+        <div className="all-guessed-banner">
+          Everyone guessed! Finishing up...
+          <button className="submit-btn" onClick={() => send({ type: 'turn-done' })}>Done</button>
+        </div>
+      )}
+
       <div className="pic-guess-feed">
-        {guesses.map((g, i) => (
+        {[...guesses].reverse().map((g, i) => (
           <div key={i} className={'pic-guess-entry' + (g.correct ? ' correct' : '')}>
             <strong>{g.handle}</strong>
             {g.correct ? ' guessed correctly!' : `: ${g.text}`}

@@ -11,7 +11,9 @@ import {
   checkTurnComplete,
   advanceTurn,
   resetGame,
+  shortenDeadline,
   TURN_DURATION_MS,
+  ALL_GUESSED_GRACE_MS,
 } from '../games/pictionary/state.js';
 import { getClientState } from '../games/pictionary/client-state.js';
 import type { PictionaryActiveState } from '../games/pictionary/types.js';
@@ -218,6 +220,31 @@ describe('checkTurnComplete', () => {
     // Other guesser guesses correctly
     const { state: afterGuess } = submitGuess(afterDisconnect, guesserIds[0], state.word);
     expect(checkTurnComplete(afterGuess)).toBe(true);
+  });
+});
+
+describe('shortenDeadline', () => {
+  it('shortens deadline when all guessers are correct', () => {
+    const { state, ids } = makeThreePlayerActive();
+    const drawerId = getCurrentDrawer(state);
+    const guesserIds = ids.filter(id => id !== drawerId);
+    const originalDeadline = state.turnDeadline;
+
+    // Player 1 guesses correctly
+    let result = submitGuess(state, guesserIds[0], state.word);
+    expect(result.correct).toBe(true);
+    // Not all guessed yet
+    expect(checkTurnComplete(result.state)).toBe(false);
+
+    // Player 2 guesses correctly — now all guessers are done
+    result = submitGuess(result.state, guesserIds[1], state.word);
+    expect(result.correct).toBe(true);
+    expect(checkTurnComplete(result.state)).toBe(true);
+
+    // Shorten the deadline
+    const shortened = shortenDeadline(result.state);
+    expect(shortened.turnDeadline).toBeLessThan(originalDeadline);
+    expect(shortened.turnDeadline).toBeLessThanOrEqual(Date.now() + ALL_GUESSED_GRACE_MS);
   });
 });
 

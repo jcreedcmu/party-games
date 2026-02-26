@@ -10,6 +10,7 @@ import type {
 import { pickWord } from './words.js';
 
 export const TURN_DURATION_MS = 75_000;
+export const ALL_GUESSED_GRACE_MS = 10_000;
 
 function shuffle<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -148,6 +149,12 @@ export function checkTurnComplete(state: PictionaryActiveState): boolean {
     if (!guessedIds.has(id)) return false;
   }
   return true;
+}
+
+export function shortenDeadline(state: PictionaryActiveState): PictionaryActiveState {
+  const graceDeadline = Date.now() + ALL_GUESSED_GRACE_MS;
+  const newDeadline = Math.min(state.turnDeadline, graceDeadline);
+  return { ...state, turnDeadline: newDeadline };
 }
 
 export function advanceTurn(

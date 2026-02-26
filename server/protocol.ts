@@ -65,7 +65,8 @@ export type ClientMessage =
   | SubmitMessage
   | ResetMessage
   | DrawStartOp | DrawMoveOp | DrawEndOp | DrawFillOp | DrawUndoOp | DrawClearOp
-  | { type: 'guess'; text: string };
+  | { type: 'guess'; text: string }
+  | { type: 'turn-done' };
 
 // --- Server -> Client messages ---
 

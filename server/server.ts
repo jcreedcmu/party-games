@@ -26,6 +26,7 @@ import {
   recordDrawOp as picRecordDrawOp,
   submitGuess as picSubmitGuess,
   checkTurnComplete as picCheckTurnComplete,
+  shortenDeadline as picShortenDeadline,
   advanceTurn as picAdvanceTurn,
   resetGame as picResetGame,
 } from './games/pictionary/state.js';
@@ -239,14 +240,23 @@ export function createServer(password: string, gameType: GameType = 'epyc') {
           },
         }]);
 
-        // Check if turn is complete (all connected guessers guessed correctly)
+        // If all guessers are correct, shorten the deadline to give drawer a grace period
         if (guessResult.correct && picCheckTurnComplete(guessResult.state)) {
-          state = picAdvanceTurn(guessResult.state);
-          if (state.phase === 'pictionary-active') {
-            startTurnTimer();
-          } else {
-            clearGameTimer();
-          }
+          state = picShortenDeadline(guessResult.state);
+          startTurnTimer();
+        }
+        broadcastState();
+        return;
+      }
+
+      case 'turn-done': {
+        if (!playerId || state.phase !== 'pictionary-active') return;
+        if (playerId !== picGetCurrentDrawer(state)) return;
+        state = picAdvanceTurn(state);
+        if (state.phase === 'pictionary-active') {
+          startTurnTimer();
+        } else {
+          clearGameTimer();
         }
         broadcastState();
         return;
