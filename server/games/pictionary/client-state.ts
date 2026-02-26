@@ -5,6 +5,7 @@ import type {
   PictionaryActiveState,
 } from './types.js';
 import { HINT_REVEAL_MS } from './state.js';
+import { getWordEntry } from './words.js';
 
 export type PictionaryClientWaitingState = {
   phase: 'pictionary-waiting';
@@ -39,6 +40,8 @@ export type PictionaryClientActiveState = {
 export type PictionaryClientTurnSummary = {
   drawerHandle: string;
   word: string;
+  wordAddedBy?: string;
+  wordAddedOn?: string;
   drawOps: DrawOp[];
   guessers: Array<{ handle: string; timeMs: number }>;
 };
@@ -121,15 +124,20 @@ export function getClientState(
           handle: p.handle,
           score: state.scores.get(p.id) ?? 0,
         })),
-        turns: state.turns.map(t => ({
-          drawerHandle: state.players.get(t.drawerId)!.handle,
-          word: t.word,
-          drawOps: t.drawOps,
-          guessers: t.correctGuessers.map(g => ({
-            handle: state.players.get(g.playerId)!.handle,
-            timeMs: g.timeMs,
-          })),
-        })),
+        turns: state.turns.map(t => {
+          const entry = getWordEntry(t.word);
+          return {
+            drawerHandle: state.players.get(t.drawerId)!.handle,
+            word: t.word,
+            ...(entry?.added_by && { wordAddedBy: entry.added_by }),
+            ...(entry?.added_on && { wordAddedOn: entry.added_on }),
+            drawOps: t.drawOps,
+            guessers: t.correctGuessers.map(g => ({
+              handle: state.players.get(g.playerId)!.handle,
+              timeMs: g.timeMs,
+            })),
+          };
+        }),
       };
   }
 }

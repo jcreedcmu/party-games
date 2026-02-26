@@ -626,6 +626,11 @@ button:disabled {
   font-size: 0.9rem;
 }
 
+.pic-turn-credit {
+  font-size: 0.75rem;
+  color: #999;
+}
+
 .pic-turn-drawing {
   padding: 0.5rem;
 }

@@ -14,6 +14,10 @@ export function pickWord(): string {
   return WORDS[Math.floor(Math.random() * WORDS.length)].word;
 }
 
+export function getWordEntry(word: string): WordEntry | undefined {
+  return WORDS.find(w => w.word.toLowerCase() === word.toLowerCase());
+}
+
 export function addWord(word: string, addedBy: string): boolean {
   const normalized = word.trim().toLowerCase();
   if (!normalized) return false;

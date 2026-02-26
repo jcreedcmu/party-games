@@ -27,6 +27,11 @@ export function PictionaryPostGame({ state, onSend }: Props) {
         <div key={i} className="pic-turn-card">
           <div className="pic-turn-header">
             <strong>{turn.drawerHandle}</strong> drew <strong>&ldquo;{turn.word}&rdquo;</strong>
+            {turn.wordAddedBy && (
+              <span className="pic-turn-credit">
+                {' '}(added by {turn.wordAddedBy}{turn.wordAddedOn && `, ${new Date(turn.wordAddedOn).toLocaleDateString()}`})
+              </span>
+            )}
           </div>
           <div className="pic-turn-drawing">
             <LiveCanvas ops={turn.drawOps} />
