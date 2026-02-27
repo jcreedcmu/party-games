@@ -33,8 +33,7 @@ export function WaitingRoom({ state, playerId, onReady, onUnready, send, addWord
       <ul className="player-list">
         {state.players.map(p => (
           <li key={p.id}>
-            {p.id === playerId && <span className="me-star">★</span>}
-            <span className="player-name">{p.handle}</span>
+            <span className={`player-name${p.id === playerId ? ' player-me' : ''}`}>{p.handle}</span>
             {p.ready && <span className="ready-indicator"> ✓</span>}
           </li>
         ))}

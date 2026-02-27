@@ -138,9 +138,9 @@ button:disabled {
   font-size: 1rem;
 }
 
-.me-star {
+.player-me {
   color: #4169e1;
-  margin-right: 0.35rem;
+  font-weight: 700;
 }
 
 .ready-indicator {
