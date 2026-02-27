@@ -4,6 +4,7 @@ import type { GameType } from './types.js';
 function parseArgs(args: string[]): { password: string; port: number; game: GameType } {
   let password = '';
   let port = 3000;
+  let host = 'localhost';
   let game: GameType = 'epyc';
 
   for (let i = 0; i < args.length; i++) {
@@ -12,6 +13,9 @@ function parseArgs(args: string[]): { password: string; port: number; game: Game
       i++;
     } else if (args[i] === '--port' && i + 1 < args.length) {
       port = parseInt(args[i + 1], 10);
+      i++;
+    } else if (args[i] === '--host' && i + 1 < args.length) {
+      host = args[i + 1];
       i++;
     } else if (args[i] === '--game' && i + 1 < args.length) {
       const g = args[i + 1];
@@ -29,12 +33,12 @@ function parseArgs(args: string[]): { password: string; port: number; game: Game
     process.exit(1);
   }
 
-  return { password, port, game };
+  return { password, port, host, game };
 }
 
-const { password, port, game } = parseArgs(process.argv.slice(2));
+const { password, port, host, game } = parseArgs(process.argv.slice(2));
 const server = createServer(password, game);
 
-server.listen(port, () => {
-  console.log(`Server listening on http://localhost:${port} (game: ${game})`);
+server.listen(port, host, () => {
+  console.log(`Server listening on http://${host}:${port} (game: ${game})`);
 });
