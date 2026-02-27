@@ -22,6 +22,7 @@ import {
   removePlayer as picRemovePlayer,
   setReady as picSetReady,
   checkAllReady as picCheckAllReady,
+  checkAllReadyPostgame as picCheckAllReadyPostgame,
   getCurrentDrawer as picGetCurrentDrawer,
   recordDrawOp as picRecordDrawOp,
   submitGuess as picSubmitGuess,
@@ -178,6 +179,12 @@ export function createServer(password: string, gameType: GameType = 'epyc') {
           if (state.phase === 'pictionary-active') {
             startTurnTimer();
           }
+        } else if (state.phase === 'pictionary-postgame') {
+          state = picSetReady(state, playerId, msg.type === 'ready');
+          state = picCheckAllReadyPostgame(state);
+          if (state.phase === 'pictionary-active') {
+            startTurnTimer();
+          }
         } else {
           return;
         }
@@ -202,9 +209,6 @@ export function createServer(password: string, gameType: GameType = 'epyc') {
         if (state.phase === 'epyc-postgame') {
           clearGameTimer();
           state = epycResetGame(state);
-        } else if (state.phase === 'pictionary-postgame') {
-          clearGameTimer();
-          state = picResetGame(state);
         } else {
           return;
         }

@@ -5,6 +5,7 @@ import {
   removePlayer,
   setReady,
   checkAllReady,
+  checkAllReadyPostgame,
   getCurrentDrawer,
   recordDrawOp,
   submitGuess,
@@ -18,7 +19,18 @@ import {
   PICK_DURATION_MS,
 } from '../games/pictionary/state.js';
 import { getClientState } from '../games/pictionary/client-state.js';
-import type { PictionaryActiveState } from '../games/pictionary/types.js';
+import type { PictionaryActiveState, PictionaryPostgameState } from '../games/pictionary/types.js';
+
+function makeTwoPlayerPostgame(): PictionaryPostgameState {
+  let active = makeTwoPlayerDrawing();
+  let next = advanceTurn(active);
+  if (next.phase === 'pictionary-active') {
+    next = selectWord(next, 0);
+    next = advanceTurn(next);
+  }
+  if (next.phase !== 'pictionary-postgame') throw new Error('Expected postgame');
+  return next;
+}
 
 function makeTwoPlayerActive(): PictionaryActiveState {
   let state = createInitialState();
@@ -477,5 +489,79 @@ describe('getClientState', () => {
     expect(client.turns.length).toBeGreaterThan(0);
     expect(client.turns[0].word).toBeTruthy();
     expect(client.turns[0].drawerHandle).toBeTruthy();
+  });
+
+  it('projects postgame state with ready and connected fields', () => {
+    const postgame = makeTwoPlayerPostgame();
+    const playerId = Array.from(postgame.players.keys())[0];
+    const client = getClientState(postgame, playerId);
+    if (client.phase !== 'pictionary-postgame') throw new Error();
+    for (const p of client.players) {
+      expect(p).toHaveProperty('ready');
+      expect(p).toHaveProperty('connected');
+      expect(p.ready).toBe(false);
+      expect(p.connected).toBe(true);
+    }
+  });
+});
+
+describe('setReady on postgame', () => {
+  it('marks a player as ready in postgame', () => {
+    const postgame = makeTwoPlayerPostgame();
+    const playerId = Array.from(postgame.players.keys())[0];
+    const updated = setReady(postgame, playerId, true);
+    expect(updated.phase).toBe('pictionary-postgame');
+    expect(updated.players.get(playerId)!.ready).toBe(true);
+  });
+
+  it('marks a player as unready in postgame', () => {
+    const postgame = makeTwoPlayerPostgame();
+    const playerId = Array.from(postgame.players.keys())[0];
+    let updated = setReady(postgame, playerId, true);
+    updated = setReady(updated, playerId, false);
+    expect(updated.players.get(playerId)!.ready).toBe(false);
+  });
+});
+
+describe('checkAllReadyPostgame', () => {
+  it('does not start with only one connected player ready', () => {
+    const postgame = makeTwoPlayerPostgame();
+    const playerId = Array.from(postgame.players.keys())[0];
+    const updated = setReady(postgame, playerId, true);
+    expect(checkAllReadyPostgame(updated).phase).toBe('pictionary-postgame');
+  });
+
+  it('starts a new game when all connected players are ready', () => {
+    let postgame = makeTwoPlayerPostgame();
+    for (const id of postgame.players.keys()) {
+      postgame = setReady(postgame, id, true);
+    }
+    const result = checkAllReadyPostgame(postgame);
+    expect(result.phase).toBe('pictionary-active');
+    if (result.phase !== 'pictionary-active') throw new Error();
+    expect(result.subPhase).toBe('picking');
+    expect(result.scores.size).toBe(2);
+  });
+
+  it('ignores disconnected players for quorum', () => {
+    let postgame = makeTwoPlayerPostgame();
+    const ids = Array.from(postgame.players.keys());
+    // Disconnect one player
+    postgame = removePlayer(postgame, ids[1]) as PictionaryPostgameState;
+    // Only one connected player ready — not enough
+    postgame = setReady(postgame, ids[0], true);
+    expect(checkAllReadyPostgame(postgame).phase).toBe('pictionary-postgame');
+  });
+
+  it('resets ready flags on all players when starting new game', () => {
+    let postgame = makeTwoPlayerPostgame();
+    for (const id of postgame.players.keys()) {
+      postgame = setReady(postgame, id, true);
+    }
+    const result = checkAllReadyPostgame(postgame);
+    if (result.phase !== 'pictionary-active') throw new Error();
+    for (const [, p] of result.players) {
+      expect(p.ready).toBe(false);
+    }
   });
 });

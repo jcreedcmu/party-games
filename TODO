@@ -1,2 +1,3 @@
-new game should not clear browsing for all players
+new game should not clear browsing for all players -- still broken, counts as "ready"
 transcript should match image height
+make static html pages

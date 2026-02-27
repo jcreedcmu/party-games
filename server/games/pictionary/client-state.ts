@@ -57,7 +57,7 @@ export type PictionaryClientTurnSummary = {
 
 export type PictionaryClientPostgameState = {
   phase: 'pictionary-postgame';
-  players: Array<{ id: string; handle: string; score: number }>;
+  players: Array<{ id: string; handle: string; score: number; ready: boolean; connected: boolean }>;
   turns: PictionaryClientTurnSummary[];
 };
 
@@ -138,6 +138,8 @@ export function getClientState(
           id: p.id,
           handle: p.handle,
           score: state.scores.get(p.id) ?? 0,
+          ready: p.ready,
+          connected: p.connected,
         })),
         turns: state.turns.map(t => {
           const entry = getWordEntry(t.word);

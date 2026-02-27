@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useSocket } from './hooks/useSocket';
 import { JoinDialog } from './components/JoinDialog';
 import { WaitingRoom } from './components/WaitingRoom';
@@ -46,6 +46,14 @@ export function App() {
   }
 
   const { gameState, playerId, gameType, error, connected, connect, send, clearError, clearAddWordResult, addWordResult, onRelay } = useSocket();
+  const [showLobby, setShowLobby] = useState(false);
+
+  // Reset showLobby when we leave postgame
+  useEffect(() => {
+    if (gameState?.phase !== 'pictionary-postgame') {
+      setShowLobby(false);
+    }
+  }, [gameState?.phase]);
 
   // Not connected/joined yet -> show join dialog
   if (!playerId || !gameState) {
@@ -96,7 +104,33 @@ export function App() {
       content = <PictionaryBoard state={gameState} playerId={playerId} send={send} onRelay={onRelay} />;
       break;
     case 'pictionary-postgame':
-      content = <PictionaryPostGame state={gameState} onSend={send} />;
+      if (showLobby) {
+        const waitingState: import('./types').PictionaryClientWaitingState = {
+          phase: 'pictionary-waiting',
+          players: gameState.players.map(p => ({
+            id: p.id,
+            handle: p.handle,
+            ready: p.ready,
+            connected: p.connected,
+          })),
+        };
+        content = (
+          <WaitingRoom
+            state={waitingState}
+            playerId={playerId}
+            onReady={() => send({ type: 'ready' })}
+            onUnready={() => send({ type: 'unready' })}
+            send={send}
+            addWordResult={addWordResult}
+            clearAddWordResult={clearAddWordResult}
+          />
+        );
+      } else {
+        content = <PictionaryPostGame state={gameState} onNewGame={() => {
+          send({ type: 'ready' });
+          setShowLobby(true);
+        }} />;
+      }
       break;
   }
 

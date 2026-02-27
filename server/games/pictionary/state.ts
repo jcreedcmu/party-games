@@ -66,11 +66,11 @@ export function removePlayer(state: PictionaryState, playerId: PlayerId): Pictio
   return { ...state, players };
 }
 
-export function setReady(
-  state: PictionaryWaitingState,
+export function setReady<S extends PictionaryWaitingState | PictionaryPostgameState>(
+  state: S,
   playerId: PlayerId,
   ready: boolean,
-): PictionaryWaitingState {
+): S {
   const players = new Map(state.players);
   const player = players.get(playerId);
   if (!player) return state;
@@ -86,6 +86,46 @@ export function checkAllReady(
   if (!playerList.every(p => p.ready)) return state;
 
   const playerIds = playerList.map(p => p.id);
+  const order = shuffle([...playerIds]);
+
+  const players = new Map(state.players);
+  for (const [id, player] of players) {
+    players.set(id, { ...player, ready: false });
+  }
+
+  const scores = new Map<PlayerId, number>();
+  for (const id of playerIds) {
+    scores.set(id, 0);
+  }
+
+  const now = Date.now();
+  return {
+    phase: 'pictionary-active' as const,
+    subPhase: 'picking' as const,
+    players,
+    order,
+    currentTurnIndex: 0,
+    word: '',
+    wordChoices: pickWords(3),
+    scores,
+    turnDeadline: now + PICK_DURATION_MS,
+    turnStartTime: now,
+    correctGuessers: [],
+    hintLetterIndex: 0,
+    currentTurnOps: [],
+    currentTurnGuesses: [],
+    completedTurns: [],
+  };
+}
+
+export function checkAllReadyPostgame(
+  state: PictionaryPostgameState,
+): PictionaryPostgameState | PictionaryActiveState {
+  const connectedPlayers = Array.from(state.players.values()).filter(p => p.connected);
+  if (connectedPlayers.length < 2) return state;
+  if (!connectedPlayers.every(p => p.ready)) return state;
+
+  const playerIds = connectedPlayers.map(p => p.id);
   const order = shuffle([...playerIds]);
 
   const players = new Map(state.players);
@@ -227,9 +267,13 @@ export function advanceTurn(
   }
 
   if (nextIndex >= state.order.length) {
+    const players = new Map(state.players);
+    for (const [id, player] of players) {
+      players.set(id, { ...player, ready: false });
+    }
     return {
       phase: 'pictionary-postgame',
-      players: state.players,
+      players,
       scores: state.scores,
       turns: completedTurns,
     };

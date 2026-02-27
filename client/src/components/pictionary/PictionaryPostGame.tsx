@@ -1,12 +1,12 @@
-import type { PictionaryClientPostgameState, ClientMessage } from '../../types';
+import type { PictionaryClientPostgameState } from '../../types';
 import { LiveCanvas } from './LiveCanvas';
 
 type Props = {
   state: PictionaryClientPostgameState;
-  onSend: (msg: ClientMessage) => void;
+  onNewGame: () => void;
 };
 
-export function PictionaryPostGame({ state, onSend }: Props) {
+export function PictionaryPostGame({ state, onNewGame }: Props) {
   const sortedPlayers = [...state.players].sort((a, b) => b.score - a.score);
 
   return (
@@ -59,7 +59,7 @@ export function PictionaryPostGame({ state, onSend }: Props) {
         </div>
       ))}
 
-      <button className="submit-btn new-game-btn" onClick={() => onSend({ type: 'reset' })}>
+      <button className="submit-btn new-game-btn" onClick={onNewGame}>
         New Game
       </button>
     </div>
