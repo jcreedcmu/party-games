@@ -127,7 +127,6 @@ export function App() {
         );
       } else {
         content = <PictionaryPostGame state={gameState} onNewGame={() => {
-          send({ type: 'ready' });
           setShowLobby(true);
         }} />;
       }
