@@ -1,3 +1,2 @@
-new game should not clear browsing for all players -- still broken, counts as "ready"
 transcript should match image height
-make static html pages
+make sure guess state is handled like ordinary state, and this propagates to gen-preview
