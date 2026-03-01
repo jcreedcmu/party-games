@@ -1,5 +1,5 @@
 name: Preview
-on: [push, pull_request]
+on: workflow_dispatch
 jobs:
   preview:
     runs-on: ubuntu-latest
