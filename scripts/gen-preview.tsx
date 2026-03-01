@@ -1,4 +1,5 @@
-// Usage: npx tsx --tsconfig client/tsconfig.json scripts/gen-preview.tsx > preview.html
+// Usage: npx tsx --tsconfig client/tsconfig.json scripts/gen-preview.tsx
+// Outputs: preview-dist/preview.html, preview-dist/preview.css
 //
 // Renders Pictionary game components to static HTML for CSS iteration.
 // Canvas elements render as blank rectangles; guess feeds and timers are empty (SSR limitations).
@@ -29,12 +30,14 @@ import type {
 
 // --- Read and inline assets ---
 
-const cssPath = path.join(__dirname, '..', 'client', 'src', 'styles', 'main.css');
-const css = fs.readFileSync(cssPath, 'utf-8');
+const root = path.join(__dirname, '..');
+const outDir = path.join(root, 'preview-dist');
+fs.mkdirSync(outDir, { recursive: true });
 
-const logoPath = path.join(__dirname, '..', 'client', 'public', 'drawplodocus.png');
-const logoBase64 = fs.readFileSync(logoPath).toString('base64');
-const logoDataUrl = `data:image/png;base64,${logoBase64}`;
+const appCss = fs.readFileSync(path.join(root, 'client', 'src', 'styles', 'main.css'), 'utf-8');
+
+const logoSrc = 'drawplodocus.png';
+fs.copyFileSync(path.join(root, 'client', 'public', 'drawplodocus.png'), path.join(outDir, logoSrc));
 
 // --- Mock data ---
 
@@ -174,7 +177,7 @@ type Section = { title: string; html: string };
 
 function renderInAppWrapper(component: React.ReactElement): string {
   const wrapped = React.createElement('div', { className: 'app' },
-    React.createElement('img', { src: logoDataUrl, alt: 'Drawplodocus', className: 'logo' }),
+    React.createElement('img', { src: logoSrc, alt: 'Drawplodocus', className: 'logo' }),
     React.createElement('div', { className: 'card' }, component),
   );
   return renderToString(wrapped);
@@ -232,7 +235,7 @@ const sections: Section[] = [
   },
 ];
 
-// --- Output HTML ---
+// --- Output files ---
 
 const sectionDivs = sections
   .map((s, i) => `<div class="preview-section" data-section="${i}" ${i === 0 ? '' : 'style="display:none"'}>${s.html}</div>`)
@@ -242,18 +245,10 @@ const tabs = sections
   .map((s, i) => `<button class="preview-tab${i === 0 ? ' active' : ''}" data-section="${i}">${s.title}</button>`)
   .join('\n      ');
 
-const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pictionary Preview</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-${css}
-/* Preview: each section acts as #root */
+const previewCss = `/* Preview-specific styles */
+
 .preview-section { max-width: 600px; margin: 1rem auto; }
+
 .preview-topbar {
   position: sticky;
   top: 0;
@@ -265,6 +260,7 @@ ${css}
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
   flex-wrap: wrap;
 }
+
 .preview-tab {
   padding: 0.4rem 0.9rem;
   border: none;
@@ -276,9 +272,22 @@ ${css}
   font-weight: 500;
   cursor: pointer;
 }
+
 .preview-tab:hover { background: #444; color: #fff; }
 .preview-tab.active { background: #4169e1; color: #fff; }
-</style>
+`;
+
+const cssOut = appCss + '\n' + previewCss;
+
+const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pictionary Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="preview.css">
 </head>
 <body>
 <div class="preview-topbar">
@@ -302,4 +311,6 @@ document.querySelector('.preview-topbar').addEventListener('click', function(e) 
 </html>
 `;
 
-process.stdout.write(html);
+fs.writeFileSync(path.join(outDir, 'preview.css'), cssOut);
+fs.writeFileSync(path.join(outDir, 'preview.html'), html);
+console.log('Wrote preview-dist/preview.html and preview-dist/preview.css');
