@@ -8,6 +8,7 @@ import { renderToString } from 'react-dom/server';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import * as prettier from 'prettier';
 import React from 'react';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -311,6 +312,7 @@ document.querySelector('.preview-topbar').addEventListener('click', function(e) 
 </html>
 `;
 
+const formatted = await prettier.format(html, { parser: 'html' });
 fs.writeFileSync(path.join(outDir, 'preview.css'), cssOut);
-fs.writeFileSync(path.join(outDir, 'preview.html'), html);
+fs.writeFileSync(path.join(outDir, 'preview.html'), formatted);
 console.log('Wrote preview-dist/preview.html and preview-dist/preview.css');
