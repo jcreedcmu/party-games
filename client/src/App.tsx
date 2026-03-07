@@ -45,11 +45,14 @@ export function App() {
 
   const { gameState, playerId, gameType, error, connected, connect, send, clearError, clearAddWordResult, addWordResult, onRelay } = useSocket();
 
+  const logo = gameType === 'epyc' ? '/epyc.png' : '/drawplodocus.png';
+  const logoAlt = gameType === 'epyc' ? 'Eat Poop You Cat' : 'Drawplodocus';
+
   // Not connected/joined yet -> show join dialog
   if (!playerId || !gameState) {
     return (
       <div className="app">
-        <img src="/drawplodocus.png" alt="Drawplodocus" className="logo" />
+        <img src={logo} alt={logoAlt} className="logo" />
         <div className="card">
           <JoinDialog
             onJoin={connect}
@@ -65,19 +68,15 @@ export function App() {
     <div className="disconnect-banner">Connection lost. Trying to reconnect...</div>
   ) : null;
 
-  const title = gameType === 'pictionary' ? 'Drawplodocus' : 'Eat Poop You Cat';
-  const showLogo = gameType === 'pictionary';
-
   const content = gameType === 'epyc'
     ? <EpycGame state={gameState as EpycClientState} playerId={playerId} send={send} addWordResult={addWordResult} clearAddWordResult={clearAddWordResult} />
     : <PictionaryGame state={gameState as PictionaryClientState} playerId={playerId} send={send} onRelay={onRelay} addWordResult={addWordResult} clearAddWordResult={clearAddWordResult} />;
 
   return (
     <div className="app">
-      {showLogo && <img src="/drawplodocus.png" alt="Drawplodocus" className="logo" />}
+      <img src={logo} alt={logoAlt} className="logo" />
       <div className="card">
         {disconnectBanner}
-        {!showLogo && <h1>{title}</h1>}
         {content}
       </div>
     </div>

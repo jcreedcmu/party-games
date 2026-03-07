@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { ClientMessage, ServerMessage, ClientGameState, GameType } from '../types';
 import type { RelayPayload } from '../types';
 import type { ClientTransport } from '../transport';
@@ -24,6 +24,13 @@ export function useSocket() {
     connected: false,
     addWordResult: null,
   });
+
+  useEffect(() => {
+    fetch('/api/game-type')
+      .then(res => res.json())
+      .then(data => setState(s => ({ ...s, gameType: data.gameType })))
+      .catch(() => {});
+  }, []);
   const transportRef = useRef<ClientTransport | null>(null);
   const relayListenersRef = useRef<Set<(payload: RelayPayload) => void>>(new Set());
 
