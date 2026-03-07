@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import {
   createInitialState,
   addPlayer,
@@ -19,7 +19,17 @@ import {
   PICK_DURATION_MS,
 } from '../games/pictionary/state.js';
 import { getClientState } from '../games/pictionary/client-state.js';
+import { configureWords } from '../games/pictionary/words.js';
 import type { PictionaryActiveState, PictionaryPostgameState } from '../games/pictionary/types.js';
+
+beforeAll(() => {
+  configureWords([
+    { word: 'cat' }, { word: 'dog' }, { word: 'fish' },
+    { word: 'bird' }, { word: 'tree' }, { word: 'sun' },
+    { word: 'moon' }, { word: 'star' }, { word: 'rain' },
+    { word: 'snow' },
+  ]);
+});
 
 function makeTwoPlayerPostgame(): PictionaryPostgameState {
   let active = makeTwoPlayerDrawing();

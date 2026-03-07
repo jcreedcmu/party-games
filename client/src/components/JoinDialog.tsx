@@ -4,16 +4,22 @@ type JoinDialogProps = {
   onJoin: (password: string, handle: string) => void;
   error: string | null;
   onClearError: () => void;
+  showPassword?: boolean;
+  passwordLabel?: string;
+  passwordPlaceholder?: string;
+  defaultPassword?: string;
 };
 
-export function JoinDialog({ onJoin, error, onClearError }: JoinDialogProps) {
+export function JoinDialog({ onJoin, error, onClearError, showPassword = true, passwordLabel = 'Password', passwordPlaceholder = 'Game password', defaultPassword = '' }: JoinDialogProps) {
   const [handle, setHandle] = useState('');
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState(defaultPassword);
+
+  const canSubmit = handle.trim() && (showPassword ? password.trim() : true);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (handle.trim() && password.trim()) {
-      onJoin(password.trim(), handle.trim());
+    if (canSubmit) {
+      onJoin(showPassword ? password.trim() : '', handle.trim());
     }
   }
 
@@ -31,17 +37,19 @@ export function JoinDialog({ onJoin, error, onClearError }: JoinDialogProps) {
             autoFocus
           />
         </label>
-        <label>
-          Password
-          <input
-            type="password"
-            value={password}
-            onChange={e => { setPassword(e.target.value); onClearError(); }}
-            placeholder="Game password"
-          />
-        </label>
+        {showPassword && (
+          <label>
+            {passwordLabel}
+            <input
+              type={passwordLabel === 'Password' ? 'password' : 'text'}
+              value={password}
+              onChange={e => { setPassword(e.target.value); onClearError(); }}
+              placeholder={passwordPlaceholder}
+            />
+          </label>
+        )}
         {error && <div className="error-message">{error}</div>}
-        <button type="submit" className="btn-primary" disabled={!handle.trim() || !password.trim()}>
+        <button type="submit" className="btn-primary" disabled={!canSubmit}>
           Join
         </button>
       </form>

@@ -1,5 +1,8 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { createServer } from './server.js';
 import type { GameType } from './types.js';
+import { configureWords } from './games/pictionary/words.js';
 
 function parseArgs(args: string[]): { password: string; port: number; host: string; game: GameType } {
   let password = '';
@@ -37,6 +40,14 @@ function parseArgs(args: string[]): { password: string; port: number; host: stri
 }
 
 const { password, port, host, game } = parseArgs(process.argv.slice(2));
+
+// Configure word list for pictionary
+const wordListPath = path.resolve(import.meta.dirname, 'games/pictionary/word-list.json');
+const words = JSON.parse(fs.readFileSync(wordListPath, 'utf-8'));
+configureWords(words, (updated) => {
+  fs.writeFileSync(wordListPath, JSON.stringify(updated, null, 2) + '\n');
+});
+
 const server = createServer(password, game);
 
 server.listen(port, host, () => {

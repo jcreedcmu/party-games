@@ -1,14 +1,19 @@
-import fs from 'node:fs';
-import path from 'node:path';
-
 export type WordEntry = {
   word: string;
   added_on?: string;
   added_by?: string;
 };
 
-const WORD_LIST_PATH = path.resolve(import.meta.dirname, 'word-list.json');
-const WORDS: WordEntry[] = JSON.parse(fs.readFileSync(WORD_LIST_PATH, 'utf-8'));
+let WORDS: WordEntry[] = [];
+let persistFn: ((words: WordEntry[]) => void) | null = null;
+
+export function configureWords(
+  words: WordEntry[],
+  persist?: (words: WordEntry[]) => void,
+): void {
+  WORDS = words;
+  persistFn = persist ?? null;
+}
 
 export function pickWord(): string {
   return WORDS[Math.floor(Math.random() * WORDS.length)].word;
@@ -34,6 +39,6 @@ export function addWord(word: string, addedBy: string): boolean {
     added_by: addedBy,
   };
   WORDS.push(entry);
-  fs.writeFileSync(WORD_LIST_PATH, JSON.stringify(WORDS, null, 2) + '\n');
+  if (persistFn) persistFn(WORDS);
   return true;
 }
