@@ -136,7 +136,14 @@ function ServerApp() {
   );
 }
 
-function parseHash(): { mode: 'server' } | { mode: 'p2p'; gameType: GameType; roomName?: string } {
+const p2pOnly = import.meta.env.VITE_P2P_ONLY === 'true';
+
+type Route =
+  | { mode: 'server' }
+  | { mode: 'p2p'; gameType: GameType; roomName?: string }
+  | { mode: 'pick-game' };
+
+function parseHash(): Route {
   const hash = window.location.hash;
 
   if (hash.startsWith('#p2p/')) {
@@ -155,7 +162,28 @@ function parseHash(): { mode: 'server' } | { mode: 'p2p'; gameType: GameType; ro
     }
   }
 
+  if (p2pOnly) return { mode: 'pick-game' };
   return { mode: 'server' };
+}
+
+function GamePicker() {
+  return (
+    <div className="app">
+      <h1>Party Games</h1>
+      <div className="card">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <a href="#p2p/pictionary" className="btn-primary" style={{ textAlign: 'center', textDecoration: 'none' }}>
+            <img src={`${base}drawplodocus.png`} alt="Drawplodocus" style={{ height: '3em', display: 'block', margin: '0 auto 0.5rem' }} />
+            Drawplodocus
+          </a>
+          <a href="#p2p/epyc" className="btn-primary" style={{ textAlign: 'center', textDecoration: 'none' }}>
+            <img src={`${base}epyc.png`} alt="Eat Poop You Cat" style={{ height: '3em', display: 'block', margin: '0 auto 0.5rem' }} />
+            Eat Poop You Cat
+          </a>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function App() {
@@ -171,6 +199,8 @@ export function App() {
   switch (route.mode) {
     case 'p2p':
       return <P2PApp gameType={route.gameType} initialRoomName={route.roomName} />;
+    case 'pick-game':
+      return <GamePicker />;
     case 'server':
       return <ServerApp />;
   }

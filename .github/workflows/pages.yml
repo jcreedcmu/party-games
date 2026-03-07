@@ -25,6 +25,7 @@ jobs:
       - run: npx vite build
         env:
           BASE_URL: /party-games/
+          VITE_P2P_ONLY: "true"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist/client
