@@ -12,8 +12,8 @@ import type { WordEntry } from '../../../server/games/pictionary/words.js';
 import { createLocalConnection } from '../transports/local';
 import bundledWords from '../../../server/games/pictionary/word-list.json';
 
-const PEER_PREFIX = 'poop-deli-';
-const LS_KEY = 'poop-deli-custom-words';
+const PEER_PREFIX = 'party-games-';
+const LS_KEY = 'party-games-custom-words';
 
 function loadAndConfigureWords() {
   const base: WordEntry[] = bundledWords as WordEntry[];

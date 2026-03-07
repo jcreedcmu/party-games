@@ -1,7 +1,7 @@
-poop deli
-=========
+party games
+===========
 
-An implementation of the game "eat poop you cat".
+An implementation of some party games: ("eat poop you cat", a pictionary-like named "drawplodocus")
 
 ## Running E2E Tests
 

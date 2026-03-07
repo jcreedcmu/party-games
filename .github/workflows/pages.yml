@@ -24,7 +24,7 @@ jobs:
       - run: npm ci
       - run: npx vite build
         env:
-          BASE_URL: /poop-deli/
+          BASE_URL: /party-games/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist/client

@@ -1,5 +1,5 @@
-poop-deli
-=========
+party-games
+===========
 
 This is an implementation of the game "Eat Poop You Cat" meant for
 online play.
