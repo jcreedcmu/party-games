@@ -11,7 +11,7 @@ export function PostGame({ state, onSend }: PostGameProps) {
   const sheet = state.sheets[currentSheet];
 
   return (
-    <div className="postgame">
+    <div className="postgame" data-testid="postgame">
       <div className="sheet-tabs">
         {state.sheets.map((_, i) => (
           <button

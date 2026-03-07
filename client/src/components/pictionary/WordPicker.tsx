@@ -20,7 +20,7 @@ export function WordPicker({ state, send }: WordPickerProps) {
   }, [state.turnDeadline]);
 
   return (
-    <div className="pictionary-board">
+    <div className="pictionary-board" data-testid="word-picker">
       <div className="round-info">
         <span>Turn {state.turnNumber} of {state.totalTurns}</span>
         <span className="timer">{timeLeft}</span>

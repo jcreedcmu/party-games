@@ -28,7 +28,7 @@ export function WaitingRoom({ state, playerId, onReady, onUnready, send, addWord
   }
 
   return (
-    <div className="waiting-room">
+    <div className="waiting-room" data-testid="waiting-room">
       <h2>Lobby</h2>
       <ul className="player-list">
         {state.players.map(p => (

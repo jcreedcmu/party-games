@@ -49,7 +49,7 @@ export function DrawerView({ state, send, onRelay }: DrawerViewProps) {
       .every(p => p.guessedThisTurn);
 
   return (
-    <div className="pictionary-board">
+    <div className="pictionary-board" data-testid="drawer-view">
       {state.lastTurnWord && (
         <div className="pic-last-word">Last word was: <strong>{state.lastTurnWord}</strong></div>
       )}

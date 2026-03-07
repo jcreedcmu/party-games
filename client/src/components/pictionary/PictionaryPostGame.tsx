@@ -10,7 +10,7 @@ export function PictionaryPostGame({ state, onNewGame }: Props) {
   const sortedPlayers = [...state.players].sort((a, b) => b.score - a.score);
 
   return (
-    <div className="postgame">
+    <div className="postgame" data-testid="postgame">
       <h2>Final Scores</h2>
       <div className="pic-scoreboard">
         {sortedPlayers.map((p, i) => (

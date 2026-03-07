@@ -56,7 +56,7 @@ export function GameBoard({ state, playerId, onSend }: GameBoardProps) {
   const submittedCount = state.players.filter(p => p.submitted).length;
 
   return (
-    <div className="game-board">
+    <div className="game-board" data-testid="game-board">
       <div className="round-info">
         <span>Round {state.currentRound + 1} of {state.totalRounds}</span>
         <span className={'timer' + (urgent ? ' timer-urgent' : '')}>{timeLeft}</span>

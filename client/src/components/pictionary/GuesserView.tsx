@@ -60,7 +60,7 @@ export function GuesserView({ state, playerId, send, onRelay }: GuesserViewProps
   }
 
   return (
-    <div className="pictionary-board">
+    <div className="pictionary-board" data-testid="guesser-view">
       {state.lastTurnWord && (
         <div className="pic-last-word">Last word was: <strong>{state.lastTurnWord}</strong></div>
       )}

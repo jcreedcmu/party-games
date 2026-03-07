@@ -16,11 +16,11 @@ export function PictionaryBoard({ state, playerId, send, onRelay }: PictionaryBo
       return <WordPicker state={state} send={send} />;
     }
     return (
-      <div className="pictionary-board">
+      <div className="pictionary-board" data-testid="pictionary-board">
         <div className="round-info">
           <span>Turn {state.turnNumber} of {state.totalTurns}</span>
         </div>
-        <div className="pic-picking-wait">
+        <div className="pic-picking-wait" data-testid="picking-wait">
           <p>{state.currentDrawerHandle} is picking a word...</p>
         </div>
       </div>

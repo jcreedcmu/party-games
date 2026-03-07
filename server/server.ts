@@ -357,6 +357,13 @@ export function createServer(password: string, gameType: GameType = 'epyc') {
           break;
         }
       }
+      // Reset to initial state when all players have left
+      const hasPlayers = Array.from(clients.values()).some(id => id !== null);
+      if (!hasPlayers) {
+        clearGameTimer();
+        state = createGameInitialState(gameType);
+      }
+
       broadcastState();
     });
   });
