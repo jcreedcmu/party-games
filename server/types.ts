@@ -22,3 +22,17 @@ export type RelayMessage = {
 import type { EpycState } from './games/epyc/types.js';
 import type { PictionaryState } from './games/pictionary/types.js';
 export type ServerState = EpycState | PictionaryState;
+
+import type { ServerMessage } from './protocol.js';
+
+export type Effect =
+  | { type: 'broadcast' }
+  | { type: 'relay'; messages: RelayMessage[] }
+  | { type: 'send'; playerId: PlayerId; msg: ServerMessage }
+  | { type: 'set-timer'; deadline: number }
+  | { type: 'clear-timer' };
+
+export type ReduceResult = {
+  state: ServerState;
+  effects: Effect[];
+};

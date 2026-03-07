@@ -1,4 +1,5 @@
-import type { PlayerId, MoveType } from '../../types.js';
+import type { PlayerId, MoveType, ReduceResult, Effect } from '../../types.js';
+import type { ClientMessage } from '../../protocol.js';
 import type {
   Move, Sheet,
   EpycState, EpycWaitingState, EpycUnderwayState, EpycPostgameState,
@@ -181,4 +182,71 @@ export function shuffle<T>(arr: T[]): T[] {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
+}
+
+// --- Reducers ---
+
+function underwayTimerEffects(state: EpycUnderwayState | EpycPostgameState): Effect[] {
+  if (state.phase === 'epyc-underway') {
+    return [{ type: 'set-timer', deadline: state.roundDeadline }];
+  }
+  return [{ type: 'clear-timer' }];
+}
+
+export function epycReduce(state: EpycState, playerId: PlayerId, msg: ClientMessage): ReduceResult {
+  switch (msg.type) {
+    case 'ready':
+    case 'unready': {
+      if (state.phase !== 'epyc-waiting') return { state, effects: [] };
+      const readied = setReady(state, playerId, msg.type === 'ready');
+      const next = checkAllReady(readied);
+      const effects: Effect[] = [{ type: 'broadcast' }];
+      if (next.phase === 'epyc-underway') {
+        effects.push({ type: 'set-timer', deadline: next.roundDeadline });
+      }
+      return { state: next, effects };
+    }
+
+    case 'submit': {
+      if (state.phase !== 'epyc-underway') return { state, effects: [] };
+      const submitted = submitMove(state, playerId, msg.move);
+      const next = checkRoundComplete(submitted);
+      return {
+        state: next,
+        effects: [{ type: 'broadcast' }, ...underwayTimerEffects(next)],
+      };
+    }
+
+    case 'reset': {
+      if (state.phase !== 'epyc-postgame') return { state, effects: [] };
+      return {
+        state: resetGame(state),
+        effects: [{ type: 'clear-timer' }, { type: 'broadcast' }],
+      };
+    }
+
+    default:
+      return { state, effects: [] };
+  }
+}
+
+export function epycReduceDisconnect(state: EpycState, playerId: PlayerId): ReduceResult {
+  const removed = removePlayer(state, playerId);
+  if (removed.phase === 'epyc-underway') {
+    const next = checkRoundComplete(removed);
+    return {
+      state: next,
+      effects: [{ type: 'broadcast' }, ...underwayTimerEffects(next)],
+    };
+  }
+  return { state: removed, effects: [{ type: 'broadcast' }] };
+}
+
+export function epycReduceTimer(state: EpycState): ReduceResult {
+  if (state.phase !== 'epyc-underway') return { state, effects: [] };
+  const next = advanceRound(state);
+  return {
+    state: next,
+    effects: [{ type: 'broadcast' }, ...underwayTimerEffects(next)],
+  };
 }

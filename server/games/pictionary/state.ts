@@ -1,5 +1,5 @@
-import type { PlayerId, PlayerInfo } from '../../types.js';
-import type { DrawOp } from '../../protocol.js';
+import type { PlayerId, PlayerInfo, ReduceResult, Effect } from '../../types.js';
+import type { DrawOp, ClientMessage } from '../../protocol.js';
 import type {
   TurnRecord,
   PictionaryState,
@@ -326,5 +326,190 @@ export function resetGame(state: PictionaryState): PictionaryWaitingState {
     phase: 'pictionary-waiting',
     players: players as PictionaryWaitingState['players'],
     nextPlayerId: Math.max(0, ...Array.from(state.players.keys()).map(Number)) + 1,
+  };
+}
+
+// --- Reducers ---
+
+import { addWord as picAddWord } from './words.js';
+
+function activeTimerEffects(state: PictionaryActiveState | PictionaryPostgameState): Effect[] {
+  if (state.phase === 'pictionary-active') {
+    return [{ type: 'set-timer', deadline: state.turnDeadline }];
+  }
+  return [{ type: 'clear-timer' }];
+}
+
+export function pictionaryReduce(state: PictionaryState, playerId: PlayerId, msg: ClientMessage): ReduceResult {
+  switch (msg.type) {
+    case 'ready':
+    case 'unready': {
+      if (state.phase === 'pictionary-waiting') {
+        const readied = setReady(state, playerId, msg.type === 'ready');
+        const next = checkAllReady(readied);
+        const effects: Effect[] = [{ type: 'broadcast' }];
+        if (next.phase === 'pictionary-active') {
+          effects.push({ type: 'set-timer', deadline: next.turnDeadline });
+        }
+        return { state: next, effects };
+      }
+      if (state.phase === 'pictionary-postgame') {
+        const readied = setReady(state, playerId, msg.type === 'ready');
+        const next = checkAllReadyPostgame(readied);
+        const effects: Effect[] = [{ type: 'broadcast' }];
+        if (next.phase === 'pictionary-active') {
+          effects.push({ type: 'set-timer', deadline: next.turnDeadline });
+        }
+        return { state: next, effects };
+      }
+      return { state, effects: [] };
+    }
+
+    case 'draw-start':
+    case 'draw-move':
+    case 'draw-end':
+    case 'draw-fill':
+    case 'draw-undo':
+    case 'draw-clear': {
+      if (state.phase !== 'pictionary-active') return { state, effects: [] };
+      if (state.subPhase !== 'drawing') return { state, effects: [] };
+      const drawerId = getCurrentDrawer(state);
+      if (playerId !== drawerId) return { state, effects: [] };
+
+      const next = recordDrawOp(state, msg as DrawOp);
+      const targets = Array.from(next.players.entries())
+        .filter(([id, p]) => id !== drawerId && p.connected)
+        .map(([id]) => id);
+
+      return {
+        state: next,
+        effects: [{ type: 'relay', messages: [{ to: targets, payload: msg as DrawOp }] }],
+      };
+    }
+
+    case 'guess': {
+      if (state.phase !== 'pictionary-active') return { state, effects: [] };
+      if (state.subPhase !== 'drawing') return { state, effects: [] };
+
+      const guessResult = submitGuess(state, playerId, msg.text);
+      const handle = guessResult.state.players.get(playerId)!.handle;
+      const allConnected = Array.from(guessResult.state.players.entries())
+        .filter(([, p]) => p.connected)
+        .map(([id]) => id);
+
+      const effects: Effect[] = [
+        {
+          type: 'relay',
+          messages: [{
+            to: allConnected,
+            payload: {
+              type: 'guess-result',
+              handle,
+              correct: guessResult.correct,
+              text: guessResult.correct ? null : msg.text,
+            },
+          }],
+        },
+        { type: 'broadcast' },
+      ];
+
+      if (guessResult.correct && checkTurnComplete(guessResult.state)) {
+        const shortened = shortenDeadline(guessResult.state);
+        effects.push({ type: 'set-timer', deadline: shortened.turnDeadline });
+        return { state: shortened, effects };
+      }
+
+      return { state: guessResult.state, effects };
+    }
+
+    case 'pick-word': {
+      if (state.phase !== 'pictionary-active') return { state, effects: [] };
+      if (state.subPhase !== 'picking') return { state, effects: [] };
+      if (playerId !== getCurrentDrawer(state)) return { state, effects: [] };
+
+      const next = selectWord(state, msg.index);
+      return {
+        state: next,
+        effects: [
+          { type: 'set-timer', deadline: next.turnDeadline },
+          { type: 'broadcast' },
+        ],
+      };
+    }
+
+    case 'turn-done': {
+      if (state.phase !== 'pictionary-active') return { state, effects: [] };
+      if (state.subPhase !== 'drawing') return { state, effects: [] };
+      if (playerId !== getCurrentDrawer(state)) return { state, effects: [] };
+
+      const next = advanceTurn(state);
+      return {
+        state: next,
+        effects: [{ type: 'broadcast' }, ...activeTimerEffects(next)],
+      };
+    }
+
+    case 'add-word': {
+      const playerHandle = state.players.get(playerId)?.handle ?? 'unknown';
+      const word = msg.word.trim().toLowerCase();
+      const added = picAddWord(msg.word, playerHandle);
+      const message = added
+        ? `"${word}" added!`
+        : (word ? `"${word}" already exists.` : 'Word cannot be empty.');
+      return {
+        state,
+        effects: [{
+          type: 'send',
+          playerId,
+          msg: { type: 'add-word-result', success: added, message },
+        }],
+      };
+    }
+
+    default:
+      return { state, effects: [] };
+  }
+}
+
+export function pictionaryReduceDisconnect(state: PictionaryState, playerId: PlayerId): ReduceResult {
+  if (state.phase === 'pictionary-active') {
+    const wasDrawer = getCurrentDrawer(state) === playerId;
+    const removed = removePlayer(state, playerId);
+    if (removed.phase === 'pictionary-active') {
+      if (wasDrawer || checkTurnComplete(removed)) {
+        const next = advanceTurn(removed);
+        return {
+          state: next,
+          effects: [{ type: 'broadcast' }, ...activeTimerEffects(next)],
+        };
+      }
+    }
+    return { state: removed, effects: [{ type: 'broadcast' }] };
+  }
+
+  const removed = removePlayer(state, playerId);
+  return { state: removed, effects: [{ type: 'broadcast' }] };
+}
+
+export function pictionaryReduceTimer(state: PictionaryState): ReduceResult {
+  if (state.phase !== 'pictionary-active') return { state, effects: [] };
+
+  if (state.subPhase === 'picking') {
+    const randomIndex = Math.floor(Math.random() * state.wordChoices.length);
+    const next = selectWord(state, randomIndex);
+    return {
+      state: next,
+      effects: [
+        { type: 'set-timer', deadline: next.turnDeadline },
+        { type: 'broadcast' },
+      ],
+    };
+  }
+
+  // Drawing phase timed out
+  const next = advanceTurn(state);
+  return {
+    state: next,
+    effects: [{ type: 'broadcast' }, ...activeTimerEffects(next)],
   };
 }

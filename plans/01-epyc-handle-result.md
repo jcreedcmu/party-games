@@ -65,16 +65,16 @@ type ReduceTimerFn = (state: ServerState) => ReduceResult;
 
 ## Steps
 
-- [ ] **1. Define `Effect` and `ReduceResult`.** Add the types to
+- [x] **1. Define `Effect` and `ReduceResult`.** Add the types to
   `server/types.ts`.
 
-- [ ] **2. Write `applyResult` in `server.ts`.** An effect interpreter that
+- [x] **2. Write `applyResult` in `server.ts`.** An effect interpreter that
   takes a `ReduceResult`, updates `state`, then walks `effects` and executes
   each one: `broadcast` → send per-player state views, `relay` → forward to
   target players, `send` → send to one player, `set-timer` → schedule timeout,
   `clear-timer` → cancel timeout.
 
-- [ ] **3. Add EPYC reducer functions.** In `server/games/epyc/state.ts`, add:
+- [x] **3. Add EPYC reducer functions.** In `server/games/epyc/state.ts`, add:
   - `epycReduce(state, playerId, msg)` — dispatches `submit`, `ready`,
     `unready`, `reset` by composing the existing helpers.
   - `epycReduceDisconnect(state, playerId)` — wraps `removePlayer` +
@@ -82,24 +82,24 @@ type ReduceTimerFn = (state: ServerState) => ReduceResult;
   - `epycReduceTimer(state)` — wraps the round-timeout logic.
   Each returns `ReduceResult` with appropriate effects.
 
-- [ ] **4. Add Pictionary reducer functions.** Same pattern in
+- [x] **4. Add Pictionary reducer functions.** Same pattern in
   `server/games/pictionary/state.ts`:
   - `pictionaryReduce(state, playerId, msg)` — dispatches `guess`, `pick-word`,
     `turn-done`, `draw-*`, `ready`/`unready`, `add-word`.
   - `pictionaryReduceDisconnect(state, playerId)`
   - `pictionaryReduceTimer(state)`
 
-- [ ] **5. Refactor `server.ts` to use reducers + `applyResult`.** Replace the
+- [x] **5. Refactor `server.ts` to use reducers + `applyResult`.** Replace the
   inline game-specific logic in `handleMessage()` and the disconnect reducer
   with calls to the game reducer functions + `applyResult()`. Both games should
   follow the same pattern.
 
-- [ ] **6. Remove dead inline orchestration.** Delete `startRoundTimer()`,
+- [x] **6. Remove dead inline orchestration.** Delete `startRoundTimer()`,
   `startTurnTimer()`, and the game-specific branches that are now handled by
-  the reducer functions. Timer scheduling should be driven entirely by
+  the reducer functions. Timer scheduling is now driven entirely by
   `applyResult` interpreting `set-timer` / `clear-timer` effects.
 
-- [ ] **7. Type-check and test.** Run `npx tsc --noEmit` for both server and
+- [x] **7. Type-check and test.** Run `npx tsc --noEmit` for both server and
   client. Run `npx vitest run`. Fix any issues.
 
 ## Risks

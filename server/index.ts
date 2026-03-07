@@ -1,7 +1,7 @@
 import { createServer } from './server.js';
 import type { GameType } from './types.js';
 
-function parseArgs(args: string[]): { password: string; port: number; game: GameType } {
+function parseArgs(args: string[]): { password: string; port: number; host: string; game: GameType } {
   let password = '';
   let port = 3000;
   let host = 'localhost';
