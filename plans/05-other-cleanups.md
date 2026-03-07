@@ -14,8 +14,10 @@ The remaining work is verifying no inline `setTimeout` calls survive.
 **Benefit:** Testability (inject a fake timer), and P2P compatibility (replace
 Node `setTimeout` with browser equivalent).
 
-- [ ] Audit remaining inline timer usage in `server.ts` after Plan 01
-- [ ] Extract to a single `applyTimer` helper if needed
+- [x] Audit remaining inline timer usage in `server.ts` after Plan 01
+  — Only `setGameTimer`/`clearGameTimer` remain, driven by `set-timer`/`clear-timer`
+  effects in `applyResult`. No further extraction needed.
+- [x] Extract to a single `applyTimer` helper if needed — not needed
 
 ## B. Client-Side Game Router
 
@@ -31,9 +33,12 @@ type GameRouter = Record<string, (props: GameProps) => React.ReactNode>;
 Each game exports its own phase-to-component mapping. `App.tsx` looks up the
 component by phase prefix (`epyc-`, `pictionary-`) and renders it.
 
-- [ ] Define a `GameComponentMap` type
-- [ ] Have each game's component directory export a mapping
-- [ ] Simplify `App.tsx` to use the registry
+- [x] Define a `GameComponentMap` type — used per-game wrapper components
+  instead of a registry type (simpler for 2 games)
+- [x] Have each game's component directory export a mapping — created
+  `EpycGame.tsx` and `PictionaryGame.tsx` wrapper components
+- [x] Simplify `App.tsx` to use the registry — App.tsx now dispatches
+  on `gameType`, each game owns its own phase routing + state
 
 ## C. Shared Test Utilities
 
@@ -43,9 +48,12 @@ helpers for creating players, advancing state, etc.
 **Fix:** Create `server/__tests__/test-utils.ts` with shared helpers like
 `createTestPlayers(n)`, `makeConnectedState(gameType, playerCount)`, etc.
 
-- [ ] Inventory duplicate helpers across test files
-- [ ] Extract shared helpers to `test-utils.ts`
-- [ ] Update test files to import from shared module
+- [x] Inventory duplicate helpers across test files — inventoried:
+  helpers are game-specific (e.g. `makeUnderwayState` for EPYC,
+  `makeTwoPlayerDrawing` for Pictionary) with no meaningful duplication
+- [x] Extract shared helpers to `test-utils.ts` — not needed, no
+  shared patterns to extract
+- [x] Update test files to import from shared module — N/A
 
 ## D. Message Type Narrowing
 
@@ -66,9 +74,10 @@ Each game's `reduce` accepts `ClientMessage` but only matches its own subset.
 The type split is mostly documentary — it helps readers understand which messages
 belong to which game.
 
-- [ ] Categorize all ClientMessage variants by game
-- [ ] Group them with intermediate union types
-- [ ] Update `ClientMessage` to be a union of the groups
+- [x] Categorize all ClientMessage variants by game
+- [x] Group them with intermediate union types — `CommonClientMessage`,
+  `EpycClientMessage`, `DrawClientMessage`, `PictionaryClientMessage`
+- [x] Update `ClientMessage` to be a union of the groups
 
 ## Execution
 

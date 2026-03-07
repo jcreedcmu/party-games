@@ -28,17 +28,18 @@ export type SubmitMessage = {
 
 export type ResetMessage = { type: 'reset' };
 
-export type ClientMessage =
-  | JoinMessage
-  | ReadyMessage
-  | UnreadyMessage
-  | SubmitMessage
-  | ResetMessage
-  | DrawStartOp | DrawMoveOp | DrawEndOp | DrawFillOp | DrawUndoOp | DrawClearOp
-  | { type: 'guess'; text: string }
-  | { type: 'turn-done' }
-  | { type: 'pick-word'; index: number }
-  | { type: 'add-word'; word: string };
+export type GuessMessage = { type: 'guess'; text: string };
+export type TurnDoneMessage = { type: 'turn-done' };
+export type PickWordMessage = { type: 'pick-word'; index: number };
+export type AddWordMessage = { type: 'add-word'; word: string };
+
+// Grouped by game for readability
+export type CommonClientMessage = JoinMessage | ReadyMessage | UnreadyMessage | ResetMessage;
+export type EpycClientMessage = SubmitMessage;
+export type DrawClientMessage = DrawStartOp | DrawMoveOp | DrawEndOp | DrawFillOp | DrawUndoOp | DrawClearOp;
+export type PictionaryClientMessage = GuessMessage | TurnDoneMessage | PickWordMessage | AddWordMessage;
+
+export type ClientMessage = CommonClientMessage | EpycClientMessage | DrawClientMessage | PictionaryClientMessage;
 
 // --- Server -> Client messages ---
 

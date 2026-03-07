@@ -1,12 +1,10 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef } from 'react';
 import { useSocket } from './hooks/useSocket';
 import { JoinDialog } from './components/JoinDialog';
-import { WaitingRoom } from './components/WaitingRoom';
-import { GameBoard } from './components/epyc/GameBoard';
-import { PostGame } from './components/epyc/PostGame';
-import { PictionaryBoard } from './components/pictionary/PictionaryBoard';
-import { PictionaryPostGame } from './components/pictionary/PictionaryPostGame';
+import { EpycGame } from './components/epyc/EpycGame';
+import { PictionaryGame } from './components/pictionary/PictionaryGame';
 import { DrawingCanvas } from './components/DrawingCanvas';
+import type { EpycClientState, PictionaryClientState } from './types';
 
 function DebugDraw() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -46,14 +44,6 @@ export function App() {
   }
 
   const { gameState, playerId, gameType, error, connected, connect, send, clearError, clearAddWordResult, addWordResult, onRelay } = useSocket();
-  const [showLobby, setShowLobby] = useState(false);
-
-  // Reset showLobby when we leave postgame
-  useEffect(() => {
-    if (gameState?.phase !== 'pictionary-postgame') {
-      setShowLobby(false);
-    }
-  }, [gameState?.phase]);
 
   // Not connected/joined yet -> show join dialog
   if (!playerId || !gameState) {
@@ -78,60 +68,9 @@ export function App() {
   const title = gameType === 'pictionary' ? 'Drawplodocus' : 'Eat Poop You Cat';
   const showLogo = gameType === 'pictionary';
 
-  let content;
-  switch (gameState.phase) {
-    case 'epyc-waiting':
-    case 'pictionary-waiting':
-      content = (
-        <WaitingRoom
-          state={gameState}
-          playerId={playerId}
-          onReady={() => send({ type: 'ready' })}
-          onUnready={() => send({ type: 'unready' })}
-          send={send}
-          addWordResult={addWordResult}
-          clearAddWordResult={clearAddWordResult}
-        />
-      );
-      break;
-    case 'epyc-underway':
-      content = <GameBoard state={gameState} playerId={playerId} onSend={send} />;
-      break;
-    case 'epyc-postgame':
-      content = <PostGame state={gameState} onSend={send} />;
-      break;
-    case 'pictionary-active':
-      content = <PictionaryBoard state={gameState} playerId={playerId} send={send} onRelay={onRelay} />;
-      break;
-    case 'pictionary-postgame':
-      if (showLobby) {
-        const waitingState: import('./types').PictionaryClientWaitingState = {
-          phase: 'pictionary-waiting',
-          players: gameState.players.map(p => ({
-            id: p.id,
-            handle: p.handle,
-            ready: p.ready,
-            connected: p.connected,
-          })),
-        };
-        content = (
-          <WaitingRoom
-            state={waitingState}
-            playerId={playerId}
-            onReady={() => send({ type: 'ready' })}
-            onUnready={() => send({ type: 'unready' })}
-            send={send}
-            addWordResult={addWordResult}
-            clearAddWordResult={clearAddWordResult}
-          />
-        );
-      } else {
-        content = <PictionaryPostGame state={gameState} onNewGame={() => {
-          setShowLobby(true);
-        }} />;
-      }
-      break;
-  }
+  const content = gameType === 'epyc'
+    ? <EpycGame state={gameState as EpycClientState} playerId={playerId} send={send} addWordResult={addWordResult} clearAddWordResult={clearAddWordResult} />
+    : <PictionaryGame state={gameState as PictionaryClientState} playerId={playerId} send={send} onRelay={onRelay} addWordResult={addWordResult} clearAddWordResult={clearAddWordResult} />;
 
   return (
     <div className="app">
