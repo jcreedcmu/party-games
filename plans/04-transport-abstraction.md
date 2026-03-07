@@ -14,109 +14,81 @@ Currently ws-specific APIs appear in exactly two places:
 
 ## Design
 
-### Server-side types
+### Server-side types (`server/transport.ts`)
 
 ```ts
-// server/transport.ts
-
 type ConnectionId = string;
 
 type Connection = {
   id: ConnectionId;
-  send: (msg: ServerMessage) => void;
+  send: (data: string) => void;
 };
 
-type TransportEvents = {
-  onConnection: (conn: Connection, onMessage: (msg: ClientMessage) => void, onClose: () => void) => void;
-};
-
-type ServerTransport = {
-  start: (events: TransportEvents) => void;
-  close: () => void;
-  getConnection: (id: ConnectionId) => Connection | undefined;
+type TransportHandler = {
+  onConnect: (conn: Connection) => void;
+  onMessage: (conn: Connection, data: string) => void;
+  onDisconnect: (conn: Connection) => void;
 };
 ```
 
-### Client-side types
+### Client-side types (`client/src/transport.ts`)
 
 ```ts
-// client/src/transport.ts
-
 type ClientTransport = {
-  connect: () => void;
-  send: (msg: ClientMessage) => void;
-  onMessage: (handler: (msg: ServerMessage) => void) => void;
-  onOpen: (handler: () => void) => void;
-  onClose: (handler: () => void) => void;
+  send: (data: string) => void;
   close: () => void;
 };
 
-type ClientTransportFactory = (url: string) => ClientTransport;
+type ConnectTransport = (
+  url: string,
+  handlers: { onOpen, onMessage, onClose },
+) => ClientTransport;
 ```
 
 ### Implementations
 
-- `server/transports/websocket.ts` — wraps `ws` library
-- `client/src/transports/websocket.ts` — wraps browser `WebSocket`
-- (future) `client/src/transports/webrtc.ts` — wraps `RTCDataChannel`
+- `server/transports/websocket.ts` — `attachWebSocketTransport(httpServer, handler)`
+- `client/src/transports/websocket.ts` — `connectWebSocket(url, handlers)`
 
-### P2P Architecture
+### P2P Architecture (future)
 
 For peer-to-peer, the "host" peer runs the game state machine in-browser. This
 is feasible because the state functions are pure — no Node.js dependencies.
 The host peer uses a `WebRTCServerTransport` that listens for data channel
 connections instead of WebSocket connections.
 
-```
-Host browser:
-  [Game State Machine] ←→ [WebRTCServerTransport] ←→ data channels
-
-Guest browsers:
-  [Client UI] ←→ [WebRTCClientTransport] ←→ data channel to host
-```
-
-Signaling (how peers find each other) is out of scope for this plan — it could
-use a lightweight signaling server, or manual offer/answer exchange.
-
 ## Steps
 
-- [ ] **1. Define transport types.** Create `server/transport.ts` and
-  `client/src/transport.ts` with the types above.
+- [x] **1. Define transport types.** Created `server/transport.ts` and
+  `client/src/transport.ts` with Connection, TransportHandler, ClientTransport,
+  and ConnectTransport types.
 
-- [ ] **2. Implement WebSocket server transport.** Extract the ws-specific code
-  from `server.ts` into `server/transports/websocket.ts`. This becomes a
-  function `createWebSocketTransport(httpServer): ServerTransport`.
+- [x] **2. Implement WebSocket server transport.** Extracted ws-specific code
+  into `server/transports/websocket.ts`. Creates Connection objects with
+  auto-incrementing IDs and wires ws events to TransportHandler callbacks.
 
-- [ ] **3. Refactor `server.ts`.** Replace direct ws usage with
-  `ServerTransport` calls. The `clients` map changes from
-  `Map<WebSocket, PlayerId>` to `Map<ConnectionId, PlayerId>`.
+- [x] **3. Refactor `server.ts`.** Replaced `Map<WebSocket, PlayerId>` with
+  `Map<ConnectionId, { conn, playerId }>`. No WebSocket imports remain in
+  server.ts — all ws-specific code is in the transport module.
 
-- [ ] **4. Implement WebSocket client transport.** Extract ws-specific code from
-  `useSocket.ts` into `client/src/transports/websocket.ts`.
+- [x] **4. Implement WebSocket client transport.** Created
+  `client/src/transports/websocket.ts` wrapping browser `WebSocket` into the
+  `ConnectTransport` interface.
 
-- [ ] **5. Refactor `useSocket.ts`.** Accept a `ClientTransport` (or factory)
-  instead of constructing `WebSocket` directly. The hook's API to components
-  doesn't change.
+- [x] **5. Refactor `useSocket.ts`.** Replaced direct `WebSocket` usage with
+  `connectWebSocket` from the transport module. Hook API unchanged.
 
-- [ ] **6. Type-check and test.** Existing tests should pass unchanged since
-  behavior is identical.
+- [x] **6. Type-check and test.** All passing (82 unit + 10 E2E).
 
-- [ ] **7. (Future) Implement WebRTC transport.** This is a separate effort
-  once the abstraction is proven.
+- [ ] **7. (Future) Implement WebRTC transport.** Separate effort once the
+  abstraction is proven.
 
 ## Risks
 
 - Over-abstraction if WebRTC never materializes. The abstraction is thin enough
-  (~20 lines of types) that it's not a big cost, but don't gold-plate it.
+  (~20 lines of types) that it's not a big cost.
 - P2P requires running server logic in the browser, which means the server
   game modules need to be bundleable for the browser. Currently they have no
   Node.js deps (except `words.ts` which uses `fs`), so this is mostly feasible
   but `words.ts` would need an alternative loading strategy.
 - Signaling for WebRTC is a whole separate problem.
-
-## Open Questions
-
-- Should the transport abstraction also handle the relay pattern (forwarding
-  draw ops to specific peers), or should that stay in the game logic layer?
-  Leaning toward keeping it in the game layer — the transport just delivers
-  messages point-to-point, and the game/server decides who to send to.

@@ -1,40 +1,39 @@
 import path from 'node:path';
 import http from 'node:http';
 import express from 'express';
-import { WebSocketServer, WebSocket } from 'ws';
 import type { ClientMessage, ServerMessage } from './protocol.js';
 import type { GameType, PlayerId, ServerState, ReduceResult, RelayMessage } from './types.js';
+import type { ConnectionId, Connection } from './transport.js';
 import { getGameModule } from './game-module.js';
+import { attachWebSocketTransport } from './transports/websocket.js';
 
 export function createServer(password: string, gameType: GameType = 'epyc') {
   const gameModule = getGameModule(gameType);
 
   const app = express();
   const server = http.createServer(app);
-  const wss = new WebSocketServer({ server, path: '/ws' });
 
   let state: ServerState = gameModule.createInitialState();
-  const clients = new Map<WebSocket, PlayerId | null>();
+  const clients = new Map<ConnectionId, { conn: Connection; playerId: PlayerId | null }>();
   let gameTimer: ReturnType<typeof setTimeout> | null = null;
 
-  function send(ws: WebSocket, msg: ServerMessage) {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(msg));
-    }
+  function sendTo(conn: Connection, msg: ServerMessage) {
+    conn.send(JSON.stringify(msg));
   }
 
   function sendToPlayer(playerId: PlayerId, msg: ServerMessage) {
-    for (const [ws, pid] of clients) {
-      if (pid === playerId) {
-        send(ws, msg);
+    const data = JSON.stringify(msg);
+    for (const [, entry] of clients) {
+      if (entry.playerId === playerId) {
+        entry.conn.send(data);
       }
     }
   }
 
   function broadcastState() {
-    for (const [ws, playerId] of clients) {
-      if (playerId) {
-        send(ws, { type: 'state', state: gameModule.getClientState(state, playerId) });
+    for (const [, entry] of clients) {
+      if (entry.playerId) {
+        sendTo(entry.conn, { type: 'state', state: gameModule.getClientState(state, entry.playerId) });
       }
     }
   }
@@ -86,57 +85,60 @@ export function createServer(password: string, gameType: GameType = 'epyc') {
     }
   }
 
-  wss.on('connection', (ws) => {
-    clients.set(ws, null);
+  attachWebSocketTransport(server, {
+    onConnect(conn) {
+      clients.set(conn.id, { conn, playerId: null });
+    },
 
-    ws.on('message', (data) => {
+    onMessage(conn, data) {
       try {
-        const msg = JSON.parse(String(data)) as ClientMessage;
-        const playerId = clients.get(ws);
+        const msg = JSON.parse(data) as ClientMessage;
+        const entry = clients.get(conn.id);
+        if (!entry) return;
 
-        // Join is handled here since it manages the ws→playerId mapping
+        // Join is handled here since it manages the connection→playerId mapping
         if (msg.type === 'join') {
-          if (playerId) {
-            send(ws, { type: 'error', message: 'Already joined' });
+          if (entry.playerId) {
+            sendTo(conn, { type: 'error', message: 'Already joined' });
             return;
           }
           if (msg.password !== password) {
-            send(ws, { type: 'error', message: 'Wrong password' });
+            sendTo(conn, { type: 'error', message: 'Wrong password' });
             return;
           }
           const result = gameModule.addPlayer(state, msg.handle);
           if (!result) {
-            send(ws, { type: 'error', message: 'Game already in progress' });
+            sendTo(conn, { type: 'error', message: 'Game already in progress' });
             return;
           }
           state = result.state;
-          clients.set(ws, result.playerId);
-          send(ws, { type: 'joined', playerId: result.playerId, gameType });
+          entry.playerId = result.playerId;
+          sendTo(conn, { type: 'joined', playerId: result.playerId, gameType });
           broadcastState();
           return;
         }
 
-        if (!playerId) return;
-        applyResult(gameModule.reduce(state, playerId, msg));
+        if (!entry.playerId) return;
+        applyResult(gameModule.reduce(state, entry.playerId, msg));
       } catch {
-        send(ws, { type: 'error', message: 'Invalid message' });
+        sendTo(conn, { type: 'error', message: 'Invalid message' });
       }
-    });
+    },
 
-    ws.on('close', () => {
-      const playerId = clients.get(ws);
-      clients.delete(ws);
-      if (playerId) {
-        applyResult(gameModule.reduceDisconnect(state, playerId));
+    onDisconnect(conn) {
+      const entry = clients.get(conn.id);
+      clients.delete(conn.id);
+      if (entry?.playerId) {
+        applyResult(gameModule.reduceDisconnect(state, entry.playerId));
       }
 
       // Reset to initial state when all players have left
-      const hasPlayers = Array.from(clients.values()).some(id => id !== null);
+      const hasPlayers = Array.from(clients.values()).some(e => e.playerId !== null);
       if (!hasPlayers) {
         clearGameTimer();
         state = gameModule.createInitialState();
       }
-    });
+    },
   });
 
   // Serve built client files

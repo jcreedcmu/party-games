@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef } from 'react';
 import type { ClientMessage, ServerMessage, ClientGameState, GameType } from '../types';
 import type { RelayPayload } from '../types';
+import type { ClientTransport } from '../transport';
+import { connectWebSocket } from '../transports/websocket';
 
 type AddWordResult = { success: boolean; message: string } | null;
 
@@ -22,54 +24,53 @@ export function useSocket() {
     connected: false,
     addWordResult: null,
   });
-  const wsRef = useRef<WebSocket | null>(null);
+  const transportRef = useRef<ClientTransport | null>(null);
   const relayListenersRef = useRef<Set<(payload: RelayPayload) => void>>(new Set());
 
   const connect = useCallback((password: string, handle: string) => {
-    if (wsRef.current) return;
+    if (transportRef.current) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
-    wsRef.current = ws;
+    const url = `${protocol}//${window.location.host}/ws`;
 
-    ws.onopen = () => {
-      setState(s => ({ ...s, connected: true, error: null }));
-      ws.send(JSON.stringify({ type: 'join', password, handle } satisfies ClientMessage));
-    };
+    const transport = connectWebSocket(url, {
+      onOpen() {
+        setState(s => ({ ...s, connected: true, error: null }));
+        transport.send(JSON.stringify({ type: 'join', password, handle } satisfies ClientMessage));
+      },
+      onMessage(data) {
+        const msg: ServerMessage = JSON.parse(data);
+        switch (msg.type) {
+          case 'joined':
+            setState(s => ({ ...s, playerId: msg.playerId, gameType: msg.gameType }));
+            break;
+          case 'state':
+            setState(s => ({ ...s, gameState: msg.state }));
+            break;
+          case 'error':
+            setState(s => ({ ...s, error: msg.message }));
+            break;
+          case 'add-word-result':
+            setState(s => ({ ...s, addWordResult: { success: msg.success, message: msg.message } }));
+            break;
+          case 'relay':
+            for (const listener of relayListenersRef.current) {
+              listener(msg.payload);
+            }
+            break;
+        }
+      },
+      onClose() {
+        setState(s => ({ ...s, connected: false }));
+        transportRef.current = null;
+      },
+    });
 
-    ws.onmessage = (e) => {
-      const msg: ServerMessage = JSON.parse(e.data);
-      switch (msg.type) {
-        case 'joined':
-          setState(s => ({ ...s, playerId: msg.playerId, gameType: msg.gameType }));
-          break;
-        case 'state':
-          setState(s => ({ ...s, gameState: msg.state }));
-          break;
-        case 'error':
-          setState(s => ({ ...s, error: msg.message }));
-          break;
-        case 'add-word-result':
-          setState(s => ({ ...s, addWordResult: { success: msg.success, message: msg.message } }));
-          break;
-        case 'relay':
-          for (const listener of relayListenersRef.current) {
-            listener(msg.payload);
-          }
-          break;
-      }
-    };
-
-    ws.onclose = () => {
-      setState(s => ({ ...s, connected: false }));
-      wsRef.current = null;
-    };
+    transportRef.current = transport;
   }, []);
 
   const send = useCallback((msg: ClientMessage) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(msg));
-    }
+    transportRef.current?.send(JSON.stringify(msg));
   }, []);
 
   const clearError = useCallback(() => {
