@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useSocket } from './hooks/useSocket';
 import { useP2P } from './hooks/useP2P';
 import { JoinDialog } from './components/JoinDialog';
@@ -138,13 +138,19 @@ function ServerApp() {
 
 const p2pOnly = import.meta.env.VITE_P2P_ONLY === 'true';
 
+function useHash(): string {
+  return useSyncExternalStore(
+    (cb) => { window.addEventListener('hashchange', cb); return () => window.removeEventListener('hashchange', cb); },
+    () => window.location.hash,
+  );
+}
+
 type Route =
   | { mode: 'server' }
   | { mode: 'p2p'; gameType: GameType; roomName?: string }
   | { mode: 'pick-game' };
 
-function parseHash(): Route {
-  const hash = window.location.hash;
+function parseHash(hash: string): Route {
 
   if (hash.startsWith('#p2p/')) {
     const rest = hash.slice(5);
@@ -194,7 +200,8 @@ export function App() {
     return <DebugStream />;
   }
 
-  const route = parseHash();
+  const hash = useHash();
+  const route = parseHash(hash);
 
   switch (route.mode) {
     case 'p2p':
