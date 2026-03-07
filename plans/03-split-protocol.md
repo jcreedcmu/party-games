@@ -12,51 +12,43 @@
 These are conceptually distinct layers. Splitting makes it clearer what's
 transport-level vs. game-level and reduces merge conflicts when adding games.
 
-## Proposed Split
+## Result
 
 ```
-server/protocol.ts          → Wire-level message types (ClientMessage, ServerMessage)
-server/draw-ops.ts          → DrawOp types, Color, ToolType, canvas constants
-server/client-state.ts      → ClientGameState union + per-game projection types
+server/draw-ops.ts     — DrawOp types (shared drawing primitives)
+server/protocol.ts     — Wire-level message types (ClientMessage, ServerMessage,
+                         RelayPayload) + ClientGameState union
+client/src/types.ts    — Barrel re-export for client; imports from protocol.ts,
+                         draw-ops.ts, game-specific client-state files, and types.ts
 ```
 
-Alternatively, the per-game client state types could live alongside each game:
-```
-server/games/epyc/client-state.ts      (already exists — projection functions)
-server/games/pictionary/client-state.ts (already exists — projection functions)
-```
-...and the *types* they export could move there too, with `client-state.ts` at
-the server root just re-exporting the union.
+Per-game client state types stay in `server/games/<game>/client-state.ts`
+(where they were already defined). The client barrel (`client/src/types.ts`)
+imports them directly from game folders instead of through protocol.ts.
 
 ## Steps
 
-- [ ] **1. Inventory all exports of `protocol.ts`.** List every type and
-  constant, categorize as: message, draw-op, client-state, or other.
+- [x] **1. Inventory all exports of `protocol.ts`.** Categorized as: message,
+  draw-op, client-state, or other.
 
-- [ ] **2. Extract draw-op types.** Move `DrawOp`, `DrawStartOp`, `DrawMoveOp`,
-  etc. plus any related constants (colors, tool types, canvas dimensions) into
-  `server/draw-ops.ts`. Update imports everywhere.
+- [x] **2. Extract draw-op types.** Moved `DrawOp`, `DrawStartOp`, `DrawMoveOp`,
+  etc. into `server/draw-ops.ts`. Protocol.ts re-exports them for backward
+  compatibility with server-side imports.
 
-- [ ] **3. Extract client-state types.** Move `ClientGameState` and its
-  constituent per-game types into `server/client-state.ts` (or into each game's
-  `client-state.ts`). Update imports.
+- [x] **3. Remove client state re-exports from protocol.ts.** Per-game client
+  state types are already defined in game folders. Removed the re-exports from
+  protocol.ts.
 
-- [ ] **4. Update `client/src/types.ts`.** This file re-exports from
-  `../../server/protocol.js`. Update it to re-export from the new locations, or
-  create a barrel export in the server so the client import path doesn't change.
+- [x] **4. Update `client/src/types.ts`.** Now imports from three sources:
+  - `../../server/protocol.js` — wire messages, DrawOp re-exports
+  - `../../server/games/epyc/client-state.js` — EPYC client state types
+  - `../../server/games/pictionary/client-state.js` — Pictionary client state types
+  - `../../server/types.js` — MoveType, GameType
 
-- [ ] **5. Type-check and test.**
+- [x] **5. Type-check and test.** All passing.
 
 ## Risks
 
-- Many import sites to update. A barrel re-export from `protocol.ts` could
-  minimize churn (protocol.ts re-exports from the new files), but that defeats
-  the purpose somewhat. Better to do it cleanly.
+- Many import sites to update. Mitigated by keeping DrawOp re-exports in
+  protocol.ts so server-side imports don't change.
 - Low behavioral risk — purely structural.
-
-## Decision Point
-
-Before executing, decide: should per-game client state types live in
-`server/games/<game>/client-state.ts` alongside projection functions, or in a
-central `server/client-state.ts`? The former is more modular; the latter is
-simpler if there are cross-game types.

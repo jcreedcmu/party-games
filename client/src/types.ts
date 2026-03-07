@@ -11,18 +11,6 @@ export type {
   StateResponse,
   RelayResponse,
   ClientGameState,
-  EpycClientWaitingState,
-  EpycClientUnderwayState,
-  EpycClientUnderwayPlayer,
-  EpycClientPostgameState,
-  EpycClientPlayerInfo,
-  EpycClientFullSheet,
-  PictionaryClientWaitingState,
-  PictionaryClientActivePlayer,
-  PictionaryClientActiveState,
-  PictionaryClientTurnSummary,
-  PictionaryClientPostgameState,
-  PictionaryClientState,
   DrawOp,
   DrawStartOp,
   DrawMoveOp,
@@ -32,5 +20,24 @@ export type {
   DrawClearOp,
   RelayPayload,
 } from '../../server/protocol.js';
+
+export type {
+  EpycClientPlayerInfo,
+  EpycClientWaitingState,
+  EpycClientUnderwayPlayer,
+  EpycClientUnderwayState,
+  EpycClientFullSheet,
+  EpycClientPostgameState,
+  EpycClientState,
+} from '../../server/games/epyc/client-state.js';
+
+export type {
+  PictionaryClientWaitingState,
+  PictionaryClientActivePlayer,
+  PictionaryClientActiveState,
+  PictionaryClientTurnSummary,
+  PictionaryClientPostgameState,
+  PictionaryClientState,
+} from '../../server/games/pictionary/client-state.js';
 
 export type { MoveType, GameType } from '../../server/types.js';

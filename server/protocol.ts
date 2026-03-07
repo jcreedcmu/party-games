@@ -1,38 +1,8 @@
 import type { MoveType, GameType } from './types.js';
+import type { DrawStartOp, DrawMoveOp, DrawEndOp, DrawFillOp, DrawUndoOp, DrawClearOp } from './draw-ops.js';
 
-// Re-export EPYC client state types
-export type {
-  EpycClientPlayerInfo,
-  EpycClientWaitingState,
-  EpycClientUnderwayPlayer,
-  EpycClientUnderwayState,
-  EpycClientFullSheet,
-  EpycClientPostgameState,
-  EpycClientState,
-} from './games/epyc/client-state.js';
-
-// Re-export Pictionary client state types
-export type {
-  PictionaryClientWaitingState,
-  PictionaryClientActivePlayer,
-  PictionaryClientActiveState,
-  PictionaryClientTurnSummary,
-  PictionaryClientPostgameState,
-  PictionaryClientState,
-} from './games/pictionary/client-state.js';
-
-import type { EpycClientState } from './games/epyc/client-state.js';
-import type { PictionaryClientState } from './games/pictionary/client-state.js';
-
-// --- Drawing operations (used in Pictionary for real-time streaming) ---
-
-export type DrawStartOp = { type: 'draw-start'; color: string; size: number; x: number; y: number };
-export type DrawMoveOp = { type: 'draw-move'; points: Array<{ x: number; y: number }> };
-export type DrawEndOp = { type: 'draw-end' };
-export type DrawFillOp = { type: 'draw-fill'; x: number; y: number; color: string };
-export type DrawUndoOp = { type: 'draw-undo' };
-export type DrawClearOp = { type: 'draw-clear' };
-export type DrawOp = DrawStartOp | DrawMoveOp | DrawEndOp | DrawFillOp | DrawUndoOp | DrawClearOp;
+// Re-export DrawOp types for convenience
+export type { DrawOp, DrawStartOp, DrawMoveOp, DrawEndOp, DrawFillOp, DrawUndoOp, DrawClearOp } from './draw-ops.js';
 
 // --- Relay payload (server -> specific clients) ---
 
@@ -103,4 +73,6 @@ export type ServerMessage = JoinedResponse | ErrorResponse | StateResponse | Rel
 
 // --- Client game state union ---
 
+import type { EpycClientState } from './games/epyc/client-state.js';
+import type { PictionaryClientState } from './games/pictionary/client-state.js';
 export type ClientGameState = EpycClientState | PictionaryClientState;
