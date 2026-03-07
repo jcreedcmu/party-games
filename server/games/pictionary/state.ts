@@ -1,4 +1,4 @@
-import type { PlayerId, PlayerInfo, ReduceResult, Effect } from '../../types.js';
+import type { PlayerId, PlayerInfo, ServerState, ReduceResult, Effect } from '../../types.js';
 import type { DrawOp, ClientMessage } from '../../protocol.js';
 import type {
   TurnRecord,
@@ -340,7 +340,7 @@ function activeTimerEffects(state: PictionaryActiveState | PictionaryPostgameSta
   return [{ type: 'clear-timer' }];
 }
 
-export function pictionaryReduce(state: PictionaryState, playerId: PlayerId, msg: ClientMessage): ReduceResult {
+export function pictionaryReduce(state: ServerState, playerId: PlayerId, msg: ClientMessage): ReduceResult {
   switch (msg.type) {
     case 'ready':
     case 'unready': {
@@ -471,7 +471,7 @@ export function pictionaryReduce(state: PictionaryState, playerId: PlayerId, msg
   }
 }
 
-export function pictionaryReduceDisconnect(state: PictionaryState, playerId: PlayerId): ReduceResult {
+export function pictionaryReduceDisconnect(state: ServerState, playerId: PlayerId): ReduceResult {
   if (state.phase === 'pictionary-active') {
     const wasDrawer = getCurrentDrawer(state) === playerId;
     const removed = removePlayer(state, playerId);
@@ -487,11 +487,14 @@ export function pictionaryReduceDisconnect(state: PictionaryState, playerId: Pla
     return { state: removed, effects: [{ type: 'broadcast' }] };
   }
 
+  if (state.phase !== 'pictionary-waiting' && state.phase !== 'pictionary-postgame') {
+    return { state, effects: [] };
+  }
   const removed = removePlayer(state, playerId);
   return { state: removed, effects: [{ type: 'broadcast' }] };
 }
 
-export function pictionaryReduceTimer(state: PictionaryState): ReduceResult {
+export function pictionaryReduceTimer(state: ServerState): ReduceResult {
   if (state.phase !== 'pictionary-active') return { state, effects: [] };
 
   if (state.subPhase === 'picking') {

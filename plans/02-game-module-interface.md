@@ -26,7 +26,7 @@ TypeScript narrows it naturally.
 
 type GameModule = {
   createInitialState: () => ServerState;
-  addPlayer: (state: ServerState, handle: string) => { state: ServerState; playerId: PlayerId };
+  addPlayer: (state: ServerState, handle: string) => { state: ServerState; playerId: PlayerId } | null;
   getClientState: (state: ServerState, playerId: PlayerId) => ClientGameState;
 
   reduce: (state: ServerState, playerId: PlayerId, msg: ClientMessage) => ReduceResult;
@@ -58,18 +58,17 @@ Notes:
 
 ## Steps
 
-- [ ] **1. Define `GameModule` type.** Create `server/game-module.ts` with the
-  type above. Import it from both game modules.
+- [x] **1. Define `GameModule` type.** Create `server/game-module.ts` with the
+  type above.
 
-- [ ] **2. Make EPYC conform.** In `server/games/epyc/state.ts`, export an
-  `epycModule: GameModule` object. The reducer functions accept `ServerState`,
-  narrow to `EpycState` via phase check, then delegate to existing helpers.
+- [x] **2. Make EPYC conform.** Widen reducer signatures to accept `ServerState`,
+  add phase guards. Module object wraps `addPlayer` and `getClientState`,
+  references reducer functions directly.
 
-- [ ] **3. Make Pictionary conform.** Same for
-  `server/games/pictionary/state.ts` — export `pictionaryModule: GameModule`.
+- [x] **3. Make Pictionary conform.** Same pattern — widen reducer signatures,
+  create module object with `addPlayer`/`getClientState` wrappers.
 
-- [ ] **4. Create a game registry.** In `server/game-module.ts` or a new
-  `server/games/index.ts`:
+- [x] **4. Create a game registry.** In `server/game-module.ts`:
   ```ts
   const gameModules: Record<GameType, GameModule> = {
     epyc: epycModule,
@@ -77,33 +76,16 @@ Notes:
   };
   ```
 
-- [ ] **5. Refactor `server.ts`.** Replace the phase-based switch/if chains
-  with:
-  ```ts
-  const gameModule = gameModules[gameType];
-  // on message:
-  const result = gameModule.reduce(state, playerId, msg);
-  applyResult(result);
-  // on disconnect:
-  const result = gameModule.reduceDisconnect(state, playerId);
-  applyResult(result);
-  // on timer:
-  const result = gameModule.reduceTimer(state);
-  applyResult(result);
-  ```
-  Common logic (join, connection tracking) stays in `server.ts`.
+- [x] **5. Refactor `server.ts`.** Replace game-specific imports and phase-switch
+  dispatch functions with `const gameModule = getGameModule(gameType)`. All
+  message handling, disconnect, timer, join, and broadcast go through the module.
 
-- [ ] **6. Handle `ready`/`unready`/`reset` uniformly.** These are common
-  across games but have game-specific effects (e.g. `checkAllReady` triggers
-  different start logic). Two options:
-  - **(a)** Route them through `gameModule.handle` — each game handles them.
-  - **(b)** Keep common ready/reset logic in `server.ts` with game-specific
-    hooks (`onAllReady`, `onReset`).
-  Decision: **(a)** is simpler and keeps `server.ts` thinner. Route them through
-  `gameModule.reduce`. The slight duplication of ready-toggle logic between
-  games is acceptable (it's ~5 lines).
+- [x] **6. Handle `ready`/`unready`/`reset` uniformly.** Routed through
+  `gameModule.reduce` — each game handles them in its own reducer. The slight
+  duplication of ready-toggle logic between games is acceptable.
 
-- [ ] **7. Type-check and test.** Full `tsc --noEmit` + `vitest run`.
+- [x] **7. Type-check and test.** Full `tsc --noEmit` + `vitest run` +
+  `playwright test`.
 
 ## Risks
 

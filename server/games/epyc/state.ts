@@ -1,4 +1,4 @@
-import type { PlayerId, MoveType, ReduceResult, Effect } from '../../types.js';
+import type { PlayerId, MoveType, ServerState, ReduceResult, Effect } from '../../types.js';
 import type { ClientMessage } from '../../protocol.js';
 import type {
   Move, Sheet,
@@ -193,7 +193,7 @@ function underwayTimerEffects(state: EpycUnderwayState | EpycPostgameState): Eff
   return [{ type: 'clear-timer' }];
 }
 
-export function epycReduce(state: EpycState, playerId: PlayerId, msg: ClientMessage): ReduceResult {
+export function epycReduce(state: ServerState, playerId: PlayerId, msg: ClientMessage): ReduceResult {
   switch (msg.type) {
     case 'ready':
     case 'unready': {
@@ -230,7 +230,10 @@ export function epycReduce(state: EpycState, playerId: PlayerId, msg: ClientMess
   }
 }
 
-export function epycReduceDisconnect(state: EpycState, playerId: PlayerId): ReduceResult {
+export function epycReduceDisconnect(state: ServerState, playerId: PlayerId): ReduceResult {
+  if (state.phase !== 'epyc-waiting' && state.phase !== 'epyc-underway' && state.phase !== 'epyc-postgame') {
+    return { state, effects: [] };
+  }
   const removed = removePlayer(state, playerId);
   if (removed.phase === 'epyc-underway') {
     const next = checkRoundComplete(removed);
@@ -242,7 +245,7 @@ export function epycReduceDisconnect(state: EpycState, playerId: PlayerId): Redu
   return { state: removed, effects: [{ type: 'broadcast' }] };
 }
 
-export function epycReduceTimer(state: EpycState): ReduceResult {
+export function epycReduceTimer(state: ServerState): ReduceResult {
   if (state.phase !== 'epyc-underway') return { state, effects: [] };
   const next = advanceRound(state);
   return {
