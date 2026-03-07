@@ -4,7 +4,10 @@ dev-epyc: build
 dev-pictionary: build
 	npx tsx --watch server/index.ts -- --password secret --game pictionary
 
-serve: build
+serve-pictionary: build
+	npx tsx server/index.ts -- --password secret --game pictionary --host 0.0.0.0
+
+serve-epyc: build
 	npx tsx server/index.ts -- --password secret --game pictionary --host 0.0.0.0
 
 preview:
