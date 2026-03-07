@@ -3,6 +3,10 @@ party games
 
 An implementation of some party games: ("eat poop you cat", a pictionary-like named "drawplodocus")
 
+## Unit tests
+
+    npm test
+
 ## Running E2E Tests
 
 Install Playwright browsers (first time only):
