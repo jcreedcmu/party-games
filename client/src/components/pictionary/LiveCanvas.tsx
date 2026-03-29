@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import type { DrawOp } from '../../types';
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT,
@@ -20,6 +20,7 @@ export function LiveCanvas({ ops, animated = false }: LiveCanvasProps) {
   const snapshotsRef = useRef<ImageData[]>([]);
   const imageDataRef = useRef<ImageData>(createBlankImageData());
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [playing, setPlaying] = useState(false);
   const drawStateRef = useRef<{
     color: string;
     rgb: [number, number, number];
@@ -29,6 +30,8 @@ export function LiveCanvas({ ops, animated = false }: LiveCanvasProps) {
     lastY: number;
     started: boolean;
   }>({ color: '#000000', rgb: [0, 0, 0], size: 5, radius: 2, lastX: 0, lastY: 0, started: false });
+
+  const hasTimestamps = animated && ops.length > 0 && ops[0].t != null;
 
   const getCtx = useCallback(() => {
     return canvasRef.current?.getContext('2d') ?? null;
@@ -97,16 +100,33 @@ export function LiveCanvas({ ops, animated = false }: LiveCanvasProps) {
     }
   }
 
-  function resetState() {
+  function applyAllOps() {
+    imageDataRef.current = createBlankImageData();
+    snapshotsRef.current = [];
+    saveSnapshot();
+    drawStateRef.current = { color: '#000000', rgb: [0, 0, 0], size: 5, radius: 2, lastX: 0, lastY: 0, started: false };
+    for (const op of ops) {
+      applyOp(op);
+    }
+    appliedRef.current = ops.length;
+    putImage();
+  }
+
+  function stopPlayback() {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    setPlaying(false);
+    applyAllOps();
+  }
+
+  function startAnimatedPlayback() {
     imageDataRef.current = createBlankImageData();
     snapshotsRef.current = [];
     saveSnapshot();
     drawStateRef.current = { color: '#000000', rgb: [0, 0, 0], size: 5, radius: 2, lastX: 0, lastY: 0, started: false };
     appliedRef.current = 0;
-  }
-
-  function startAnimatedPlayback() {
-    resetState();
     putImage();
 
     const totalOriginalMs = ops[ops.length - 1].t ?? 0;
@@ -114,7 +134,6 @@ export function LiveCanvas({ ops, animated = false }: LiveCanvasProps) {
 
     function scheduleNext() {
       if (appliedRef.current >= ops.length) {
-        // Hold on last frame, then loop
         timerRef.current = setTimeout(() => {
           startAnimatedPlayback();
         }, HOLD_DURATION_MS);
@@ -136,19 +155,32 @@ export function LiveCanvas({ ops, animated = false }: LiveCanvasProps) {
     scheduleNext();
   }
 
+  function handleToggle() {
+    if (playing) {
+      stopPlayback();
+    } else {
+      setPlaying(true);
+      startAnimatedPlayback();
+    }
+  }
+
+  // Initial render: show final state
   useEffect(() => {
     saveSnapshot();
-
-    if (animated && ops.length > 0 && ops[0].t != null) {
-      startAnimatedPlayback();
-    } else {
-      // Non-animated: apply all ops immediately
+    if (!hasTimestamps) {
+      // Non-animated or no timestamps: apply all immediately
       while (appliedRef.current < ops.length) {
         applyOp(ops[appliedRef.current]);
         appliedRef.current++;
       }
-      putImage();
+    } else {
+      // Animated but starts stopped: show final state
+      for (const op of ops) {
+        applyOp(op);
+      }
+      appliedRef.current = ops.length;
     }
+    putImage();
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -157,7 +189,7 @@ export function LiveCanvas({ ops, animated = false }: LiveCanvasProps) {
 
   // For non-animated (live streaming): apply new ops as they arrive
   useEffect(() => {
-    if (animated) return;
+    if (hasTimestamps) return;
     while (appliedRef.current < ops.length) {
       applyOp(ops[appliedRef.current]);
       appliedRef.current++;
@@ -166,11 +198,22 @@ export function LiveCanvas({ ops, animated = false }: LiveCanvasProps) {
   }, [ops.length]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={CANVAS_WIDTH}
-      height={CANVAS_HEIGHT}
-      className="live-canvas"
-    />
+    <div className="live-canvas-container">
+      <canvas
+        ref={canvasRef}
+        width={CANVAS_WIDTH}
+        height={CANVAS_HEIGHT}
+        className="live-canvas"
+      />
+      {hasTimestamps && (
+        <button
+          className="live-canvas-play-btn"
+          onClick={handleToggle}
+          title={playing ? 'Stop' : 'Play'}
+        >
+          {playing ? '\u25A0' : '\u25B6'}
+        </button>
+      )}
+    </div>
   );
 }
