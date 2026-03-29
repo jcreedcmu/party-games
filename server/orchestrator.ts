@@ -6,7 +6,7 @@ import type { GameModule } from './game-module.js';
 export type OrchestratorConfig = {
   gameModule: GameModule;
   gameType: GameType;
-  password: string | null; // null = skip password check (P2P mode)
+  password: string | null;
 };
 
 export type Orchestrator = {
