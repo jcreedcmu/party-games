@@ -120,8 +120,10 @@ export function LiveCanvas({ ops, animated = false, playing = false }: LiveCanva
     appliedRef.current = 0;
     putImage();
 
-    const totalOriginalMs = ops[ops.length - 1].t ?? 0;
-    const scale = totalOriginalMs > 0 ? PLAYBACK_DURATION_MS / totalOriginalMs : 1;
+    const firstT = ops[0].t ?? 0;
+    const lastT = ops[ops.length - 1].t ?? 0;
+    const durationMs = lastT - firstT;
+    const scale = durationMs > 0 ? PLAYBACK_DURATION_MS / durationMs : 1;
 
     function scheduleNext() {
       if (appliedRef.current >= ops.length) {
@@ -132,7 +134,7 @@ export function LiveCanvas({ ops, animated = false, playing = false }: LiveCanva
       }
 
       const curT = ops[appliedRef.current].t ?? 0;
-      const prevT = appliedRef.current > 0 ? (ops[appliedRef.current - 1].t ?? 0) : 0;
+      const prevT = appliedRef.current > 0 ? (ops[appliedRef.current - 1].t ?? 0) : firstT;
       const delay = (curT - prevT) * scale;
 
       timerRef.current = setTimeout(() => {
