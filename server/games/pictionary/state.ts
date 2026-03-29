@@ -391,6 +391,25 @@ export function pictionaryReduce(state: ServerState, playerId: PlayerId, msg: Cl
       if (state.phase !== 'pictionary-active') return { state, effects: [] };
       if (state.subPhase !== 'drawing') return { state, effects: [] };
 
+      // Already-correct guessers can still chat but don't re-guess
+      const alreadyGuessed = state.correctGuessers.some(g => g.playerId === playerId);
+      if (alreadyGuessed) {
+        const handle = state.players.get(playerId)!.handle;
+        const allConnected = Array.from(state.players.entries())
+          .filter(([, p]) => p.connected)
+          .map(([id]) => id);
+        return {
+          state,
+          effects: [{
+            type: 'relay',
+            messages: [{
+              to: allConnected,
+              payload: { type: 'guess-result', handle, correct: false, text: msg.text },
+            }],
+          }],
+        };
+      }
+
       const guessResult = submitGuess(state, playerId, msg.text);
       const handle = guessResult.state.players.get(playerId)!.handle;
       const allConnected = Array.from(guessResult.state.players.entries())
