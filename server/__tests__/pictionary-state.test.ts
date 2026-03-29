@@ -621,4 +621,20 @@ describe('isCloseEnough', () => {
   it('still rejects totally wrong guesses with punctuation', () => {
     expect(isCloseEnough("hello-world", "t-rex")).toBe(false);
   });
+
+  it('matches adjacent transposition', () => {
+    expect(isCloseEnough('elehpant', 'elephant')).toBe(true);
+  });
+
+  it('matches transposition at start', () => {
+    expect(isCloseEnough('tsar', 'star')).toBe(true);
+  });
+
+  it('matches transposition at end', () => {
+    expect(isCloseEnough('bera', 'bear')).toBe(true);
+  });
+
+  it('rejects two transpositions', () => {
+    expect(isCloseEnough('tsar bear', 'star baer')).toBe(false);
+  });
 });

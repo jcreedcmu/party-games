@@ -171,11 +171,19 @@ export function isCloseEnough(guess: string, answer: string): boolean {
   if (lenDiff > 1) return false;
 
   if (guess.length === answer.length) {
-    // Check for exactly one substitution
+    // Check for exactly one substitution or one adjacent transposition
     let diffs = 0;
     for (let i = 0; i < guess.length; i++) {
-      if (guess[i] !== answer[i]) diffs++;
-      if (diffs > 1) return false;
+      if (guess[i] !== answer[i]) {
+        diffs++;
+        if (diffs > 1) return false;
+        // Check if this is an adjacent transposition
+        if (i + 1 < guess.length &&
+          guess[i] === answer[i + 1] &&
+          guess[i + 1] === answer[i]) {
+          i++; // skip the next character, it's the other half of the swap
+        }
+      }
     }
     return diffs === 1;
   }
