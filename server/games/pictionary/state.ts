@@ -331,7 +331,7 @@ export function resetGame(state: PictionaryState): PictionaryWaitingState {
 
 // --- Reducers ---
 
-import { addWord as picAddWord } from './words.js';
+import { addWord as picAddWord, type AddWordResult } from './words.js';
 
 function activeTimerEffects(state: PictionaryActiveState | PictionaryPostgameState): Effect[] {
   if (state.phase === 'pictionary-active') {
@@ -452,16 +452,19 @@ export function pictionaryReduce(state: ServerState, playerId: PlayerId, msg: Cl
     case 'add-word': {
       const playerHandle = state.players.get(playerId)?.handle ?? 'unknown';
       const word = msg.word.trim().toLowerCase();
-      const added = picAddWord(msg.word, playerHandle);
-      const message = added
-        ? `"${word}" added!`
-        : (word ? `"${word}" already exists.` : 'Word cannot be empty.');
+      const result: AddWordResult = picAddWord(msg.word, playerHandle);
+      const messages: Record<AddWordResult, string> = {
+        'added': `"${word}" added!`,
+        'duplicate': `"${word}" already exists.`,
+        'empty': 'Word cannot be empty.',
+        'persist-failed': `Failed to save "${word}" — word list is not writable.`,
+      };
       return {
         state,
         effects: [{
           type: 'send',
           playerId,
-          msg: { type: 'add-word-result', success: added, message },
+          msg: { type: 'add-word-result', success: result === 'added', message: messages[result] },
         }],
       };
     }

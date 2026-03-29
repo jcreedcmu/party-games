@@ -45,7 +45,13 @@ const { password, port, host, game } = parseArgs(process.argv.slice(2));
 const wordListPath = path.resolve(import.meta.dirname, 'games/pictionary/word-list.json');
 const words = JSON.parse(fs.readFileSync(wordListPath, 'utf-8'));
 configureWords(words, (updated) => {
-  fs.writeFileSync(wordListPath, JSON.stringify(updated, null, 2) + '\n');
+  try {
+    fs.writeFileSync(wordListPath, JSON.stringify(updated, null, 2) + '\n');
+    return true;
+  } catch (e) {
+    console.error('Failed to persist word list:', e);
+    return false;
+  }
 });
 
 const server = createServer(password, game);

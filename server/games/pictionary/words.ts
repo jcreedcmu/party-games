@@ -5,11 +5,11 @@ export type WordEntry = {
 };
 
 let WORDS: WordEntry[] = [];
-let persistFn: ((words: WordEntry[]) => void) | null = null;
+let persistFn: ((words: WordEntry[]) => boolean) | null = null;
 
 export function configureWords(
   words: WordEntry[],
-  persist?: (words: WordEntry[]) => void,
+  persist?: (words: WordEntry[]) => boolean,
 ): void {
   WORDS = words;
   persistFn = persist ?? null;
@@ -28,10 +28,12 @@ export function getWordEntry(word: string): WordEntry | undefined {
   return WORDS.find(w => w.word.toLowerCase() === word.toLowerCase());
 }
 
-export function addWord(word: string, addedBy: string): boolean {
+export type AddWordResult = 'added' | 'empty' | 'duplicate' | 'persist-failed';
+
+export function addWord(word: string, addedBy: string): AddWordResult {
   const normalized = word.trim().toLowerCase();
-  if (!normalized) return false;
-  if (WORDS.some(w => w.word.toLowerCase() === normalized)) return false;
+  if (!normalized) return 'empty';
+  if (WORDS.some(w => w.word.toLowerCase() === normalized)) return 'duplicate';
 
   const entry: WordEntry = {
     word: normalized,
@@ -39,6 +41,9 @@ export function addWord(word: string, addedBy: string): boolean {
     added_by: addedBy,
   };
   WORDS.push(entry);
-  if (persistFn) persistFn(WORDS);
-  return true;
+  if (persistFn && !persistFn(WORDS)) {
+    WORDS.pop();
+    return 'persist-failed';
+  }
+  return 'added';
 }
