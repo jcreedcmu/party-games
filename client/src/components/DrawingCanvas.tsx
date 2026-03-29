@@ -55,6 +55,17 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        if (undoStack.current.length <= 1) return;
+        undoStack.current.pop();
+        const prev = undoStack.current[undoStack.current.length - 1];
+        imageDataRef.current = cloneImageData(prev);
+        putImage();
+        if (isStream) onStreamOp?.({ type: 'draw-undo' });
+        return;
+      }
+      if (e.ctrlKey || e.metaKey) return;
       switch (e.key) {
         case 'c': setTool('pen'); break;
         case 'z': setTool('fill'); break;
