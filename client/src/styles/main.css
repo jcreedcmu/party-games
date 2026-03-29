@@ -597,6 +597,8 @@ button:disabled {
 .live-canvas-play-btn {
   width: 28px;
   height: 28px;
+  min-height: 28px;
+  padding: 0;
   border-radius: 50%;
   border: 2px solid #ccc;
   background: #f5f5f5;
