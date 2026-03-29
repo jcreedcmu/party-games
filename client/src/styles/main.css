@@ -332,6 +332,14 @@ button:disabled {
   padding: 0.25rem 0.5rem;
   font-size: 0.8rem;
   border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tool-icon {
+  width: 18px;
+  height: 18px;
 }
 
 .tool-btn.active {

@@ -121,6 +121,10 @@ export function clearImageData(data: Uint8ClampedArray): void {
 }
 
 export function createBlankImageData(): ImageData {
+  if (typeof ImageData === 'undefined') {
+    // SSR stub — canvas components won't render meaningfully server-side
+    return { data: new Uint8ClampedArray(0), width: CANVAS_WIDTH, height: CANVAS_HEIGHT, colorSpace: 'srgb' } as ImageData;
+  }
   const img = new ImageData(CANVAS_WIDTH, CANVAS_HEIGHT);
   clearImageData(img.data);
   return img;

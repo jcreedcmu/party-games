@@ -39,6 +39,8 @@ const appCss = fs.readFileSync(path.join(root, 'client', 'src', 'styles', 'main.
 
 const logoSrc = 'drawplodocus.png';
 fs.copyFileSync(path.join(root, 'client', 'public', 'drawplodocus.png'), path.join(outDir, logoSrc));
+fs.copyFileSync(path.join(root, 'client', 'public', 'pencil.png'), path.join(outDir, 'pencil.png'));
+fs.copyFileSync(path.join(root, 'client', 'public', 'bucket.png'), path.join(outDir, 'bucket.png'));
 
 // --- Mock data ---
 

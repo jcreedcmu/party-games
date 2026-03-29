@@ -206,14 +206,14 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
             onClick={() => setTool('pen')}
             title="Pen (C)"
           >
-            &#9998;
+            <img src="pencil.png" alt="Pen" className="tool-icon" />
           </button>
           <button
             className={'tool-btn' + (tool === 'fill' ? ' active' : '')}
             onClick={() => setTool('fill')}
             title="Fill (Z)"
           >
-            &#9781;
+            <img src="bucket.png" alt="Fill" className="tool-icon" />
           </button>
         </div>
         <div className="color-palette">
@@ -240,7 +240,7 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
             className="color-input-hidden"
           />
         </div>
-        {tool === 'pen' && <div className="size-picker">
+        <div className="size-picker" style={{ visibility: tool === 'pen' ? 'visible' : 'hidden' }}>
           {SIZES.map((s, i) => (
             <button
               key={s}
@@ -251,7 +251,7 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
               <span className="size-dot" style={{ width: s, height: s }} />
             </button>
           ))}
-        </div>}
+        </div>
         <div className="drawing-actions">
           <button onClick={handleUndo}>Undo</button>
           <button onClick={handleClear}>Clear</button>
