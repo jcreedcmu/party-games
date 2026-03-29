@@ -1,5 +1,5 @@
 import type { PictionaryClientPostgameState } from '../../types';
-import { LiveCanvas } from './LiveCanvas';
+import { PostGameTurnCard } from './PostGameTurnCard';
 
 type Props = {
   state: PictionaryClientPostgameState;
@@ -24,39 +24,7 @@ export function PictionaryPostGame({ state, onNewGame }: Props) {
 
       <h3>Turns</h3>
       {state.turns.map((turn, i) => (
-        <div key={i} className="pic-turn-card">
-          <div className="pic-turn-header">
-            <strong>{turn.drawerHandle}</strong> drew <strong>&ldquo;{turn.word}&rdquo;</strong>
-            {turn.wordAddedBy && (
-              <span className="pic-turn-credit">
-                {' '}(added by {turn.wordAddedBy}{turn.wordAddedOn && `, ${new Date(turn.wordAddedOn).toLocaleDateString()}`})
-              </span>
-            )}
-          </div>
-          <div className="pic-turn-body">
-            <div className="pic-turn-drawing">
-              <LiveCanvas ops={turn.drawOps} animated />
-            </div>
-            <div className="pic-turn-guess-log">
-              {turn.guessLog.map((g, j) => (
-                <div key={j} className={'pic-guess-entry' + (g.correct ? ' correct' : '')}>
-                  <strong>{g.handle}</strong>
-                  {g.correct ? ' guessed correctly!' : `: ${g.text}`}
-                </div>
-              ))}
-              {turn.guessLog.length === 0 && (
-                <div className="pic-turn-no-guesses">No guesses</div>
-              )}
-            </div>
-          </div>
-          {turn.guessers.length > 0 ? (
-            <div className="pic-turn-guessers">
-              Guessed by: {turn.guessers.map(g => `${g.handle} (${(g.timeMs / 1000).toFixed(1)}s)`).join(', ')}
-            </div>
-          ) : (
-            <div className="pic-turn-guessers">Nobody guessed it</div>
-          )}
-        </div>
+        <PostGameTurnCard key={i} turn={turn} />
       ))}
 
       <button className="submit-btn new-game-btn" onClick={onNewGame}>

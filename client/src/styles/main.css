@@ -594,33 +594,23 @@ button:disabled {
   margin-bottom: 0.75rem;
 }
 
-.live-canvas-container {
-  position: relative;
-  display: inline-block;
-  width: 100%;
-}
-
 .live-canvas-play-btn {
-  position: absolute;
-  bottom: 12px;
-  right: 12px;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: 2px solid #ccc;
-  background: rgba(255, 255, 255, 0.85);
-  font-size: 14px;
+  background: #f5f5f5;
+  font-size: 12px;
   line-height: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.6;
-  transition: opacity 0.15s;
+  flex-shrink: 0;
 }
 
 .live-canvas-play-btn:hover {
-  opacity: 1;
+  background: #e0e0e0;
 }
 
 .live-canvas {
@@ -812,6 +802,9 @@ button:disabled {
   font-size: 0.85rem;
   color: #555;
   border-top: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 /* Word Picker */
