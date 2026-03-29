@@ -1,8 +1,8 @@
 import { useRef, useEffect, useCallback } from 'react';
 import type { DrawOp } from '../../types';
 
-const CANVAS_WIDTH = 400;
-const CANVAS_HEIGHT = 300;
+const CANVAS_WIDTH = 600;
+const CANVAS_HEIGHT = 450;
 
 type LiveCanvasProps = {
   ops: DrawOp[];

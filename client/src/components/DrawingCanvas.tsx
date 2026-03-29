@@ -7,8 +7,8 @@ const COLORS = [
   '#ffffff',
 ];
 const SIZES = [2, 5, 10, 20];
-const CANVAS_WIDTH = 400;
-const CANVAS_HEIGHT = 300;
+const CANVAS_WIDTH = 600;
+const CANVAS_HEIGHT = 450;
 const BATCH_INTERVAL_MS = 50;
 
 type DrawingCanvasProps = {
