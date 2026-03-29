@@ -1,8 +1,10 @@
 import { useRef, useEffect, useCallback } from 'react';
 import type { DrawOp } from '../../types';
-
-const CANVAS_WIDTH = 600;
-const CANVAS_HEIGHT = 450;
+import {
+  CANVAS_WIDTH, CANVAS_HEIGHT,
+  parseColor, stampCircle, drawLineSegment, floodFill,
+  clearImageData, createBlankImageData, cloneImageData,
+} from '../../draw-util';
 
 type LiveCanvasProps = {
   ops: DrawOp[];
@@ -12,130 +14,78 @@ export function LiveCanvas({ ops }: LiveCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const appliedRef = useRef(0);
   const snapshotsRef = useRef<ImageData[]>([]);
-  const drawStateRef = useRef({ color: '#000000', size: 5, started: false });
+  const imageDataRef = useRef<ImageData>(createBlankImageData());
+  const drawStateRef = useRef<{
+    color: string;
+    rgb: [number, number, number];
+    size: number;
+    radius: number;
+    lastX: number;
+    lastY: number;
+    started: boolean;
+  }>({ color: '#000000', rgb: [0, 0, 0], size: 5, radius: 2, lastX: 0, lastY: 0, started: false });
 
   const getCtx = useCallback(() => {
     return canvasRef.current?.getContext('2d') ?? null;
   }, []);
 
-  function saveSnapshot() {
+  function putImage() {
     const ctx = getCtx();
-    if (!ctx) return;
-    snapshotsRef.current.push(ctx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT));
+    if (ctx) ctx.putImageData(imageDataRef.current, 0, 0);
+  }
+
+  function saveSnapshot() {
+    snapshotsRef.current.push(cloneImageData(imageDataRef.current));
     if (snapshotsRef.current.length > 30) snapshotsRef.current.shift();
   }
 
-  function floodFill(ctx: CanvasRenderingContext2D, startX: number, startY: number, fillColor: string) {
-    const imageData = ctx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    const data = imageData.data;
-
-    const tmp = document.createElement('canvas').getContext('2d')!;
-    tmp.fillStyle = fillColor;
-    tmp.fillRect(0, 0, 1, 1);
-    const [fr, fg, fb] = tmp.getImageData(0, 0, 1, 1).data;
-
-    const sx = Math.floor(startX);
-    const sy = Math.floor(startY);
-    if (sx < 0 || sx >= CANVAS_WIDTH || sy < 0 || sy >= CANVAS_HEIGHT) return;
-
-    const idx = (sy * CANVAS_WIDTH + sx) * 4;
-    const tr = data[idx], tg = data[idx + 1], tb = data[idx + 2], ta = data[idx + 3];
-
-    if (tr === fr && tg === fg && tb === fb && ta === 255) return;
-
-    const tolerance = 32;
-    function matches(i: number) {
-      return Math.abs(data[i] - tr) <= tolerance &&
-        Math.abs(data[i + 1] - tg) <= tolerance &&
-        Math.abs(data[i + 2] - tb) <= tolerance &&
-        Math.abs(data[i + 3] - ta) <= tolerance;
-    }
-
-    const stack = [sx, sy];
-    const visited = new Uint8Array(CANVAS_WIDTH * CANVAS_HEIGHT);
-
-    while (stack.length > 0) {
-      const cy = stack.pop()!;
-      const cx = stack.pop()!;
-      const pi = cy * CANVAS_WIDTH + cx;
-      if (visited[pi]) continue;
-      visited[pi] = 1;
-
-      const di = pi * 4;
-      if (!matches(di)) continue;
-
-      data[di] = fr;
-      data[di + 1] = fg;
-      data[di + 2] = fb;
-      data[di + 3] = 255;
-
-      if (cx > 0) stack.push(cx - 1, cy);
-      if (cx < CANVAS_WIDTH - 1) stack.push(cx + 1, cy);
-      if (cy > 0) stack.push(cx, cy - 1);
-      if (cy < CANVAS_HEIGHT - 1) stack.push(cx, cy + 1);
-    }
-
-    ctx.putImageData(imageData, 0, 0);
-  }
-
   function applyOp(op: DrawOp) {
-    const ctx = getCtx();
-    if (!ctx) return;
     const ds = drawStateRef.current;
+    const data = imageDataRef.current.data;
 
     switch (op.type) {
-      case 'draw-start':
+      case 'draw-start': {
+        const rgb = parseColor(op.color);
+        const radius = Math.max(0, op.size / 2 - 0.5);
         ds.color = op.color;
+        ds.rgb = rgb;
         ds.size = op.size;
+        ds.radius = radius;
         ds.started = true;
-        ctx.beginPath();
-        ctx.moveTo(op.x, op.y);
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.strokeStyle = op.color;
-        ctx.lineWidth = op.size;
-        ctx.lineTo(op.x, op.y);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(op.x, op.y);
+        ds.lastX = op.x;
+        ds.lastY = op.y;
+        stampCircle(data, op.x, op.y, radius, rgb[0], rgb[1], rgb[2]);
         break;
-      case 'draw-move':
+      }
+      case 'draw-move': {
         if (!ds.started) break;
-        ctx.strokeStyle = ds.color;
-        ctx.lineWidth = ds.size;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        const [r, g, b] = ds.rgb;
         for (const pt of op.points) {
-          ctx.lineTo(pt.x, pt.y);
-        }
-        ctx.stroke();
-        if (op.points.length > 0) {
-          const last = op.points[op.points.length - 1];
-          ctx.beginPath();
-          ctx.moveTo(last.x, last.y);
+          drawLineSegment(data, ds.lastX, ds.lastY, pt.x, pt.y, ds.radius, r, g, b);
+          ds.lastX = pt.x;
+          ds.lastY = pt.y;
         }
         break;
+      }
       case 'draw-end':
         ds.started = false;
         saveSnapshot();
         break;
       case 'draw-fill':
-        floodFill(ctx, op.x, op.y, op.color);
+        floodFill(data, op.x, op.y, op.color);
         saveSnapshot();
         break;
       case 'draw-undo':
         if (snapshotsRef.current.length > 1) {
           snapshotsRef.current.pop();
-          ctx.putImageData(snapshotsRef.current[snapshotsRef.current.length - 1], 0, 0);
+          imageDataRef.current = cloneImageData(snapshotsRef.current[snapshotsRef.current.length - 1]);
         } else {
           snapshotsRef.current = [];
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+          imageDataRef.current = createBlankImageData();
         }
         break;
       case 'draw-clear':
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        clearImageData(imageDataRef.current.data);
         snapshotsRef.current = [];
         saveSnapshot();
         break;
@@ -144,16 +94,13 @@ export function LiveCanvas({ ops }: LiveCanvasProps) {
 
   // Initialize canvas
   useEffect(() => {
-    const ctx = getCtx();
-    if (!ctx) return;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     saveSnapshot();
     // Apply any ops that were provided at mount time
     while (appliedRef.current < ops.length) {
       applyOp(ops[appliedRef.current]);
       appliedRef.current++;
     }
+    putImage();
   }, []);
 
   // Apply new ops incrementally
@@ -162,6 +109,7 @@ export function LiveCanvas({ ops }: LiveCanvasProps) {
       applyOp(ops[appliedRef.current]);
       appliedRef.current++;
     }
+    putImage();
   }, [ops.length]);
 
   return (
