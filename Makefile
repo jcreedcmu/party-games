@@ -13,5 +13,8 @@ serve-epyc: build
 preview:
 	npx tsx --tsconfig client/tsconfig.json scripts/gen-preview.tsx 2>/dev/null
 
+preview-zip: preview
+	zip -j preview.zip preview-dist/*
+
 build:
 	npx vite build --config vite.config.ts
