@@ -158,7 +158,14 @@ export function checkAllReadyPostgame(
   };
 }
 
-function isCloseEnough(guess: string, answer: string): boolean {
+export function stripPunctuation(s: string): string {
+  return s.replace(/[^a-z0-9 ]/g, '');
+}
+
+export function isCloseEnough(guess: string, answer: string): boolean {
+  // Normalize out punctuation so "t-rex" matches "trex", "t rex", etc.
+  guess = stripPunctuation(guess);
+  answer = stripPunctuation(answer);
   if (guess === answer) return true;
   const lenDiff = Math.abs(guess.length - answer.length);
   if (lenDiff > 1) return false;
@@ -474,7 +481,7 @@ export function pictionaryReduce(state: ServerState, playerId: PlayerId, msg: Cl
       const result: AddWordResult = picAddWord(msg.word, playerHandle);
       const messages: Record<AddWordResult, string> = {
         'added': `"${word}" added!`,
-        'invalid': 'Words can only contain letters and spaces.',
+        'invalid': 'Words can only contain letters, spaces, hyphens, and apostrophes.',
         'duplicate': `"${word}" already exists.`,
         'empty': 'Word cannot be empty.',
         'persist-failed': `Failed to save "${word}" — word list is not writable.`,

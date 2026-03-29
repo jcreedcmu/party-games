@@ -17,6 +17,7 @@ import {
   TURN_DURATION_MS,
   ALL_GUESSED_GRACE_MS,
   PICK_DURATION_MS,
+  isCloseEnough,
 } from '../games/pictionary/state.js';
 import { getClientState } from '../games/pictionary/client-state.js';
 import { configureWords } from '../games/pictionary/words.js';
@@ -573,5 +574,51 @@ describe('checkAllReadyPostgame', () => {
     for (const [, p] of result.players) {
       expect(p.ready).toBe(false);
     }
+  });
+});
+
+describe('isCloseEnough', () => {
+  it('matches exact answers', () => {
+    expect(isCloseEnough('cat', 'cat')).toBe(true);
+  });
+
+  it('matches with one substitution', () => {
+    expect(isCloseEnough('cat', 'car')).toBe(true);
+  });
+
+  it('matches with one insertion', () => {
+    expect(isCloseEnough('cat', 'cats')).toBe(true);
+  });
+
+  it('matches with one deletion', () => {
+    expect(isCloseEnough('cats', 'cat')).toBe(true);
+  });
+
+  it('rejects two or more differences', () => {
+    expect(isCloseEnough('cat', 'dog')).toBe(false);
+  });
+
+  it('ignores hyphens in guess', () => {
+    expect(isCloseEnough('t-rex', 't rex')).toBe(true);
+  });
+
+  it('ignores hyphens in answer', () => {
+    expect(isCloseEnough('trex', 't-rex')).toBe(true);
+  });
+
+  it('ignores apostrophes', () => {
+    expect(isCloseEnough("tam o shanter", "tam o' shanter")).toBe(true);
+  });
+
+  it('matches hyphenated answer with space in guess', () => {
+    expect(isCloseEnough('ice cream', 'ice-cream')).toBe(true);
+  });
+
+  it('matches when only punctuation differs', () => {
+    expect(isCloseEnough("dont", "don't")).toBe(true);
+  });
+
+  it('still rejects totally wrong guesses with punctuation', () => {
+    expect(isCloseEnough("hello-world", "t-rex")).toBe(false);
   });
 });

@@ -30,7 +30,7 @@ export function getWordEntry(word: string): WordEntry | undefined {
 
 export type AddWordResult = 'added' | 'empty' | 'invalid' | 'duplicate' | 'persist-failed';
 
-const VALID_WORD = /^[a-z ]+$/;
+const VALID_WORD = /^[a-z '-]+$/;
 
 export function addWord(word: string, addedBy: string): AddWordResult {
   const normalized = word.trim().toLowerCase();
