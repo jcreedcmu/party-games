@@ -1,5 +1,7 @@
 name: Preview
 on: workflow_dispatch
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 jobs:
   preview:
     runs-on: ubuntu-latest
@@ -7,7 +9,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - run: npm ci
       - run: npx tsx --tsconfig client/tsconfig.json scripts/gen-preview.tsx
       - uses: actions/upload-artifact@v4
