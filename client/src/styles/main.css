@@ -14,7 +14,7 @@ body {
 }
 
 #root {
-  max-width: 600px;
+  max-width: 720px;
   margin: 1rem auto;
 }
 
@@ -312,6 +312,7 @@ button:disabled {
   border: 2px solid #ddd;
   border-radius: 10px;
   cursor: crosshair;
+  image-rendering: pixelated;
 }
 
 .drawing-toolbar {
@@ -558,12 +559,13 @@ button:disabled {
 
 .pic-main-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
 }
 
 .pic-main-left {
   flex: 1;
-  min-width: 0;
+  min-width: 300px;
 }
 
 .pic-guess-feed {
@@ -592,6 +594,7 @@ button:disabled {
   width: 100%;
   border: 2px solid #eee;
   border-radius: 10px;
+  image-rendering: pixelated;
 }
 
 .pic-word-hint {

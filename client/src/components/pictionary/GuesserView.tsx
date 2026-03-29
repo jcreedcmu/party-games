@@ -13,11 +13,12 @@ type GuesserViewProps = {
   playerId: string;
   send: (msg: ClientMessage) => void;
   onRelay: (listener: (payload: RelayPayload) => void) => () => void;
+  initialGuesses?: GuessEntry[];
 };
 
-export function GuesserView({ state, playerId, send, onRelay }: GuesserViewProps) {
+export function GuesserView({ state, playerId, send, onRelay, initialGuesses = [] }: GuesserViewProps) {
   const [drawOps, setDrawOps] = useState<DrawOp[]>([]);
-  const [guesses, setGuesses] = useState<GuessEntry[]>([]);
+  const [guesses, setGuesses] = useState<GuessEntry[]>(initialGuesses);
   const [text, setText] = useState('');
   const [timeLeft, setTimeLeft] = useState('');
   const [urgent, setUrgent] = useState(false);

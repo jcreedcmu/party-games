@@ -12,10 +12,11 @@ type DrawerViewProps = {
   state: PictionaryClientActiveState;
   send: (msg: ClientMessage) => void;
   onRelay: (listener: (payload: RelayPayload) => void) => () => void;
+  initialGuesses?: GuessEntry[];
 };
 
-export function DrawerView({ state, send, onRelay }: DrawerViewProps) {
-  const [guesses, setGuesses] = useState<GuessEntry[]>([]);
+export function DrawerView({ state, send, onRelay, initialGuesses = [] }: DrawerViewProps) {
+  const [guesses, setGuesses] = useState<GuessEntry[]>(initialGuesses);
   const [timeLeft, setTimeLeft] = useState('');
   const [urgent, setUrgent] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -59,12 +60,11 @@ export function DrawerView({ state, send, onRelay }: DrawerViewProps) {
         <span className={'timer' + (urgent ? ' timer-urgent' : '')}>{timeLeft}</span>
       </div>
 
-      <div className="pic-secret-word">
-        Draw: <strong>{state.word}</strong>
-      </div>
-
       <div className="pic-main-row">
         <div className="pic-main-left">
+          <div className="pic-secret-word">
+            Draw: <strong>{state.word}</strong>
+          </div>
           <DrawingCanvas
             canvasRef={canvasRef}
             mode="stream"

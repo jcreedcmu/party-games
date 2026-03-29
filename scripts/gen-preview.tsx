@@ -214,7 +214,17 @@ const sections: Section[] = [
   {
     title: 'Drawing (Drawer View)',
     html: renderInAppWrapper(
-      React.createElement(DrawerView, { state: drawerState, send: noopSend, onRelay: noopRelay }),
+      React.createElement(DrawerView, {
+        state: drawerState,
+        send: noopSend,
+        onRelay: noopRelay,
+        initialGuesses: [
+          { handle: 'Bob', correct: false, text: 'trunk' },
+          { handle: 'Charlie', correct: false, text: 'tree' },
+          { handle: 'Bob', correct: true, text: null },
+          { handle: 'Charlie', correct: false, text: 'mammoth' },
+        ],
+      }),
     ),
   },
   {
@@ -225,6 +235,11 @@ const sections: Section[] = [
         playerId: 'p2',
         send: noopSend,
         onRelay: noopRelay,
+        initialGuesses: [
+          { handle: 'Bob', correct: false, text: 'trunk' },
+          { handle: 'Bob', correct: true, text: null },
+          { handle: 'Charlie', correct: false, text: 'mammoth' },
+        ],
       }),
     ),
   },
