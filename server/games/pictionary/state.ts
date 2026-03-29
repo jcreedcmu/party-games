@@ -455,6 +455,7 @@ export function pictionaryReduce(state: ServerState, playerId: PlayerId, msg: Cl
       const result: AddWordResult = picAddWord(msg.word, playerHandle);
       const messages: Record<AddWordResult, string> = {
         'added': `"${word}" added!`,
+        'invalid': 'Words can only contain letters and spaces.',
         'duplicate': `"${word}" already exists.`,
         'empty': 'Word cannot be empty.',
         'persist-failed': `Failed to save "${word}" — word list is not writable.`,

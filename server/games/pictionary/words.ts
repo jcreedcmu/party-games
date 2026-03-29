@@ -28,11 +28,14 @@ export function getWordEntry(word: string): WordEntry | undefined {
   return WORDS.find(w => w.word.toLowerCase() === word.toLowerCase());
 }
 
-export type AddWordResult = 'added' | 'empty' | 'duplicate' | 'persist-failed';
+export type AddWordResult = 'added' | 'empty' | 'invalid' | 'duplicate' | 'persist-failed';
+
+const VALID_WORD = /^[a-z ]+$/;
 
 export function addWord(word: string, addedBy: string): AddWordResult {
   const normalized = word.trim().toLowerCase();
   if (!normalized) return 'empty';
+  if (!VALID_WORD.test(normalized)) return 'invalid';
   if (WORDS.some(w => w.word.toLowerCase() === normalized)) return 'duplicate';
 
   const entry: WordEntry = {
