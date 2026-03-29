@@ -54,7 +54,7 @@ export function GuesserView({ state, playerId, send, onRelay, initialGuesses = [
 
   function submitGuess() {
     const trimmed = text.trim();
-    if (!trimmed || state.guessedCorrectly) return;
+    if (!trimmed) return;
     send({ type: 'guess', text: trimmed });
     setText('');
     inputRef.current?.focus();
