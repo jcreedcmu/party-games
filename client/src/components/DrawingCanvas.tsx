@@ -52,6 +52,22 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
     saveSnapshot();
   }, [getCtx]);
 
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      switch (e.key) {
+        case 'c': setTool('pen'); break;
+        case 'z': setTool('fill'); break;
+        case '1': setSize(SIZES[0]); setTool('pen'); break;
+        case '2': setSize(SIZES[1]); setTool('pen'); break;
+        case '3': setSize(SIZES[2]); setTool('pen'); break;
+        case '4': setSize(SIZES[3]); setTool('pen'); break;
+      }
+    }
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, []);
+
   function saveSnapshot() {
     undoStack.current.push(cloneImageData(imageDataRef.current));
     if (undoStack.current.length > 30) {
@@ -188,16 +204,16 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
           <button
             className={'tool-btn' + (tool === 'pen' ? ' active' : '')}
             onClick={() => setTool('pen')}
-            title="Pen"
+            title="Pen (C)"
           >
-            Pen
+            &#9998;
           </button>
           <button
             className={'tool-btn' + (tool === 'fill' ? ' active' : '')}
             onClick={() => setTool('fill')}
-            title="Fill"
+            title="Fill (Z)"
           >
-            Fill
+            &#9781;
           </button>
         </div>
         <div className="color-palette">
@@ -225,11 +241,12 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
           />
         </div>
         {tool === 'pen' && <div className="size-picker">
-          {SIZES.map(s => (
+          {SIZES.map((s, i) => (
             <button
               key={s}
               className={'size-btn' + (s === size ? ' active' : '')}
               onClick={() => setSize(s)}
+              title={`Size ${s} (${i + 1})`}
             >
               <span className="size-dot" style={{ width: s, height: s }} />
             </button>
