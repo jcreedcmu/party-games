@@ -14,7 +14,7 @@ body {
 }
 
 #root {
-  max-width: 720px;
+  max-width: 900px;
   margin: 1rem auto;
 }
 
@@ -551,10 +551,6 @@ button:disabled {
   border-radius: 10px;
   font-size: 0.875rem;
   color: #0c5460;
-}
-
-.pictionary-board {
-  max-width: 720px;
 }
 
 .pic-main-row {

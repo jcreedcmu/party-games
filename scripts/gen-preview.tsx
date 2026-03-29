@@ -254,7 +254,7 @@ const sections: Section[] = [
 // --- Output files ---
 
 const sectionDivs = sections
-  .map((s, i) => `<div class="preview-section" data-section="${i}" ${i === 0 ? '' : 'style="display:none"'}>${s.html}</div>`)
+  .map((s, i) => `<div id="root" class="preview-section" data-section="${i}" ${i === 0 ? '' : 'style="display:none"'}>${s.html}</div>`)
   .join('\n');
 
 const tabs = sections
@@ -262,8 +262,6 @@ const tabs = sections
   .join('\n      ');
 
 const previewCss = `/* Preview-specific styles */
-
-.preview-section { max-width: 600px; margin: 1rem auto; }
 
 .preview-topbar {
   position: sticky;
