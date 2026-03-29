@@ -35,7 +35,7 @@ export function PictionaryPostGame({ state, onNewGame }: Props) {
           </div>
           <div className="pic-turn-body">
             <div className="pic-turn-drawing">
-              <LiveCanvas ops={turn.drawOps} />
+              <LiveCanvas ops={turn.drawOps} animated />
             </div>
             <div className="pic-turn-guess-log">
               {turn.guessLog.map((g, j) => (

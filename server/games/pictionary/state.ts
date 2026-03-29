@@ -209,7 +209,8 @@ export function getCurrentDrawer(state: PictionaryActiveState): PlayerId {
 }
 
 export function recordDrawOp(state: PictionaryActiveState, op: DrawOp): PictionaryActiveState {
-  return { ...state, currentTurnOps: [...state.currentTurnOps, op] };
+  const t = Date.now() - state.turnStartTime;
+  return { ...state, currentTurnOps: [...state.currentTurnOps, { ...op, t }] };
 }
 
 export function submitGuess(

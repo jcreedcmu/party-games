@@ -6,15 +6,20 @@ import {
   clearImageData, createBlankImageData, cloneImageData,
 } from '../../draw-util';
 
+const PLAYBACK_DURATION_MS = 5000;
+const HOLD_DURATION_MS = 3000;
+
 type LiveCanvasProps = {
   ops: DrawOp[];
+  animated?: boolean;
 };
 
-export function LiveCanvas({ ops }: LiveCanvasProps) {
+export function LiveCanvas({ ops, animated = false }: LiveCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const appliedRef = useRef(0);
   const snapshotsRef = useRef<ImageData[]>([]);
   const imageDataRef = useRef<ImageData>(createBlankImageData());
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const drawStateRef = useRef<{
     color: string;
     rgb: [number, number, number];
@@ -92,19 +97,67 @@ export function LiveCanvas({ ops }: LiveCanvasProps) {
     }
   }
 
-  // Initialize canvas
+  function resetState() {
+    imageDataRef.current = createBlankImageData();
+    snapshotsRef.current = [];
+    saveSnapshot();
+    drawStateRef.current = { color: '#000000', rgb: [0, 0, 0], size: 5, radius: 2, lastX: 0, lastY: 0, started: false };
+    appliedRef.current = 0;
+  }
+
+  function startAnimatedPlayback() {
+    resetState();
+    putImage();
+
+    const totalOriginalMs = ops[ops.length - 1].t ?? 0;
+    const scale = totalOriginalMs > 0 ? PLAYBACK_DURATION_MS / totalOriginalMs : 1;
+
+    function scheduleNext() {
+      if (appliedRef.current >= ops.length) {
+        // Hold on last frame, then loop
+        timerRef.current = setTimeout(() => {
+          startAnimatedPlayback();
+        }, HOLD_DURATION_MS);
+        return;
+      }
+
+      const curT = ops[appliedRef.current].t ?? 0;
+      const prevT = appliedRef.current > 0 ? (ops[appliedRef.current - 1].t ?? 0) : 0;
+      const delay = (curT - prevT) * scale;
+
+      timerRef.current = setTimeout(() => {
+        applyOp(ops[appliedRef.current]);
+        putImage();
+        appliedRef.current++;
+        scheduleNext();
+      }, delay);
+    }
+
+    scheduleNext();
+  }
+
   useEffect(() => {
     saveSnapshot();
-    // Apply any ops that were provided at mount time
-    while (appliedRef.current < ops.length) {
-      applyOp(ops[appliedRef.current]);
-      appliedRef.current++;
+
+    if (animated && ops.length > 0 && ops[0].t != null) {
+      startAnimatedPlayback();
+    } else {
+      // Non-animated: apply all ops immediately
+      while (appliedRef.current < ops.length) {
+        applyOp(ops[appliedRef.current]);
+        appliedRef.current++;
+      }
+      putImage();
     }
-    putImage();
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
-  // Apply new ops incrementally
+  // For non-animated (live streaming): apply new ops as they arrive
   useEffect(() => {
+    if (animated) return;
     while (appliedRef.current < ops.length) {
       applyOp(ops[appliedRef.current]);
       appliedRef.current++;

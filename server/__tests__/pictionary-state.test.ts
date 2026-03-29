@@ -207,14 +207,18 @@ describe('getCurrentDrawer', () => {
 });
 
 describe('recordDrawOp', () => {
-  it('appends a draw op to currentTurnOps', () => {
+  it('appends a draw op to currentTurnOps with timestamp', () => {
     const active = makeTwoPlayerDrawing();
     const op = { type: 'draw-start' as const, color: '#000', size: 5, x: 10, y: 20 };
     const result = recordDrawOp(active, op);
-    expect(result.currentTurnOps).toEqual([op]);
+    expect(result.currentTurnOps).toHaveLength(1);
+    expect(result.currentTurnOps[0]).toMatchObject(op);
+    expect(result.currentTurnOps[0]).toHaveProperty('t');
+    expect(typeof result.currentTurnOps[0].t).toBe('number');
     const op2 = { type: 'draw-end' as const };
     const result2 = recordDrawOp(result, op2);
-    expect(result2.currentTurnOps).toEqual([op, op2]);
+    expect(result2.currentTurnOps).toHaveLength(2);
+    expect(result2.currentTurnOps[1]).toMatchObject(op2);
   });
 });
 
