@@ -191,6 +191,8 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
 
     ctx.lineTo(pt.x, pt.y);
     ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(pt.x, pt.y);
 
     if (isStream) {
       pointBuffer.current.push(pt);
