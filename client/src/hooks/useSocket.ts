@@ -35,7 +35,10 @@ export function useSocket() {
   const relayListenersRef = useRef<Set<(payload: RelayPayload) => void>>(new Set());
 
   const connect = useCallback((password: string, handle: string) => {
-    if (transportRef.current) return;
+    if (transportRef.current) {
+      transportRef.current.close();
+      transportRef.current = null;
+    }
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const url = `${protocol}//${window.location.host}/ws`;
