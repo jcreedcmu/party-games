@@ -81,7 +81,7 @@ export function GuesserView({ state, playerId, send, onRelay, initialGuesses = [
           <div className="pic-word-hint">{hintRevealed ? state.wordHintRevealed : state.wordHint}</div>
 
           {state.guessedCorrectly ? (
-            <div className="pic-guessed-correct">You guessed it!</div>
+            <div className="pic-guessed-correct">You guessed it! The word was <strong>{state.word}</strong>.</div>
           ) : (
             <form className="pic-guess-form" onSubmit={(e) => { e.preventDefault(); submitGuess(); }}>
               <input

@@ -95,7 +95,7 @@ function getActiveClientState(
     currentDrawerHandle: drawerInfo.handle,
     turnNumber: state.currentTurnIndex + 1,
     totalTurns: state.order.length,
-    word: (!isPicking && isDrawer) ? state.word : null,
+    word: (!isPicking && (isDrawer || guessedIds.has(playerId))) ? state.word : null,
     wordChoices: (isPicking && isDrawer) ? state.wordChoices : null,
     wordHint,
     wordHintRevealed,
