@@ -14,6 +14,10 @@ export function createLocalConnection(
     send(data) {
       queueMicrotask(() => clientHandlers.onMessage(data));
     },
+    close() {
+      handler.onDisconnect(conn);
+      clientHandlers.onClose();
+    },
   };
 
   handler.onConnect(conn);

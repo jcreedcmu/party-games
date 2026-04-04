@@ -565,6 +565,20 @@ export function pictionaryReduce(state: ServerState, playerId: PlayerId, msg: Cl
       };
     }
 
+    case 'boot': {
+      if (state.phase !== 'pictionary-waiting' && state.phase !== 'pictionary-postgame') {
+        return { state, effects: [] };
+      }
+      const targetId = msg.targetId;
+      if (targetId === playerId) return { state, effects: [] };
+      if (!state.players.has(targetId)) return { state, effects: [] };
+      const next = removePlayer(state, targetId);
+      return {
+        state: next,
+        effects: [{ type: 'kick', playerId: targetId }, { type: 'broadcast' }],
+      };
+    }
+
     default:
       return { state, effects: [] };
   }

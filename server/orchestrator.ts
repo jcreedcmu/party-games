@@ -105,6 +105,15 @@ export function createOrchestrator(config: OrchestratorConfig): Orchestrator {
         case 'clear-timer':
           clearGameTimer();
           break;
+        case 'kick':
+          for (const [connId, entry] of clients) {
+            if (entry.playerId === effect.playerId) {
+              console.log(`[orch] kicking player=${effect.playerId} conn=${connId}`);
+              sendTo(entry.conn, { type: 'error', message: 'You have been kicked' });
+              entry.conn.close();
+            }
+          }
+          break;
       }
     }
   }

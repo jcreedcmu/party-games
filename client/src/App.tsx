@@ -50,6 +50,7 @@ type GameShellProps = {
   playerId: string;
   gameType: GameType | null;
   connected: boolean;
+  reconnect: () => void;
   send: (msg: ClientMessage) => void;
   onRelay: (listener: (payload: RelayPayload) => void) => () => void;
   addWordResult: { success: boolean; message: string } | null;
@@ -57,9 +58,11 @@ type GameShellProps = {
   topBanner?: React.ReactNode;
 };
 
-function GameShell({ gameState, playerId, gameType, connected, send, onRelay, addWordResult, clearAddWordResult, topBanner }: GameShellProps) {
+function GameShell({ gameState, playerId, gameType, connected, reconnect, send, onRelay, addWordResult, clearAddWordResult, topBanner }: GameShellProps) {
   const disconnectBanner = !connected ? (
-    <div className="disconnect-banner">Connection lost. Trying to reconnect...</div>
+    <div className="disconnect-banner">
+      Connection lost. <button className="reconnect-btn" onClick={reconnect}>Reconnect</button>
+    </div>
   ) : null;
 
   const content = gameType === 'epyc'
@@ -79,10 +82,10 @@ function GameShell({ gameState, playerId, gameType, connected, send, onRelay, ad
 }
 
 function ServerApp() {
-  const { gameState, playerId, gameType, error, connected, connect, send, clearError, clearAddWordResult, addWordResult, onRelay } = useSocket();
+  const { gameState, playerId, gameType, error, connected, connect, reconnect, send, clearError, clearAddWordResult, addWordResult, onRelay } = useSocket();
 
   if (playerId && gameState) {
-    return <GameShell gameState={gameState} playerId={playerId} gameType={gameType} connected={connected} send={send} onRelay={onRelay} addWordResult={addWordResult} clearAddWordResult={clearAddWordResult} />;
+    return <GameShell gameState={gameState} playerId={playerId} gameType={gameType} connected={connected} reconnect={reconnect} send={send} onRelay={onRelay} addWordResult={addWordResult} clearAddWordResult={clearAddWordResult} />;
   }
 
   return (

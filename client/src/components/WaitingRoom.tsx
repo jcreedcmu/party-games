@@ -27,6 +27,8 @@ export function WaitingRoom({ state, playerId, onReady, onUnready, send, addWord
     setNewWord('');
   }
 
+  const base = import.meta.env.BASE_URL;
+
   return (
     <div className="waiting-room" data-testid="waiting-room">
       <h2>Lobby</h2>
@@ -35,6 +37,15 @@ export function WaitingRoom({ state, playerId, onReady, onUnready, send, addWord
           <li key={p.id}>
             <span className={`player-name${p.id === playerId ? ' player-me' : ''}`}>{p.handle}</span>
             {p.ready && <span className="ready-indicator"> ✓</span>}
+            {p.id !== playerId && (
+              <button
+                className="boot-btn"
+                title={`Kick ${p.handle}`}
+                onClick={() => send({ type: 'boot', targetId: p.id })}
+              >
+                <img src={`${base}boot.svg`} alt="Kick" className="boot-icon" />
+              </button>
+            )}
           </li>
         ))}
       </ul>

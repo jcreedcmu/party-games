@@ -32,9 +32,10 @@ export type GuessMessage = { type: 'guess'; text: string };
 export type TurnDoneMessage = { type: 'turn-done' };
 export type PickWordMessage = { type: 'pick-word'; index: number };
 export type AddWordMessage = { type: 'add-word'; word: string };
+export type BootMessage = { type: 'boot'; targetId: string };
 
 // Grouped by game for readability
-export type CommonClientMessage = JoinMessage | ReadyMessage | UnreadyMessage | ResetMessage;
+export type CommonClientMessage = JoinMessage | ReadyMessage | UnreadyMessage | ResetMessage | BootMessage;
 export type EpycClientMessage = SubmitMessage;
 export type DrawClientMessage = DrawStartOp | DrawMoveOp | DrawEndOp | DrawFillOp | DrawUndoOp | DrawClearOp;
 export type PictionaryClientMessage = GuessMessage | TurnDoneMessage | PickWordMessage | AddWordMessage;

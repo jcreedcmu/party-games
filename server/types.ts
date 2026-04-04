@@ -30,7 +30,8 @@ export type Effect =
   | { type: 'relay'; messages: RelayMessage[] }
   | { type: 'send'; playerId: PlayerId; msg: ServerMessage }
   | { type: 'set-timer'; deadline: number }
-  | { type: 'clear-timer' };
+  | { type: 'clear-timer' }
+  | { type: 'kick'; playerId: PlayerId };
 
 export type ReduceResult = {
   state: ServerState;

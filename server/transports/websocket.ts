@@ -32,6 +32,9 @@ export function attachWebSocketTransport(httpServer: http.Server, handler: Trans
       send(data) {
         if (ws.readyState === WebSocket.OPEN) ws.send(data);
       },
+      close() {
+        ws.close();
+      },
     };
 
     handler.onConnect(conn);

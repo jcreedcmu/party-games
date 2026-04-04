@@ -15,8 +15,6 @@ type SocketState = {
   addWordResult: AddWordResult;
 };
 
-const RECONNECT_DELAYS = [500, 1000, 2000, 4000];
-
 export function useSocket() {
   const [state, setState] = useState<SocketState>({
     gameState: null,
@@ -36,8 +34,6 @@ export function useSocket() {
   const transportRef = useRef<ClientTransport | null>(null);
   const relayListenersRef = useRef<Set<(payload: RelayPayload) => void>>(new Set());
   const credentialsRef = useRef<{ password: string; handle: string } | null>(null);
-  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const reconnectAttemptRef = useRef(0);
 
   function openConnection(password: string, handle: string) {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -47,7 +43,6 @@ export function useSocket() {
     const transport = connectWebSocket(url, {
       onOpen() {
         console.log('[ws] connected, sending join');
-        reconnectAttemptRef.current = 0;
         setState(s => ({ ...s, connected: true, error: null }));
         transport.send(JSON.stringify({ type: 'join', password, handle } satisfies ClientMessage));
       },
@@ -79,38 +74,30 @@ export function useSocket() {
         console.log('[ws] disconnected');
         setState(s => ({ ...s, connected: false }));
         transportRef.current = null;
-        scheduleReconnect();
       },
     });
 
     transportRef.current = transport;
   }
 
-  function scheduleReconnect() {
-    if (!credentialsRef.current) return;
-    const attempt = reconnectAttemptRef.current;
-    const delay = RECONNECT_DELAYS[Math.min(attempt, RECONNECT_DELAYS.length - 1)];
-    console.log(`[ws] reconnecting in ${delay}ms (attempt ${attempt + 1})`);
-    reconnectAttemptRef.current = attempt + 1;
-    reconnectTimerRef.current = setTimeout(() => {
-      if (credentialsRef.current) {
-        openConnection(credentialsRef.current.password, credentialsRef.current.handle);
-      }
-    }, delay);
-  }
-
   const connect = useCallback((password: string, handle: string) => {
-    if (reconnectTimerRef.current) {
-      clearTimeout(reconnectTimerRef.current);
-      reconnectTimerRef.current = null;
-    }
     if (transportRef.current) {
       transportRef.current.close();
       transportRef.current = null;
     }
     credentialsRef.current = { password, handle };
-    reconnectAttemptRef.current = 0;
     openConnection(password, handle);
+  }, []);
+
+  const reconnect = useCallback(() => {
+    if (transportRef.current) {
+      transportRef.current.close();
+      transportRef.current = null;
+    }
+    if (credentialsRef.current) {
+      console.log('[ws] manual reconnect');
+      openConnection(credentialsRef.current.password, credentialsRef.current.handle);
+    }
   }, []);
 
   const send = useCallback((msg: ClientMessage) => {
@@ -135,5 +122,5 @@ export function useSocket() {
     return () => { relayListenersRef.current.delete(listener); };
   }, []);
 
-  return { ...state, connect, send, clearError, clearAddWordResult, onRelay };
+  return { ...state, connect, reconnect, send, clearError, clearAddWordResult, onRelay };
 }

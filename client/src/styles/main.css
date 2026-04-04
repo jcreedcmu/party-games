@@ -132,10 +132,32 @@ button:disabled {
 }
 
 .player-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.5rem 0.75rem;
   border-bottom: 1px solid #eee;
   border-radius: 8px;
   font-size: 1rem;
+}
+
+.boot-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.2rem;
+  opacity: 0.4;
+  transition: opacity 0.15s;
+}
+
+.boot-btn:hover {
+  opacity: 0.8;
+}
+
+.boot-icon {
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
 .player-me {
@@ -529,6 +551,22 @@ button:disabled {
   margin-bottom: 1rem;
   font-size: 0.875rem;
   font-weight: 600;
+}
+
+.reconnect-btn {
+  margin-left: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background: #fff;
+  color: #e63946;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.reconnect-btn:hover {
+  background: #f0d0d3;
 }
 
 /* New Game Button */

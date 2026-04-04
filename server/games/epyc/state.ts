@@ -225,6 +225,18 @@ export function epycReduce(state: ServerState, playerId: PlayerId, msg: ClientMe
       };
     }
 
+    case 'boot': {
+      if (state.phase !== 'epyc-waiting') return { state, effects: [] };
+      const targetId = msg.targetId;
+      if (targetId === playerId) return { state, effects: [] };
+      if (!state.players.has(targetId)) return { state, effects: [] };
+      const next = removePlayer(state, targetId);
+      return {
+        state: next,
+        effects: [{ type: 'kick', playerId: targetId }, { type: 'broadcast' }],
+      };
+    }
+
     default:
       return { state, effects: [] };
   }

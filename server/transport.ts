@@ -3,6 +3,7 @@ export type ConnectionId = string;
 export type Connection = {
   id: ConnectionId;
   send: (data: string) => void;
+  close: () => void;
 };
 
 export type TransportHandler = {
