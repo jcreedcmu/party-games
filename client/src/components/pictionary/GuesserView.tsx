@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { PictionaryClientActiveState, ClientMessage, RelayPayload, DrawOp } from '../../types';
 import { LiveCanvas } from './LiveCanvas';
+import { playBling } from '../../sounds';
 
 type GuessEntry = {
   handle: string;
@@ -28,6 +29,7 @@ export function GuesserView({ state, playerId, send, onRelay, initialGuesses = [
   useEffect(() => {
     return onRelay((payload) => {
       if (payload.type === 'guess-result') {
+        if (payload.correct) playBling();
         setGuesses(prev => [...prev, {
           handle: payload.handle,
           correct: payload.correct,
