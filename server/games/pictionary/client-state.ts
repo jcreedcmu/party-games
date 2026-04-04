@@ -80,12 +80,22 @@ function getActiveClientState(
     : null;
 
   const isPicking = state.subPhase === 'picking';
-  const wordHint = isPicking ? '' : state.word.replace(/[a-zA-Z]/g, '_');
+
+  function buildHint(chars: string[]): string {
+    const raw = chars.join('');
+    return raw.split(' ').map(w => {
+      const letterCount = w.replace(/[^a-zA-Z_]/g, '').length;
+      return `${w} (${letterCount})`;
+    }).join('  ');
+  }
+
+  const wordChars = isPicking ? [] : [...state.word].map(c => /[a-zA-Z]/.test(c) ? '_' : c);
+  const wordHint = isPicking ? '' : buildHint(wordChars);
   let wordHintRevealed = '';
   if (!isPicking) {
-    const hintChars = [...wordHint];
-    hintChars[state.hintLetterIndex] = state.word[state.hintLetterIndex];
-    wordHintRevealed = hintChars.join('');
+    const revealedChars = [...wordChars];
+    revealedChars[state.hintLetterIndex] = state.word[state.hintLetterIndex];
+    wordHintRevealed = buildHint(revealedChars);
   }
 
   return {
