@@ -1,11 +1,19 @@
 let audioCtx: AudioContext | null = null;
 
 function getAudioContext(): AudioContext {
-  if (!audioCtx) audioCtx = new AudioContext();
+  if (!audioCtx) {
+    audioCtx = new AudioContext();
+    console.log(`[sound] created AudioContext, state=${audioCtx.state}`);
+  }
+  if (audioCtx.state === 'suspended') {
+    console.log('[sound] resuming suspended AudioContext');
+    audioCtx.resume();
+  }
   return audioCtx;
 }
 
 export function playBling() {
+  console.log('[sound] playBling called');
   const ctx = getAudioContext();
   const now = ctx.currentTime;
 
