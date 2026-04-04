@@ -1,6 +1,6 @@
-transcript should match image height in recap
+
 make sure guess state is handled like ordinary state, and this propagates to gen-preview
-allow hyphens
+
 undo for word add
 
 alternates
