@@ -3,6 +3,7 @@ import type { PictionaryClientState, PictionaryClientWaitingState, ClientMessage
 import { WaitingRoom } from '../WaitingRoom';
 import { PictionaryBoard } from './PictionaryBoard';
 import { PictionaryPostGame } from './PictionaryPostGame';
+import { AddWordForm } from './AddWordForm';
 
 type AddWordResult = { success: boolean; message: string } | null;
 
@@ -38,7 +39,14 @@ export function PictionaryGame({ state, playerId, send, onRelay, addWordResult, 
         />
       );
     case 'pictionary-active':
-      return <PictionaryBoard state={state} playerId={playerId} send={send} onRelay={onRelay} />;
+      return (
+        <div className="pic-board-layout">
+          <div className="card">
+            <PictionaryBoard state={state} playerId={playerId} send={send} onRelay={onRelay} />
+          </div>
+          <AddWordForm send={send} addWordResult={addWordResult} clearAddWordResult={clearAddWordResult} />
+        </div>
+      );
     case 'pictionary-postgame':
       if (showLobby) {
         const waitingState: PictionaryClientWaitingState = {

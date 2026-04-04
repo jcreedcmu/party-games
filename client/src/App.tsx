@@ -65,6 +65,8 @@ function GameShell({ gameState, playerId, gameType, connected, reconnect, send, 
     </div>
   ) : null;
 
+  const isPicActive = gameState.phase === 'pictionary-active';
+
   const content = gameType === 'epyc'
     ? <EpycGame state={gameState as EpycClientState} playerId={playerId} send={send} addWordResult={addWordResult} clearAddWordResult={clearAddWordResult} />
     : <PictionaryGame state={gameState as PictionaryClientState} playerId={playerId} send={send} onRelay={onRelay} addWordResult={addWordResult} clearAddWordResult={clearAddWordResult} />;
@@ -72,11 +74,19 @@ function GameShell({ gameState, playerId, gameType, connected, reconnect, send, 
   return (
     <div className="app">
       <img src={getLogo(gameType)} alt={getLogoAlt(gameType)} className="logo" />
-      <div className="card">
-        {topBanner}
-        {disconnectBanner}
-        {content}
-      </div>
+      {isPicActive ? (
+        <>
+          {topBanner}
+          {disconnectBanner}
+          {content}
+        </>
+      ) : (
+        <div className="card">
+          {topBanner}
+          {disconnectBanner}
+          {content}
+        </div>
+      )}
     </div>
   );
 }

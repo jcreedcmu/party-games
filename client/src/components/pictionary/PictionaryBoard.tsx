@@ -3,7 +3,6 @@ import type { PictionaryClientActiveState, ClientMessage, RelayPayload } from '.
 import { DrawerView } from './DrawerView';
 import { GuesserView } from './GuesserView';
 import { WordPicker } from './WordPicker';
-
 type PictionaryBoardProps = {
   state: PictionaryClientActiveState;
   playerId: string;
@@ -52,28 +51,30 @@ function RevealView({ state }: { state: PictionaryClientActiveState }) {
 }
 
 export function PictionaryBoard({ state, playerId, send, onRelay }: PictionaryBoardProps) {
+  let content;
+
   if (state.subPhase === 'reveal') {
-    return <RevealView state={state} />;
-  }
-
-  if (state.subPhase === 'picking') {
+    content = <RevealView state={state} />;
+  } else if (state.subPhase === 'picking') {
     if (state.role === 'drawer') {
-      return <WordPicker state={state} send={send} />;
+      content = <WordPicker state={state} send={send} />;
+    } else {
+      content = (
+        <div className="pictionary-board" data-testid="pictionary-board">
+          <div className="round-info">
+            <span>Turn {state.turnNumber} of {state.totalTurns}</span>
+          </div>
+          <div className="pic-picking-wait" data-testid="picking-wait">
+            <p>{state.currentDrawerHandle} is picking a word...</p>
+          </div>
+        </div>
+      );
     }
-    return (
-      <div className="pictionary-board" data-testid="pictionary-board">
-        <div className="round-info">
-          <span>Turn {state.turnNumber} of {state.totalTurns}</span>
-        </div>
-        <div className="pic-picking-wait" data-testid="picking-wait">
-          <p>{state.currentDrawerHandle} is picking a word...</p>
-        </div>
-      </div>
-    );
+  } else if (state.role === 'drawer') {
+    content = <DrawerView key={state.turnNumber} state={state} send={send} onRelay={onRelay} />;
+  } else {
+    content = <GuesserView key={state.turnNumber} state={state} playerId={playerId} send={send} onRelay={onRelay} />;
   }
 
-  if (state.role === 'drawer') {
-    return <DrawerView key={state.turnNumber} state={state} send={send} onRelay={onRelay} />;
-  }
-  return <GuesserView key={state.turnNumber} state={state} playerId={playerId} send={send} onRelay={onRelay} />;
+  return content;
 }

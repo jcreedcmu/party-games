@@ -207,6 +207,43 @@ button:disabled {
   color: #e63946;
 }
 
+/* Add Word Sidebar (in-game) */
+
+.pic-board-layout {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.pic-board-layout > .card {
+  flex: 1;
+  min-width: 0;
+}
+
+.add-word-sidebar {
+  flex-shrink: 0;
+  width: 180px;
+  padding: 1rem;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+}
+
+.add-word-sidebar h3 {
+  font-size: 0.85rem;
+  margin: 0 0 0.5rem;
+  color: #333;
+}
+
+.add-word-sidebar .add-word-form {
+  flex-direction: column;
+}
+
+.add-word-sidebar .add-word-form input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 /* Game Board (EPYC) */
 
 .game-board {
