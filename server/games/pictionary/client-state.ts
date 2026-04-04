@@ -65,6 +65,30 @@ export type PictionaryClientState =
   | PictionaryClientActiveState
   | PictionaryClientPostgameState;
 
+export function buildHint(chars: string[]): string {
+  const raw = chars.join('');
+  // Split on separators (space, hyphen) but keep them
+  return raw.split(/(?<=[ -])|(?=[ -])/).map(part => {
+    if (part === ' ' || part === '-') return part;
+    const letterCount = part.replace(/[^a-zA-Z_]/g, '').length;
+    return `${part}(${letterCount})`;
+  }).join('');
+}
+
+export function getWordHints(word: string, hintIndices: number[]): { blank: string; reveals: string[] } {
+  const wordChars = [...word].map(c => /[a-zA-Z]/.test(c) ? '_' : c);
+  const blank = buildHint(wordChars);
+  const reveals: string[] = [];
+  for (let i = 0; i < hintIndices.length; i++) {
+    const revealedChars = [...wordChars];
+    for (let j = 0; j <= i; j++) {
+      revealedChars[hintIndices[j]] = word[hintIndices[j]];
+    }
+    reveals.push(buildHint(revealedChars));
+  }
+  return { blank, reveals };
+}
+
 function getActiveClientState(
   state: PictionaryActiveState,
   playerId: PlayerId,
@@ -80,31 +104,16 @@ function getActiveClientState(
 
   const isPicking = state.subPhase === 'picking';
 
-  function buildHint(chars: string[]): string {
-    const raw = chars.join('');
-    // Split on separators (space, hyphen) but keep them
-    return raw.split(/(?<=[ -])|(?=[ -])/).map(part => {
-      if (part === ' ' || part === '-') return part;
-      const letterCount = part.replace(/[^a-zA-Z_]/g, '').length;
-      return `${part}(${letterCount})`;
-    }).join('');
-  }
-
-  const wordChars = isPicking ? [] : [...state.word].map(c => /[a-zA-Z]/.test(c) ? '_' : c);
-  const wordHint = isPicking ? '' : buildHint(wordChars);
+  const { blank: wordHint, reveals: hintHints } = isPicking
+    ? { blank: '', reveals: [] }
+    : getWordHints(state.word, state.hintLetterIndices);
 
   const hintReveals: Array<{ hint: string; revealTime: number }> = [];
   if (!isPicking) {
-    const numHints = state.hintLetterIndices.length;
     const turnStart = state.turnDeadline - TURN_DURATION_MS;
-    for (let i = 0; i < numHints; i++) {
-      const revealedChars = [...wordChars];
-      for (let j = 0; j <= i; j++) {
-        const idx = state.hintLetterIndices[j];
-        revealedChars[idx] = state.word[idx];
-      }
-      const revealTime = turnStart + ((i + 1) / (numHints + 1)) * TURN_DURATION_MS;
-      hintReveals.push({ hint: buildHint(revealedChars), revealTime });
+    for (let i = 0; i < hintHints.length; i++) {
+      const revealTime = turnStart + ((i + 1) / (hintHints.length + 1)) * TURN_DURATION_MS;
+      hintReveals.push({ hint: hintHints[i], revealTime });
     }
   }
 

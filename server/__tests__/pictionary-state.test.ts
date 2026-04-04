@@ -19,7 +19,7 @@ import {
   PICK_DURATION_MS,
   isCloseEnough,
 } from '../games/pictionary/state.js';
-import { getClientState } from '../games/pictionary/client-state.js';
+import { getClientState, getWordHints } from '../games/pictionary/client-state.js';
 import { configureWords } from '../games/pictionary/words.js';
 import type { PictionaryActiveState, PictionaryPostgameState } from '../games/pictionary/types.js';
 
@@ -660,5 +660,42 @@ describe('isCloseEnough', () => {
 
   it('rejects two transpositions', () => {
     expect(isCloseEnough('tsar bear', 'star baer')).toBe(false);
+  });
+});
+
+describe('getWordHints', () => {
+  it('renders blanks for a simple word', () => {
+    const { blank } = getWordHints('cat', []);
+    expect(blank).toBe('___(3)');
+  });
+
+  it('renders blanks for a multi-word phrase', () => {
+    const { blank } = getWordHints('ice cream', []);
+    expect(blank).toBe('___(3) _____(5)');
+  });
+
+  it('renders blanks for a hyphenated word', () => {
+    const { blank } = getWordHints('t-rex', []);
+    expect(blank).toBe('_(1)-___(3)');
+  });
+
+  it('reveals hint letters incrementally', () => {
+    const { blank, reveals } = getWordHints('t-rex', [0, 3]);
+    expect(blank).toBe('_(1)-___(3)');
+    expect(reveals[0]).toBe('t(1)-___(3)');
+    expect(reveals[1]).toBe('t(1)-_e_(3)');
+  });
+
+  it('reveals hint letters for a simple word', () => {
+    const { reveals } = getWordHints('cat', [2, 0]);
+    expect(reveals[0]).toBe('__t(3)');
+    expect(reveals[1]).toBe('c_t(3)');
+  });
+
+  it('renders blanks for a word with an apostrophe', () => {
+    const { blank, reveals } = getWordHints("don't", [0, 4]);
+    expect(blank).toBe("___'_(4)");
+    expect(reveals[0]).toBe("d__'_(4)");
+    expect(reveals[1]).toBe("d__'t(4)");
   });
 });
