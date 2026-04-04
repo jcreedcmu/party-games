@@ -9,8 +9,8 @@ import type {
 } from './types.js';
 import { pickWords } from './words.js';
 
-export const TURN_DURATION_MS = 75_000;
-export const ALL_GUESSED_GRACE_MS = 10_000;
+export const TURN_DURATION_MS = 105_000;
+export const ALL_GUESSED_GRACE_MS = 20_000;
 export const HINT_REVEAL_MS = 20_000;
 export const PICK_DURATION_MS = 15_000;
 export const REVEAL_DURATION_MS = 5_000;
