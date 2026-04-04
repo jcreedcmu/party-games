@@ -14,6 +14,18 @@ export type Orchestrator = {
   destroy: () => void;
 };
 
+function playerSummary(state: ServerState): string {
+  const players = Array.from(state.players.values());
+  const parts = players.map(p => {
+    const flags = [
+      p.connected ? 'conn' : 'disc',
+      p.ready ? 'ready' : 'not-ready',
+    ].join(',');
+    return `${p.handle}(${p.id}:${flags})`;
+  });
+  return `[${parts.join(' ')}]`;
+}
+
 export function createOrchestrator(config: OrchestratorConfig): Orchestrator {
   const { gameModule, gameType, password } = config;
 
@@ -62,12 +74,20 @@ export function createOrchestrator(config: OrchestratorConfig): Orchestrator {
     clearGameTimer();
     const delay = Math.max(0, deadline - Date.now());
     gameTimer = setTimeout(() => {
-      applyResult(gameModule.reduceTimer(state));
+      applyResult(gameModule.reduceTimer(state), 'timer');
     }, delay);
   }
 
-  function applyResult(result: ReduceResult) {
+  function applyResult(result: ReduceResult, label: string) {
+    const oldPhase = state.phase;
     state = result.state;
+    const newPhase = state.phase;
+    const effects = result.effects.map(e => e.type).join(',');
+    if (oldPhase !== newPhase) {
+      console.log(`[orch] ${label}: phase ${oldPhase} -> ${newPhase} effects=[${effects}] ${playerSummary(state)}`);
+    } else {
+      console.log(`[orch] ${label}: phase=${newPhase} effects=[${effects}] ${playerSummary(state)}`);
+    }
     for (const effect of result.effects) {
       switch (effect.type) {
         case 'broadcast':
@@ -91,6 +111,7 @@ export function createOrchestrator(config: OrchestratorConfig): Orchestrator {
 
   const handler: TransportHandler = {
     onConnect(conn) {
+      console.log(`[orch] connect conn=${conn.id}`);
       clients.set(conn.id, { conn, playerId: null });
     },
 
@@ -102,27 +123,32 @@ export function createOrchestrator(config: OrchestratorConfig): Orchestrator {
 
         if (msg.type === 'join') {
           if (entry.playerId) {
+            console.log(`[orch] join rejected: conn=${conn.id} already joined as player=${entry.playerId}`);
             sendTo(conn, { type: 'error', message: 'Already joined' });
             return;
           }
           if (password !== null && msg.password !== password) {
+            console.log(`[orch] join rejected: conn=${conn.id} wrong password`);
             sendTo(conn, { type: 'error', message: 'Wrong password' });
             return;
           }
           const result = gameModule.addPlayer(state, msg.handle);
           if (!result) {
+            console.log(`[orch] join rejected: conn=${conn.id} handle="${msg.handle}" addPlayer returned null (phase=${state.phase})`);
             sendTo(conn, { type: 'error', message: 'Game already in progress' });
             return;
           }
           state = result.state;
           entry.playerId = result.playerId;
+          console.log(`[orch] join: conn=${conn.id} -> player=${result.playerId} handle="${msg.handle}" phase=${state.phase} ${playerSummary(state)}`);
           sendTo(conn, { type: 'joined', playerId: result.playerId, gameType });
           broadcastState();
           return;
         }
 
         if (!entry.playerId) return;
-        applyResult(gameModule.reduce(state, entry.playerId, msg));
+        const handle = state.players.get(entry.playerId)?.handle ?? '?';
+        applyResult(gameModule.reduce(state, entry.playerId, msg), `msg:${msg.type} from ${handle}(${entry.playerId})`);
       } catch {
         sendTo(conn, { type: 'error', message: 'Invalid message' });
       }
@@ -130,13 +156,17 @@ export function createOrchestrator(config: OrchestratorConfig): Orchestrator {
 
     onDisconnect(conn) {
       const entry = clients.get(conn.id);
+      const playerId = entry?.playerId;
+      const handle = playerId ? state.players.get(playerId)?.handle ?? '?' : null;
+      console.log(`[orch] disconnect conn=${conn.id} player=${playerId ?? 'none'} handle="${handle ?? ''}" phase=${state.phase}`);
       clients.delete(conn.id);
-      if (entry?.playerId) {
-        applyResult(gameModule.reduceDisconnect(state, entry.playerId));
+      if (playerId) {
+        applyResult(gameModule.reduceDisconnect(state, playerId), `disconnect ${handle}(${playerId})`);
       }
 
       const hasPlayers = Array.from(clients.values()).some(e => e.playerId !== null);
       if (!hasPlayers) {
+        console.log(`[orch] no players remaining, resetting game state`);
         clearGameTimer();
         state = gameModule.createInitialState();
       }
