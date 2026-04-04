@@ -25,6 +25,7 @@ export type PictionaryActiveState = {
   phase: 'pictionary-active';
   subPhase: 'picking' | 'drawing';
   players: Map<PlayerId, PlayerInfo>;
+  nextPlayerId: number;
   order: PlayerId[];
   currentTurnIndex: number;
   currentRound: number;
@@ -44,6 +45,7 @@ export type PictionaryActiveState = {
 export type PictionaryPostgameState = {
   phase: 'pictionary-postgame';
   players: Map<PlayerId, PlayerInfo>;
+  nextPlayerId: number;
   scores: Map<PlayerId, number>;
   turns: TurnRecord[];
 };

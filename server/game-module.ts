@@ -48,7 +48,7 @@ export const epycModule: GameModule = {
 export const pictionaryModule: GameModule = {
   createInitialState: picCreateInitialState,
   addPlayer(state, handle) {
-    if (state.phase !== 'pictionary-waiting') return null;
+    if (state.phase !== 'pictionary-waiting' && state.phase !== 'pictionary-active' && state.phase !== 'pictionary-postgame') return null;
     return picAddPlayer(state, handle);
   },
   getClientState(state, playerId) {

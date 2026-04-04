@@ -39,14 +39,22 @@ export function createInitialState(): PictionaryWaitingState {
   };
 }
 
-export function addPlayer(
-  state: PictionaryWaitingState,
+export function addPlayer<S extends PictionaryState>(
+  state: S,
   handle: string,
-): { state: PictionaryWaitingState; playerId: PlayerId } {
+): { state: S; playerId: PlayerId } {
   const playerId = String(state.nextPlayerId);
   const player: PlayerInfo = { id: playerId, handle, ready: false, connected: true };
   const players = new Map(state.players);
   players.set(playerId, player);
+  if (state.phase === 'pictionary-active') {
+    const scores = new Map(state.scores);
+    scores.set(playerId, 0);
+    return {
+      state: { ...state, players, scores, nextPlayerId: state.nextPlayerId + 1 },
+      playerId,
+    };
+  }
   return {
     state: { ...state, players, nextPlayerId: state.nextPlayerId + 1 },
     playerId,
@@ -104,6 +112,7 @@ export function checkAllReady(
     phase: 'pictionary-active' as const,
     subPhase: 'picking' as const,
     players,
+    nextPlayerId: state.nextPlayerId,
     order,
     currentTurnIndex: 0,
     currentRound: 0,
@@ -146,6 +155,7 @@ export function checkAllReadyPostgame(
     phase: 'pictionary-active' as const,
     subPhase: 'picking' as const,
     players,
+    nextPlayerId: state.nextPlayerId,
     order,
     currentTurnIndex: 0,
     currentRound: 0,
@@ -297,14 +307,17 @@ export function advanceTurn(
       return {
         phase: 'pictionary-postgame',
         players,
+        nextPlayerId: state.nextPlayerId,
         scores: state.scores,
         turns: completedTurns,
       };
     }
 
-    // Start next round — reshuffle order, skip to first connected player
+    // Start next round — include all connected players (including late-joiners)
     const connectedOrder = shuffle(
-      state.order.filter(id => state.players.get(id)?.connected)
+      Array.from(state.players.entries())
+        .filter(([, p]) => p.connected)
+        .map(([id]) => id)
     );
     let startIndex = 0;
     while (startIndex < connectedOrder.length) {
