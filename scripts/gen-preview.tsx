@@ -38,9 +38,10 @@ fs.mkdirSync(outDir, { recursive: true });
 const appCss = fs.readFileSync(path.join(root, 'client', 'src', 'styles', 'main.css'), 'utf-8');
 
 const logoSrc = 'drawplodocus.png';
-fs.copyFileSync(path.join(root, 'client', 'public', 'drawplodocus.png'), path.join(outDir, logoSrc));
-fs.copyFileSync(path.join(root, 'client', 'public', 'pencil.png'), path.join(outDir, 'pencil.png'));
-fs.copyFileSync(path.join(root, 'client', 'public', 'bucket.png'), path.join(outDir, 'bucket.png'));
+const publicDir = path.join(root, 'client', 'public');
+for (const file of fs.readdirSync(publicDir)) {
+  fs.copyFileSync(path.join(publicDir, file), path.join(outDir, file));
+}
 
 // --- Mock data ---
 
