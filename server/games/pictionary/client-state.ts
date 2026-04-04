@@ -83,10 +83,12 @@ function getActiveClientState(
 
   function buildHint(chars: string[]): string {
     const raw = chars.join('');
-    return raw.split(' ').map(w => {
-      const letterCount = w.replace(/[^a-zA-Z_]/g, '').length;
-      return `${w} (${letterCount})`;
-    }).join('  ');
+    // Split on separators (space, hyphen) but keep them
+    return raw.split(/(?<=[ -])|(?=[ -])/).map(part => {
+      if (part === ' ' || part === '-') return part;
+      const letterCount = part.replace(/[^a-zA-Z_]/g, '').length;
+      return `${part}(${letterCount})`;
+    }).join('');
   }
 
   const wordChars = isPicking ? [] : [...state.word].map(c => /[a-zA-Z]/.test(c) ? '_' : c);
