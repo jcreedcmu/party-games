@@ -164,6 +164,23 @@ describe('checkAllReady', () => {
     expect(active.currentTurnOps).toEqual([]);
     expect(active.completedTurns).toEqual([]);
   });
+
+  it('starts the game when an unready player leaves and the rest are ready', () => {
+    let state = createInitialState();
+    const r1 = addPlayer(state, 'Alice');
+    state = r1.state;
+    const r2 = addPlayer(state, 'Bob');
+    state = r2.state;
+    const r3 = addPlayer(state, 'Carol');
+    state = r3.state;
+    state = setReady(state, r1.playerId, true);
+    state = setReady(state, r2.playerId, true);
+    // Carol is not ready
+    const afterRemove = removePlayer(state, r3.playerId);
+    // Carol is deleted in waiting phase, so only Alice and Bob remain (both ready)
+    const next = checkAllReady(afterRemove as typeof state);
+    expect(next.phase).toBe('pictionary-active');
+  });
 });
 
 describe('selectWord', () => {

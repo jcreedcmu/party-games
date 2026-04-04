@@ -587,11 +587,19 @@ export function pictionaryReduce(state: ServerState, playerId: PlayerId, msg: Cl
       const targetId = msg.targetId;
       if (targetId === playerId) return { state, effects: [] };
       if (!state.players.has(targetId)) return { state, effects: [] };
-      const next = removePlayer(state, targetId);
-      return {
-        state: next,
-        effects: [{ type: 'kick', playerId: targetId }, { type: 'broadcast' }],
-      };
+      const removed = removePlayer(state, targetId);
+      const effects: Effect[] = [{ type: 'kick', playerId: targetId }];
+      let next: PictionaryState;
+      if (removed.phase === 'pictionary-waiting') {
+        next = checkAllReady(removed);
+      } else {
+        next = checkAllReadyPostgame(removed as PictionaryPostgameState);
+      }
+      effects.push({ type: 'broadcast' });
+      if (next.phase === 'pictionary-active') {
+        effects.push({ type: 'set-timer', deadline: next.turnDeadline });
+      }
+      return { state: next, effects };
     }
 
     default:
@@ -615,11 +623,27 @@ export function pictionaryReduceDisconnect(state: ServerState, playerId: PlayerI
     return { state: removed, effects: [{ type: 'broadcast' }] };
   }
 
-  if (state.phase !== 'pictionary-waiting' && state.phase !== 'pictionary-postgame') {
-    return { state, effects: [] };
+  if (state.phase === 'pictionary-waiting') {
+    const removed = removePlayer(state, playerId) as PictionaryWaitingState;
+    const next = checkAllReady(removed);
+    const effects: Effect[] = [{ type: 'broadcast' }];
+    if (next.phase === 'pictionary-active') {
+      effects.push({ type: 'set-timer', deadline: next.turnDeadline });
+    }
+    return { state: next, effects };
   }
-  const removed = removePlayer(state, playerId);
-  return { state: removed, effects: [{ type: 'broadcast' }] };
+
+  if (state.phase === 'pictionary-postgame') {
+    const removed = removePlayer(state, playerId) as PictionaryPostgameState;
+    const next = checkAllReadyPostgame(removed);
+    const effects: Effect[] = [{ type: 'broadcast' }];
+    if (next.phase === 'pictionary-active') {
+      effects.push({ type: 'set-timer', deadline: next.turnDeadline });
+    }
+    return { state: next, effects };
+  }
+
+  return { state, effects: [] };
 }
 
 export function pictionaryReduceTimer(state: ServerState): ReduceResult {
