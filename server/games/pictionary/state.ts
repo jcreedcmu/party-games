@@ -323,15 +323,17 @@ export function advanceTurn(
       };
     }
 
-    // Start next round — include all connected players (including late-joiners)
-    const connectedOrder = shuffle(
-      Array.from(state.players.entries())
-        .filter(([, p]) => p.connected)
-        .map(([id]) => id)
-    );
+    // Start next round — same order, but append any late-joiners
+    const orderSet = new Set(state.order);
+    const lateJoiners = Array.from(state.players.entries())
+      .filter(([id, p]) => p.connected && !orderSet.has(id))
+      .map(([id]) => id);
+    const newOrder = [...state.order, ...lateJoiners];
+
+    // Find first connected player in the order
     let startIndex = 0;
-    while (startIndex < connectedOrder.length) {
-      const p = state.players.get(connectedOrder[startIndex]);
+    while (startIndex < newOrder.length) {
+      const p = state.players.get(newOrder[startIndex]);
       if (p && p.connected) break;
       startIndex++;
     }
@@ -340,7 +342,7 @@ export function advanceTurn(
     return {
       ...state,
       subPhase: 'picking' as const,
-      order: connectedOrder,
+      order: newOrder,
       currentTurnIndex: startIndex,
       currentRound: nextRound,
       word: '',
