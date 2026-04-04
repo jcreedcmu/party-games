@@ -24,18 +24,16 @@ export function PostGameTurnCard({ turn }: Props) {
         <div className="pic-turn-drawing">
           <LiveCanvas ops={turn.drawOps} animated playing={playing} />
         </div>
-        <div className="pic-turn-guess-log-wrapper">
-          <div className="pic-turn-guess-log">
-            {turn.guessLog.map((g, j) => (
-              <div key={j} className={'pic-guess-entry' + (g.correct ? ' correct' : '')}>
-                <strong>{g.handle}</strong>
-                {g.correct ? ' guessed correctly!' : `: ${g.text}`}
-              </div>
-            ))}
-            {turn.guessLog.length === 0 && (
-              <div className="pic-turn-no-guesses">No guesses</div>
-            )}
-          </div>
+        <div className="pic-turn-guess-log">
+          {turn.guessLog.map((g, j) => (
+            <div key={j} className={'pic-guess-entry' + (g.correct ? ' correct' : '')}>
+              <strong>{g.handle}</strong>
+              {g.correct ? ' guessed correctly!' : `: ${g.text}`}
+            </div>
+          ))}
+          {turn.guessLog.length === 0 && (
+            <div className="pic-turn-no-guesses">No guesses</div>
+          )}
         </div>
       </div>
       <div className="pic-turn-guessers">

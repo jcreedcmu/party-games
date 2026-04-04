@@ -27,7 +27,7 @@ export function WaitingRoom({ state, playerId, onReady, onUnready, send, addWord
     setNewWord('');
   }
 
-  const base = import.meta.env.BASE_URL;
+  const base = import.meta.env?.BASE_URL ?? '/';
 
   return (
     <div className="waiting-room" data-testid="waiting-room">

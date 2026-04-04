@@ -123,18 +123,40 @@ const guesserState: PictionaryClientActiveState = {
   lastTurnWord: 'bicycle',
 };
 
+const stubOps = [{ type: 'draw-start' as const, color: '#000', size: 5, x: 10, y: 10, t: 0 }];
+
 const mockTurns: PictionaryClientTurnSummary[] = [
   {
     drawerHandle: 'Alice',
     word: 'bicycle',
-    drawOps: [],
+    drawOps: stubOps,
     guessers: [
       { handle: 'Bob', timeMs: 12300 },
       { handle: 'Charlie', timeMs: 28700 },
     ],
     guessLog: [
-      { handle: 'Bob', text: 'bike', correct: false },
+      { handle: 'Bob', text: 'wheel', correct: false },
+      { handle: 'Charlie', text: 'circle', correct: false },
+      { handle: 'Bob', text: 'unicycle', correct: false },
       { handle: 'Charlie', text: 'motorcycle', correct: false },
+      { handle: 'Bob', text: 'scooter', correct: false },
+      { handle: 'Charlie', text: 'tricycle', correct: false },
+      { handle: 'Bob', text: 'bike', correct: false },
+      { handle: 'Charlie', text: 'pedal', correct: false },
+      { handle: 'Bob', text: 'handlebar', correct: false },
+      { handle: 'Charlie', text: 'tandem', correct: false },
+      { handle: 'Bob', text: 'velocipede', correct: false },
+      { handle: 'Charlie', text: 'rickshaw', correct: false },
+      { handle: 'Bob', text: 'moped', correct: false },
+      { handle: 'Charlie', text: 'segway', correct: false },
+      { handle: 'Bob', text: 'wheelbarrow', correct: false },
+      { handle: 'Charlie', text: 'chariot', correct: false },
+      { handle: 'Bob', text: 'wagon', correct: false },
+      { handle: 'Charlie', text: 'cart', correct: false },
+      { handle: 'Bob', text: 'spoke', correct: false },
+      { handle: 'Charlie', text: 'chain', correct: false },
+      { handle: 'Bob', text: 'cycling', correct: false },
+      { handle: 'Charlie', text: 'road bike', correct: false },
       { handle: 'Bob', text: 'bicycle', correct: true },
       { handle: 'Charlie', text: 'bicycle', correct: true },
     ],
@@ -143,7 +165,7 @@ const mockTurns: PictionaryClientTurnSummary[] = [
     drawerHandle: 'Bob',
     word: 'volcano',
     wordAddedBy: 'Diana',
-    drawOps: [],
+    drawOps: stubOps,
     guessers: [{ handle: 'Alice', timeMs: 45200 }],
     guessLog: [
       { handle: 'Alice', text: 'mountain', correct: false },
@@ -154,7 +176,7 @@ const mockTurns: PictionaryClientTurnSummary[] = [
   {
     drawerHandle: 'Charlie',
     word: 'skateboard',
-    drawOps: [],
+    drawOps: stubOps,
     guessers: [],
     guessLog: [
       { handle: 'Alice', text: 'surfboard', correct: false },

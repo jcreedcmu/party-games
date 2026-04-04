@@ -874,36 +874,26 @@ button:disabled {
   color: #999;
 }
 
+.pic-turn-body {
+  display: flex;
+  height: 300px;
+}
+
 .pic-turn-drawing {
-  flex: 1;
-  min-width: 0;
-  padding: 0.5rem;
+  flex-shrink: 0;
+  height: 100%;
 }
 
 .pic-turn-drawing canvas {
-  width: 100%;
-}
-
-.pic-turn-body {
-  display: flex;
-  gap: 0;
-  position: relative;
-}
-
-.pic-turn-guess-log-wrapper {
-  width: 200px;
-  flex-shrink: 0;
-  position: relative;
-  border-left: 1px solid #eee;
+  height: 100%;
+  display: block;
 }
 
 .pic-turn-guess-log {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  flex: 1;
+  min-width: 0;
   overflow-y: auto;
+  border-left: 1px solid #eee;
   padding: 0.25rem 0;
 }
 
