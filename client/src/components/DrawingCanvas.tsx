@@ -21,7 +21,7 @@ type DrawingCanvasProps = {
   onStreamOp?: (op: DrawOp) => void;
 };
 
-type Tool = 'pen' | 'fill';
+type Tool = 'pen' | 'fill' | 'eyedropper';
 
 export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp }: DrawingCanvasProps) {
   const [color, setColor] = useState(COLORS[0]);
@@ -69,6 +69,7 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
       switch (e.key) {
         case 'c': setTool('pen'); break;
         case 'z': setTool('fill'); break;
+        case 'o': setTool('eyedropper'); break;
         case '1': setSize(SIZES[0]); setTool('pen'); break;
         case '2': setSize(SIZES[1]); setTool('pen'); break;
         case '3': setSize(SIZES[2]); setTool('pen'); break;
@@ -121,11 +122,26 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
     const pt = getCanvasXY(e);
     if (!pt) return;
 
+    if (tool === 'eyedropper') {
+      const px = Math.round(pt.x);
+      const py = Math.round(pt.y);
+      if (px >= 0 && px < CANVAS_WIDTH && py >= 0 && py < CANVAS_HEIGHT) {
+        const i = (py * CANVAS_WIDTH + px) * 4;
+        const d = imageDataRef.current.data;
+        const hex = '#' + [d[i], d[i + 1], d[i + 2]].map(v => v.toString(16).padStart(2, '0')).join('');
+        setColor(hex);
+        setCustomColor(hex);
+      }
+      setTool('pen');
+      return;
+    }
+
     if (tool === 'fill') {
       floodFill(imageDataRef.current.data, pt.x, pt.y, color);
       putImage();
       saveSnapshot();
       if (isStream) onStreamOp?.({ type: 'draw-fill', x: pt.x, y: pt.y, color });
+      setTool('pen');
       return;
     }
 
@@ -226,6 +242,13 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
           >
             <img src="bucket.png" alt="Fill" className="tool-icon" />
           </button>
+          <button
+            className={'tool-btn' + (tool === 'eyedropper' ? ' active' : '')}
+            onClick={() => setTool('eyedropper')}
+            title="Eyedropper (O)"
+          >
+            <img src="eyedropper.png" alt="Eyedropper" className="tool-icon" />
+          </button>
         </div>
         <div className="color-palette">
           {COLORS.map(c => (
@@ -251,7 +274,7 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
             className="color-input-hidden"
           />
         </div>
-        <div className="size-picker" style={{ visibility: tool === 'pen' ? 'visible' : 'hidden' }}>
+        <div className="size-picker" style={{ visibility: tool === 'pen' ? 'visible' : 'hidden', pointerEvents: tool === 'pen' ? 'auto' : 'none' }}>
           {SIZES.map((s, i) => (
             <button
               key={s}
