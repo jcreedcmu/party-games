@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createServer } from './server.js';
 import type { GameType } from './types.js';
-import { configureWords } from './games/pictionary/words.js';
+import { configureWords, configureStats } from './games/pictionary/words.js';
+import type { WordStats } from './games/pictionary/words.js';
 
 function parseArgs(args: string[]): { password: string; port: number; host: string; game: GameType } {
   let password = '';
@@ -51,6 +52,22 @@ configureWords(words, (updated) => {
   } catch (e) {
     console.error('Failed to persist word list:', e);
     return false;
+  }
+});
+
+// Configure word stats
+const statsPath = path.resolve(import.meta.dirname, 'games/pictionary/word-stats.json');
+let stats: Record<string, WordStats> = {};
+try {
+  stats = JSON.parse(fs.readFileSync(statsPath, 'utf-8'));
+} catch {
+  // No stats file yet, start fresh
+}
+configureStats(stats, (updated) => {
+  try {
+    fs.writeFileSync(statsPath, JSON.stringify(updated, null, 2) + '\n');
+  } catch (e) {
+    console.error('Failed to persist word stats:', e);
   }
 });
 

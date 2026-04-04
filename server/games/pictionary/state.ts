@@ -7,7 +7,7 @@ import type {
   PictionaryActiveState,
   PictionaryPostgameState,
 } from './types.js';
-import { pickWords } from './words.js';
+import { pickWords, recordPresented, recordChosen, recordGuessOutcome } from './words.js';
 
 export const TURN_DURATION_MS = 105_000;
 export const ALL_GUESSED_GRACE_MS = 20_000;
@@ -15,6 +15,12 @@ export const HINT_REVEAL_MS = 20_000;
 export const PICK_DURATION_MS = 15_000;
 export const REVEAL_DURATION_MS = 5_000;
 export const TOTAL_ROUNDS = 3;
+
+function pickAndRecordWords(n: number): string[] {
+  const words = pickWords(n);
+  recordPresented(words);
+  return words;
+}
 
 function pickRandomLetterIndex(word: string): number {
   const indices: number[] = [];
@@ -119,7 +125,7 @@ export function checkAllReady(
     currentRound: 0,
     totalRounds: TOTAL_ROUNDS,
     word: '',
-    wordChoices: pickWords(3),
+    wordChoices: pickAndRecordWords(3),
     scores,
     turnDeadline: now + PICK_DURATION_MS,
     turnStartTime: now,
@@ -162,7 +168,7 @@ export function checkAllReadyPostgame(
     currentRound: 0,
     totalRounds: TOTAL_ROUNDS,
     word: '',
-    wordChoices: pickWords(3),
+    wordChoices: pickAndRecordWords(3),
     scores,
     turnDeadline: now + PICK_DURATION_MS,
     turnStartTime: now,
@@ -239,6 +245,7 @@ export function submitGuess(
   if (state.correctGuessers.some(g => g.playerId === playerId)) return { state, correct: false };
 
   const correct = isCloseEnough(text.trim().toLowerCase(), state.word.toLowerCase());
+  recordGuessOutcome(state.word, correct);
   const guessRecord = { playerId, text: text.trim(), correct };
   const currentTurnGuesses = [...state.currentTurnGuesses, guessRecord];
 
@@ -346,7 +353,7 @@ export function advanceTurn(
       currentTurnIndex: startIndex,
       currentRound: nextRound,
       word: '',
-      wordChoices: pickWords(3),
+      wordChoices: pickAndRecordWords(3),
       turnDeadline: now + PICK_DURATION_MS,
       turnStartTime: now,
       correctGuessers: [],
@@ -363,7 +370,7 @@ export function advanceTurn(
     subPhase: 'picking' as const,
     currentTurnIndex: nextIndex,
     word: '',
-    wordChoices: pickWords(3),
+    wordChoices: pickAndRecordWords(3),
     turnDeadline: now + PICK_DURATION_MS,
     turnStartTime: now,
     correctGuessers: [],
@@ -382,6 +389,7 @@ export function selectWord(
   if (choiceIndex < 0 || choiceIndex >= state.wordChoices.length) return state;
 
   const word = state.wordChoices[choiceIndex];
+  recordChosen(word);
   const now = Date.now();
   return {
     ...state,

@@ -4,8 +4,18 @@ export type WordEntry = {
   added_by?: string;
 };
 
+export type WordStats = {
+  presented: number;
+  chosen: number;
+  guessExposures: number;
+  guessSuccesses: number;
+  guessFailures: number;
+};
+
 let WORDS: WordEntry[] = [];
 let persistFn: ((words: WordEntry[]) => boolean) | null = null;
+let STATS: Map<string, WordStats> = new Map();
+let persistStatsFn: ((stats: Record<string, WordStats>) => void) | null = null;
 
 export function configureWords(
   words: WordEntry[],
@@ -13,6 +23,50 @@ export function configureWords(
 ): void {
   WORDS = words;
   persistFn = persist ?? null;
+}
+
+export function configureStats(
+  stats: Record<string, WordStats>,
+  persist: (stats: Record<string, WordStats>) => void,
+): void {
+  STATS = new Map(Object.entries(stats));
+  persistStatsFn = persist;
+}
+
+function getStats(word: string): WordStats {
+  const key = word.toLowerCase();
+  let s = STATS.get(key);
+  if (!s) {
+    s = { presented: 0, chosen: 0, guessExposures: 0, guessSuccesses: 0, guessFailures: 0 };
+    STATS.set(key, s);
+  }
+  return s;
+}
+
+function saveStats() {
+  if (persistStatsFn) {
+    persistStatsFn(Object.fromEntries(STATS));
+  }
+}
+
+export function recordPresented(words: string[]): void {
+  for (const w of words) {
+    getStats(w).presented++;
+  }
+  saveStats();
+}
+
+export function recordChosen(word: string): void {
+  getStats(word).chosen++;
+  saveStats();
+}
+
+export function recordGuessOutcome(word: string, correct: boolean): void {
+  const s = getStats(word);
+  s.guessExposures++;
+  if (correct) s.guessSuccesses++;
+  else s.guessFailures++;
+  saveStats();
 }
 
 export function pickWord(): string {
