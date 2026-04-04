@@ -48,7 +48,7 @@ export function PostGameTurnCard({ turn }: Props) {
             onClick={() => setPlaying(p => !p)}
             title={playing ? 'Stop' : 'Play'}
           >
-            {playing ? '\u25A0' : '\u25B6'}
+            {playing ? 'Stop' : 'Play'}
           </button>
         )}
       </div>

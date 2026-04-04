@@ -664,14 +664,14 @@ button:disabled {
 }
 
 .live-canvas-play-btn {
-  width: 28px;
   height: 28px;
   min-height: 28px;
-  padding: 0;
-  border-radius: 50%;
+  padding: 0 0.75rem;
+  border-radius: 14px;
   border: 2px solid #ccc;
   background: #f5f5f5;
   font-size: 12px;
+  font-weight: 600;
   line-height: 1;
   cursor: pointer;
   display: flex;
