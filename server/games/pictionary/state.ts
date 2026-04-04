@@ -11,7 +11,6 @@ import { pickWords, recordPresented, recordChosen, recordGuessOutcome } from './
 
 export const TURN_DURATION_MS = 105_000;
 export const ALL_GUESSED_GRACE_MS = 20_000;
-export const HINT_REVEAL_MS = 20_000;
 export const PICK_DURATION_MS = 15_000;
 export const REVEAL_DURATION_MS = 5_000;
 export const TOTAL_ROUNDS = 3;
@@ -22,12 +21,18 @@ function pickAndRecordWords(n: number): string[] {
   return words;
 }
 
-function pickRandomLetterIndex(word: string): number {
-  const indices: number[] = [];
+function pickRandomLetterIndices(word: string, count: number): number[] {
+  const available: number[] = [];
   for (let i = 0; i < word.length; i++) {
-    if (/[a-zA-Z]/.test(word[i])) indices.push(i);
+    if (/[a-zA-Z]/.test(word[i])) available.push(i);
   }
-  return indices[Math.floor(Math.random() * indices.length)];
+  const picked: number[] = [];
+  for (let i = 0; i < count && available.length > 0; i++) {
+    const j = Math.floor(Math.random() * available.length);
+    picked.push(available[j]);
+    available.splice(j, 1);
+  }
+  return picked;
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -130,7 +135,7 @@ export function checkAllReady(
     turnDeadline: now + PICK_DURATION_MS,
     turnStartTime: now,
     correctGuessers: [],
-    hintLetterIndex: 0,
+    hintLetterIndices: [],
     currentTurnOps: [],
     currentTurnGuesses: [],
     completedTurns: [],
@@ -173,7 +178,7 @@ export function checkAllReadyPostgame(
     turnDeadline: now + PICK_DURATION_MS,
     turnStartTime: now,
     correctGuessers: [],
-    hintLetterIndex: 0,
+    hintLetterIndices: [],
     currentTurnOps: [],
     currentTurnGuesses: [],
     completedTurns: [],
@@ -357,7 +362,7 @@ export function advanceTurn(
       turnDeadline: now + PICK_DURATION_MS,
       turnStartTime: now,
       correctGuessers: [],
-      hintLetterIndex: 0,
+      hintLetterIndices: [],
       currentTurnOps: [],
       currentTurnGuesses: [],
       completedTurns,
@@ -374,7 +379,7 @@ export function advanceTurn(
     turnDeadline: now + PICK_DURATION_MS,
     turnStartTime: now,
     correctGuessers: [],
-    hintLetterIndex: 0,
+    hintLetterIndices: [],
     currentTurnOps: [],
     currentTurnGuesses: [],
     completedTurns,
@@ -398,7 +403,7 @@ export function selectWord(
     wordChoices: [],
     turnDeadline: now + TURN_DURATION_MS,
     turnStartTime: now,
-    hintLetterIndex: pickRandomLetterIndex(word),
+    hintLetterIndices: pickRandomLetterIndices(word, 3),
   };
 }
 

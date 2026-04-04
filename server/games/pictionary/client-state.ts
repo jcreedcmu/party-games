@@ -4,7 +4,7 @@ import type {
   PictionaryState,
   PictionaryActiveState,
 } from './types.js';
-import { HINT_REVEAL_MS } from './state.js';
+import { TURN_DURATION_MS } from './state.js';
 import { getWordEntry } from './words.js';
 
 export type PictionaryClientWaitingState = {
@@ -31,8 +31,7 @@ export type PictionaryClientActiveState = {
   word: string | null;
   wordChoices: string[] | null;
   wordHint: string;
-  wordHintRevealed: string;
-  hintRevealTime: number;
+  hintReveals: Array<{ hint: string; revealTime: number }>;
   guessedCorrectly: boolean;
   correctGuessers: string[];
   players: PictionaryClientActivePlayer[];
@@ -93,11 +92,20 @@ function getActiveClientState(
 
   const wordChars = isPicking ? [] : [...state.word].map(c => /[a-zA-Z]/.test(c) ? '_' : c);
   const wordHint = isPicking ? '' : buildHint(wordChars);
-  let wordHintRevealed = '';
+
+  const hintReveals: Array<{ hint: string; revealTime: number }> = [];
   if (!isPicking) {
-    const revealedChars = [...wordChars];
-    revealedChars[state.hintLetterIndex] = state.word[state.hintLetterIndex];
-    wordHintRevealed = buildHint(revealedChars);
+    const numHints = state.hintLetterIndices.length;
+    const turnStart = state.turnDeadline - TURN_DURATION_MS;
+    for (let i = 0; i < numHints; i++) {
+      const revealedChars = [...wordChars];
+      for (let j = 0; j <= i; j++) {
+        const idx = state.hintLetterIndices[j];
+        revealedChars[idx] = state.word[idx];
+      }
+      const revealTime = turnStart + ((i + 1) / (numHints + 1)) * TURN_DURATION_MS;
+      hintReveals.push({ hint: buildHint(revealedChars), revealTime });
+    }
   }
 
   return {
@@ -110,8 +118,7 @@ function getActiveClientState(
     word: (state.subPhase === 'reveal' || (!isPicking && (isDrawer || guessedIds.has(playerId)))) ? state.word : null,
     wordChoices: (isPicking && isDrawer) ? state.wordChoices : null,
     wordHint,
-    wordHintRevealed,
-    hintRevealTime: isPicking ? Infinity : state.turnDeadline - HINT_REVEAL_MS,
+    hintReveals,
     turnDeadline: state.turnDeadline,
     guessedCorrectly: guessedIds.has(playerId),
     correctGuessers: state.correctGuessers.map(g => state.players.get(g.playerId)!.handle),

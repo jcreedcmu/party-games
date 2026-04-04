@@ -23,7 +23,7 @@ export function GuesserView({ state, playerId, send, onRelay, initialGuesses = [
   const [text, setText] = useState('');
   const [timeLeft, setTimeLeft] = useState('');
   const [urgent, setUrgent] = useState(false);
-  const [hintRevealed, setHintRevealed] = useState(false);
+  const [visibleHint, setVisibleHint] = useState(state.wordHint);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -47,7 +47,11 @@ export function GuesserView({ state, playerId, send, onRelay, initialGuesses = [
       const remaining = Math.max(0, Math.ceil((state.turnDeadline - now) / 1000));
       setTimeLeft(`${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`);
       setUrgent(remaining <= 10 && remaining > 0);
-      setHintRevealed(now >= state.hintRevealTime);
+      let hint = state.wordHint;
+      for (const h of state.hintReveals) {
+        if (now >= h.revealTime) hint = h.hint;
+      }
+      setVisibleHint(hint);
     }
     tick();
     const id = setInterval(tick, 1000);
@@ -80,7 +84,7 @@ export function GuesserView({ state, playerId, send, onRelay, initialGuesses = [
             <LiveCanvas ops={drawOps} />
           </div>
 
-          <div className="pic-word-hint">{hintRevealed ? state.wordHintRevealed : state.wordHint}</div>
+          <div className="pic-word-hint">{visibleHint}</div>
 
           {state.guessedCorrectly && (
             <div className="pic-guessed-correct">You guessed it! The word was <strong>{state.word}</strong>.</div>
