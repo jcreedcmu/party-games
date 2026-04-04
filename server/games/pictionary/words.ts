@@ -69,13 +69,34 @@ export function recordGuessOutcome(word: string, correct: boolean): void {
   saveStats();
 }
 
+const PICK_DECAY_FACTOR = 8;
+
+function wordWeight(word: string): number {
+  const s = STATS.get(word.toLowerCase());
+  const chosen = s?.chosen ?? 0;
+  return Math.pow(1 / PICK_DECAY_FACTOR, chosen);
+}
+
 export function pickWord(): string {
-  return WORDS[Math.floor(Math.random() * WORDS.length)].word;
+  return pickWords(1)[0];
 }
 
 export function pickWords(n: number): string[] {
-  const shuffled = [...WORDS].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, n).map(w => w.word);
+  const result: string[] = [];
+  const remaining = [...WORDS];
+  for (let i = 0; i < n && remaining.length > 0; i++) {
+    const weights = remaining.map(w => wordWeight(w.word));
+    const total = weights.reduce((a, b) => a + b, 0);
+    let r = Math.random() * total;
+    let picked = remaining.length - 1;
+    for (let j = 0; j < remaining.length; j++) {
+      r -= weights[j];
+      if (r <= 0) { picked = j; break; }
+    }
+    result.push(remaining[picked].word);
+    remaining.splice(picked, 1);
+  }
+  return result;
 }
 
 export function getWordEntry(word: string): WordEntry | undefined {
