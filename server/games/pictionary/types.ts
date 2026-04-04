@@ -27,6 +27,8 @@ export type PictionaryActiveState = {
   players: Map<PlayerId, PlayerInfo>;
   order: PlayerId[];
   currentTurnIndex: number;
+  currentRound: number;
+  totalRounds: number;
   word: string;
   wordChoices: string[];
   scores: Map<PlayerId, number>;

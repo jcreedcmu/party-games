@@ -33,11 +33,12 @@ beforeAll(() => {
 });
 
 function makeTwoPlayerPostgame(): PictionaryPostgameState {
-  let active = makeTwoPlayerDrawing();
-  let next = advanceTurn(active);
-  if (next.phase === 'pictionary-active') {
-    next = selectWord(next, 0);
+  let next: PictionaryActiveState | PictionaryPostgameState = makeTwoPlayerDrawing();
+  while (next.phase === 'pictionary-active') {
     next = advanceTurn(next);
+    if (next.phase === 'pictionary-active') {
+      next = selectWord(next, 0);
+    }
   }
   if (next.phase !== 'pictionary-postgame') throw new Error('Expected postgame');
   return next;
@@ -370,16 +371,18 @@ describe('advanceTurn', () => {
     expect(result.currentTurnOps).toEqual([]);
   });
 
-  it('goes to postgame after all turns', () => {
-    let active = makeTwoPlayerDrawing();
-    // Advance through both turns
-    let next = advanceTurn(active);
-    if (next.phase !== 'pictionary-active') throw new Error('Expected active');
-    next = selectWord(next, 0);
-    const result = advanceTurn(next);
-    expect(result.phase).toBe('pictionary-postgame');
-    if (result.phase !== 'pictionary-postgame') throw new Error('Expected postgame');
-    expect(result.turns.length).toBe(2);
+  it('goes to postgame after all rounds', () => {
+    let next: PictionaryActiveState | PictionaryPostgameState = makeTwoPlayerDrawing();
+    // Advance through all rounds (3 rounds × 2 players = 6 turns)
+    while (next.phase === 'pictionary-active') {
+      next = advanceTurn(next);
+      if (next.phase === 'pictionary-active') {
+        next = selectWord(next, 0);
+      }
+    }
+    expect(next.phase).toBe('pictionary-postgame');
+    if (next.phase !== 'pictionary-postgame') throw new Error('Expected postgame');
+    expect(next.turns.length).toBe(6);
   });
 
   it('skips disconnected drawers', () => {
@@ -400,11 +403,7 @@ describe('advanceTurn', () => {
 
 describe('resetGame', () => {
   it('returns to waiting with connected players', () => {
-    let active = makeTwoPlayerDrawing();
-    active = advanceTurn(active) as PictionaryActiveState;
-    active = selectWord(active, 0);
-    const postgame = advanceTurn(active);
-    if (postgame.phase !== 'pictionary-postgame') throw new Error('Expected postgame');
+    const postgame = makeTwoPlayerPostgame();
     const waiting = resetGame(postgame);
     expect(waiting.phase).toBe('pictionary-waiting');
     expect(waiting.players.size).toBe(2);
@@ -414,14 +413,18 @@ describe('resetGame', () => {
   });
 
   it('excludes disconnected players on reset', () => {
-    let active = makeTwoPlayerDrawing();
-    const drawerId = getCurrentDrawer(active);
-    active = removePlayer(active, drawerId) as PictionaryActiveState;
-    active = advanceTurn(active) as PictionaryActiveState;
-    active = selectWord(active, 0);
-    const postgame = advanceTurn(active);
-    if (postgame.phase !== 'pictionary-postgame') throw new Error('Expected postgame');
-    const waiting = resetGame(postgame);
+    let next: PictionaryActiveState | PictionaryPostgameState = makeTwoPlayerDrawing();
+    const drawerId = getCurrentDrawer(next);
+    next = removePlayer(next, drawerId) as PictionaryActiveState;
+    // Advance through all remaining rounds
+    while (next.phase === 'pictionary-active') {
+      next = advanceTurn(next);
+      if (next.phase === 'pictionary-active') {
+        next = selectWord(next, 0);
+      }
+    }
+    if (next.phase !== 'pictionary-postgame') throw new Error('Expected postgame');
+    const waiting = resetGame(next);
     expect(waiting.players.size).toBe(1);
     expect(waiting.players.has(drawerId)).toBe(false);
   });
@@ -471,7 +474,7 @@ describe('getClientState', () => {
     expect(client.word).toBe(active.word);
     expect(client.currentDrawerHandle).toBeTruthy();
     expect(client.turnNumber).toBe(1);
-    expect(client.totalTurns).toBe(2);
+    expect(client.totalTurns).toBe(6);
   });
 
   it('projects drawing state for guesser (hides word)', () => {
@@ -491,9 +494,9 @@ describe('getClientState', () => {
     const guesserId = active.order.find(id => id !== drawerId)!;
     // Guess correctly
     const { state: afterGuess } = submitGuess(active, guesserId, active.word);
-    // Advance through all turns
-    let next = advanceTurn(afterGuess);
-    if (next.phase === 'pictionary-active') {
+    // Advance through all rounds
+    let next: PictionaryActiveState | PictionaryPostgameState = advanceTurn(afterGuess);
+    while (next.phase === 'pictionary-active') {
       next = selectWord(next, 0);
       next = advanceTurn(next);
     }

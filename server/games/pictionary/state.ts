@@ -13,6 +13,7 @@ export const TURN_DURATION_MS = 75_000;
 export const ALL_GUESSED_GRACE_MS = 10_000;
 export const HINT_REVEAL_MS = 20_000;
 export const PICK_DURATION_MS = 15_000;
+export const TOTAL_ROUNDS = 3;
 
 function pickRandomLetterIndex(word: string): number {
   const indices: number[] = [];
@@ -105,6 +106,8 @@ export function checkAllReady(
     players,
     order,
     currentTurnIndex: 0,
+    currentRound: 0,
+    totalRounds: TOTAL_ROUNDS,
     word: '',
     wordChoices: pickWords(3),
     scores,
@@ -145,6 +148,8 @@ export function checkAllReadyPostgame(
     players,
     order,
     currentTurnIndex: 0,
+    currentRound: 0,
+    totalRounds: TOTAL_ROUNDS,
     word: '',
     wordChoices: pickWords(3),
     scores,
@@ -283,15 +288,47 @@ export function advanceTurn(
   }
 
   if (nextIndex >= state.order.length) {
-    const players = new Map(state.players);
-    for (const [id, player] of players) {
-      players.set(id, { ...player, ready: false });
+    const nextRound = state.currentRound + 1;
+    if (nextRound >= state.totalRounds) {
+      const players = new Map(state.players);
+      for (const [id, player] of players) {
+        players.set(id, { ...player, ready: false });
+      }
+      return {
+        phase: 'pictionary-postgame',
+        players,
+        scores: state.scores,
+        turns: completedTurns,
+      };
     }
+
+    // Start next round — reshuffle order, skip to first connected player
+    const connectedOrder = shuffle(
+      state.order.filter(id => state.players.get(id)?.connected)
+    );
+    let startIndex = 0;
+    while (startIndex < connectedOrder.length) {
+      const p = state.players.get(connectedOrder[startIndex]);
+      if (p && p.connected) break;
+      startIndex++;
+    }
+
+    const now = Date.now();
     return {
-      phase: 'pictionary-postgame',
-      players,
-      scores: state.scores,
-      turns: completedTurns,
+      ...state,
+      subPhase: 'picking' as const,
+      order: connectedOrder,
+      currentTurnIndex: startIndex,
+      currentRound: nextRound,
+      word: '',
+      wordChoices: pickWords(3),
+      turnDeadline: now + PICK_DURATION_MS,
+      turnStartTime: now,
+      correctGuessers: [],
+      hintLetterIndex: 0,
+      currentTurnOps: [],
+      currentTurnGuesses: [],
+      completedTurns,
     };
   }
 
