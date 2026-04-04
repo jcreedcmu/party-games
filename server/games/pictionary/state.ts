@@ -13,6 +13,7 @@ export const TURN_DURATION_MS = 75_000;
 export const ALL_GUESSED_GRACE_MS = 10_000;
 export const HINT_REVEAL_MS = 20_000;
 export const PICK_DURATION_MS = 15_000;
+export const REVEAL_DURATION_MS = 5_000;
 export const TOTAL_ROUNDS = 3;
 
 function pickRandomLetterIndex(word: string): number {
@@ -276,6 +277,15 @@ export function shortenDeadline(state: PictionaryActiveState): PictionaryActiveS
   return { ...state, turnDeadline: newDeadline };
 }
 
+export function startReveal(state: PictionaryActiveState): PictionaryActiveState {
+  const now = Date.now();
+  return {
+    ...state,
+    subPhase: 'reveal',
+    turnDeadline: now + REVEAL_DURATION_MS,
+  };
+}
+
 export function advanceTurn(
   state: PictionaryActiveState,
 ): PictionaryActiveState | PictionaryPostgameState {
@@ -527,10 +537,10 @@ export function pictionaryReduce(state: ServerState, playerId: PlayerId, msg: Cl
       if (state.subPhase !== 'drawing') return { state, effects: [] };
       if (playerId !== getCurrentDrawer(state)) return { state, effects: [] };
 
-      const next = advanceTurn(state);
+      const next = startReveal(state);
       return {
         state: next,
-        effects: [{ type: 'broadcast' }, ...activeTimerEffects(next)],
+        effects: [{ type: 'broadcast' }, { type: 'set-timer', deadline: next.turnDeadline }],
       };
     }
 
@@ -566,10 +576,10 @@ export function pictionaryReduceDisconnect(state: ServerState, playerId: PlayerI
     const removed = removePlayer(state, playerId);
     if (removed.phase === 'pictionary-active') {
       if (wasDrawer || checkTurnComplete(removed)) {
-        const next = advanceTurn(removed);
+        const next = startReveal(removed);
         return {
           state: next,
-          effects: [{ type: 'broadcast' }, ...activeTimerEffects(next)],
+          effects: [{ type: 'broadcast' }, { type: 'set-timer', deadline: next.turnDeadline }],
         };
       }
     }
@@ -598,7 +608,16 @@ export function pictionaryReduceTimer(state: ServerState): ReduceResult {
     };
   }
 
-  // Drawing phase timed out
+  if (state.subPhase === 'drawing') {
+    // Drawing phase timed out — show reveal
+    const next = startReveal(state);
+    return {
+      state: next,
+      effects: [{ type: 'broadcast' }, { type: 'set-timer', deadline: next.turnDeadline }],
+    };
+  }
+
+  // Reveal phase timed out — advance to next turn
   const next = advanceTurn(state);
   return {
     state: next,

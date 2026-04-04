@@ -23,7 +23,7 @@ export type PictionaryWaitingState = {
 
 export type PictionaryActiveState = {
   phase: 'pictionary-active';
-  subPhase: 'picking' | 'drawing';
+  subPhase: 'picking' | 'drawing' | 'reveal';
   players: Map<PlayerId, PlayerInfo>;
   nextPlayerId: number;
   order: PlayerId[];

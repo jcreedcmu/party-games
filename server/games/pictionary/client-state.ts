@@ -22,7 +22,7 @@ export type PictionaryClientActivePlayer = {
 
 export type PictionaryClientActiveState = {
   phase: 'pictionary-active';
-  subPhase: 'picking' | 'drawing';
+  subPhase: 'picking' | 'drawing' | 'reveal';
   role: 'drawer' | 'guesser';
   currentDrawerHandle: string;
   turnNumber: number;
@@ -95,7 +95,7 @@ function getActiveClientState(
     currentDrawerHandle: drawerInfo.handle,
     turnNumber: state.currentRound * state.order.length + state.currentTurnIndex + 1,
     totalTurns: state.order.length * state.totalRounds,
-    word: (!isPicking && (isDrawer || guessedIds.has(playerId))) ? state.word : null,
+    word: (state.subPhase === 'reveal' || (!isPicking && (isDrawer || guessedIds.has(playerId)))) ? state.word : null,
     wordChoices: (isPicking && isDrawer) ? state.wordChoices : null,
     wordHint,
     wordHintRevealed,

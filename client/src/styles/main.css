@@ -551,6 +551,37 @@ button:disabled {
 
 /* Pictionary */
 
+.pic-reveal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.pic-reveal-word {
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.pic-reveal-word strong {
+  font-size: 2rem;
+  color: #4169e1;
+}
+
+.pic-reveal-drawn-by {
+  font-size: 1rem;
+  color: #666;
+}
+
+.pic-reveal-stats {
+  font-size: 1.125rem;
+  color: #555;
+  margin-top: 0.5rem;
+}
+
 .pic-last-word {
   padding: 0.5rem 0.75rem;
   margin-bottom: 0.75rem;
