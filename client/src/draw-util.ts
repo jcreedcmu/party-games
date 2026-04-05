@@ -1,5 +1,5 @@
-export const CANVAS_WIDTH = 600;
-export const CANVAS_HEIGHT = 450;
+export const CANVAS_WIDTH = 800;
+export const CANVAS_HEIGHT = 500;
 
 export function parseColor(color: string): [number, number, number] {
   const tmp = document.createElement('canvas');
