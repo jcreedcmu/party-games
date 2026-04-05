@@ -28,4 +28,5 @@
     --ro-bind $HOME/.nvm $HOME/.nvm \
     --ro-bind "$PWD" "$PWD" \
     --bind "$PWD/server/games/pictionary/word-list.json" "$PWD/server/games/pictionary/word-list.json" \
+    --bind "$PWD/server/games/pictionary/word-stats.json" "$PWD/server/games/pictionary/word-stats.json" \
     npx tsx server/index.ts "$@"
