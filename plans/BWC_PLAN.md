@@ -311,11 +311,13 @@ as completed per CLAUDE.md.
       `Surface`, `BwcState`, message, and client-state types. No reducer
       logic yet — type-check only.
 
-- [ ] **Step 3: Card library persistence.** Implement load/save of
-      `cards.json`. Implement `bwc-create-card` reducer + the projection of
-      library cards into client state. Build minimal `CreateCardModal` using
-      DrawingCanvas. End state: players can create cards and see them in a
-      "library" panel, surviving server restart.
+- [ ] **Step 3: Card creation.** Implement the in-memory card library
+      (a `Map<CardId, Card>` in `BwcPlayingState` for now — persistence
+      comes later). Implement `bwc-create-card` reducer and the projection
+      of library cards into client state. Build the `CardEditor` component
+      (DrawingCanvas + text input) and a "library" panel listing all cards
+      created so far. End state: players can author cards and see each
+      other's cards in the library, all in-memory.
 
 - [ ] **Step 4: Spawn & move objects.** Implement `bwc-spawn-card`,
       `bwc-move-object`, `bwc-bring-to-front`, `bwc-flip-object`,
@@ -323,18 +325,24 @@ as completed per CLAUDE.md.
       pointer drag, and z-ordering. No rotation/seating yet — assume all
       players see the table the same way.
 
-- [ ] **Step 5: Seating.** Implement seating algorithm, assign seats on
+- [ ] **Step 5: Card editing.** `bwc-edit-card` (re-open `CardEditor`
+      seeded with the existing `ops` and `text`). Edits overwrite in place.
+      This step is intentionally early in the plan because card creation +
+      editing is the central authoring loop of 1kbwc and deserves time to
+      get right before the more mechanical features pile on.
+
+- [ ] **Step 6: Seating.** Implement seating algorithm, assign seats on
       `waiting → playing` transition, project `mySeat` per player, and
       apply rotation transform on the client. Add seat avatars/labels.
 
-- [ ] **Step 6: Hand surfaces & hidden info.** Each player gets a private
+- [ ] **Step 7: Hand surfaces & hidden info.** Each player gets a private
       `Surface` rendered as a second canvas (the "hand tray"). Cross-surface
       moves via `bwc-move-object` (drag from table → hand or vice versa).
       Projection hides other players' hand contents (only count exposed) and
       hides face-down cards everywhere. Render `OtherHands` as opaque
       placeholders showing only the count.
 
-- [ ] **Step 7: Decks.** Implement `bwc-form-deck`, `bwc-draw-from-deck`,
+- [ ] **Step 8: Decks.** Implement `bwc-form-deck`, `bwc-draw-from-deck`,
       `bwc-return-to-deck`, `bwc-shuffle-deck`, and `bwc-flip-object` for
       decks. Decks may be face-up or face-down; flipping a deck physically
       inverts it (reverses the order of its cards) so that what was the
@@ -342,16 +350,17 @@ as completed per CLAUDE.md.
       in the projection; face-down decks expose only their count. Build the
       `DeckView` component.
 
-- [ ] **Step 8: Scores.** First-class per-player score display near each
+- [ ] **Step 9: Scores.** First-class per-player score display near each
       seat with +/- controls. Scores are global `Map<PlayerId, number>`
       state. Any player can adjust any player's score (trust-based, like
       the rest of the tabletop).
 
-- [ ] **Step 9: Card editing.** `bwc-edit-card` (re-open `CardEditor`
-      seeded with the existing `ops` and `text`). Edits overwrite in place.
-
-- [ ] **Step 10: Table snapshot persistence.** Debounced save, load on
-      startup, reset clears table snapshot but not library.
+- [ ] **Step 10: Persistence.** Promote the in-memory card library to
+      disk-backed storage at `data/bwc/cards.json` (load on startup, write
+      on every create/edit). Add the table snapshot at `data/bwc/table.json`
+      (debounced save, load on startup). `reset` clears the table snapshot
+      but leaves the card library intact. Follow the `word-stats` storage
+      pattern from the pictionary game module.
 
 - [ ] **Step 11: Polish.** Multi-select drag, visual affordances for
       face-down vs face-up, hover tooltips with card creator, "shuffle"
