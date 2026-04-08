@@ -25,10 +25,11 @@ to be over a simultaneous video call; no in-game chat is planned).
 4. **No programmed end condition.** Players declare winners socially. The
    host can `reset` to clear the table (but not the card library).
 5. **No chat.**
-6. **Seated around a rectangular table.** Players have rotational positions
-   distributed along the four sides of a rectangle. Each player's client
-   renders the table rotated so their seat is at the bottom. Soft cap ~10
-   players; seat distribution is computed to balance the four sides.
+6. **Seated around a square table.** Players have rotational positions
+   distributed along the four sides of a square. Each player's client
+   renders the table rotated so their seat is at the bottom. It's likely that there
+   are not more than ~10 players but there's no hard limit;
+   seat distribution is computed to balance the four sides.
 
 ## Architectural fit
 
@@ -58,24 +59,33 @@ type SeatIndex = number;     // 0..N-1, assigned at join time
 type Card = {
   id: CardId;
   ops: DrawOp[];             // front art
+  text: string;              // description of what the card does
   creator: string;           // handle of original author
-  createdAt: number;
+  createdAt: string;         // stringified Date
 };
 
 // A position on the table. Coordinates are in "table space" — a fixed
-// logical rectangle. Each client rotates the rendering so their seat is
+// logical square. Each client rotates the rendering so their seat is
 // at the bottom.
-type Pose = { x: number; y: number; rot: number };
+type Pose = { x: number; y: number; rot: number }; // rotation is in degrees, likely to be in 0, 90, 180, 270 in practice.
+
+// A "surface" is a 2D space containing objects. The shared table is one
+// surface; each player's hand is another (private) surface. Surfaces share
+// the same coordinate conventions and the same set of object kinds, so most
+// operations (move, flip, bring-to-front, form-deck, etc.) work uniformly
+// regardless of which surface an object lives on.
+type SurfaceId =
+  | { kind: 'table' }
+  | { kind: 'hand'; ownerId: PlayerId };
 
 type TableObject =
   | { kind: 'card';  id: ObjectId; cardId: CardId; pose: Pose; faceUp: boolean; z: number }
-  | { kind: 'deck';  id: ObjectId; cardIds: CardId[]; pose: Pose; faceUp: boolean; z: number }
-  | { kind: 'token'; id: ObjectId; color: string; label: string | null; pose: Pose; z: number }
-  | { kind: 'die';   id: ObjectId; sides: number; value: number; pose: Pose; z: number };
+  | { kind: 'deck';  id: ObjectId; cardIds: CardId[]; pose: Pose; faceUp: boolean; z: number };
 
-type Hand = {
-  ownerId: PlayerId;
-  cardIds: CardId[];         // ordered, owner-visible only
+type Surface = {
+  id: SurfaceId;
+  objects: Map<ObjectId, TableObject>;
+  zCounter: number;
 };
 
 type BwcWaitingState = {
@@ -88,9 +98,9 @@ type BwcPlayingState = {
   phase: 'bwc-playing';
   players: Map<PlayerId, PlayerInfo>;
   seats: Map<PlayerId, SeatIndex>;
-  objects: Map<ObjectId, TableObject>;
-  hands: Map<PlayerId, Hand>;
-  zCounter: number;          // monotonically increasing for "bring to front"
+  table: Surface;                       // shared
+  hands: Map<PlayerId, Surface>;        // one private surface per player
+  scores: Map<PlayerId, number>;        // first-class per-player score
 };
 
 type BwcState = BwcWaitingState | BwcPlayingState;
@@ -102,31 +112,34 @@ The **card library** is *not* in `BwcState` — it's a separate persisted store
 ### Client state projection (`server/protocol.ts` additions)
 
 ```ts
-type BwcClientHand =
-  | { ownerId: PlayerId; mine: true; cardIds: CardId[] }
-  | { ownerId: PlayerId; mine: false; count: number };
-
 type BwcVisibleObject =
   | { kind: 'card'; id: ObjectId; pose: Pose; z: number;
       // present only if face-up:
-      card?: { id: CardId; ops: DrawOp[]; creator: string } }
+      card?: { id: CardId; ops: DrawOp[]; text: string; creator: string } }
   | { kind: 'deck'; id: ObjectId; pose: Pose; z: number; faceUp: boolean;
-      count: number; topCard?: { id: CardId; ops: DrawOp[] } /* if faceUp */ }
-  | { kind: 'token'; ... }
-  | { kind: 'die'; ... };
+      count: number; topCard?: { id: CardId; ops: DrawOp[]; text: string } /* if faceUp */ };
+
+// A surface as seen by a particular client. The shared table is always
+// fully visible (modulo face-down cards). My own hand is fully visible.
+// Other players' hands are summarized as a count of objects only.
+type BwcVisibleSurface =
+  | { id: SurfaceId; visibility: 'full'; objects: BwcVisibleObject[] }
+  | { id: SurfaceId; visibility: 'opaque'; objectCount: number };
 
 type BwcPlayingClientState = {
   phase: 'bwc-playing';
   mySeat: SeatIndex;
-  seats: Array<{ playerId: PlayerId; handle: string; seat: SeatIndex; side: 'N'|'E'|'S'|'W' }>;
-  objects: BwcVisibleObject[];
-  hands: BwcClientHand[];
+  seats: Array<{ playerId: PlayerId; handle: string; seat: SeatIndex; side: 'N'|'E'|'S'|'W'; score: number }>;
+  table: BwcVisibleSurface;             // always 'full'
+  myHand: BwcVisibleSurface;            // always 'full'
+  otherHands: BwcVisibleSurface[];      // always 'opaque'
 };
 ```
 
 The projection function hides:
-- DrawOps of face-down cards (on table or in face-down decks)
-- The full content of others' hands (only count is exposed)
+- DrawOps of face-down cards (on any surface, including the owner's own
+  hand — face-down means face-down)
+- The entire contents of other players' hands (only an object count is exposed)
 - Deck composition below the top card
 
 ---
@@ -139,24 +152,30 @@ All messages are **intents** — whole gestures, not increments.
 
 | Message | Fields | Notes |
 |---|---|---|
-| `bwc-create-card` | `ops: DrawOp[]` | Adds to library, returns new CardId |
-| `bwc-edit-card` | `cardId, ops` | Replaces art (history tracked? see open Q) |
-| `bwc-spawn-card` | `cardId, pose, faceUp` | Puts a library card on the table |
-| `bwc-move-object` | `objectId, pose` | Single complete drag |
-| `bwc-flip-object` | `objectId` | Card or deck |
-| `bwc-bring-to-front` | `objectId` | Updates z |
-| `bwc-delete-object` | `objectId` | Removes from table (cards return to library) |
-| `bwc-take-to-hand` | `objectId` | Card on table → my hand |
-| `bwc-play-from-hand` | `cardId, pose, faceUp` | My hand → table |
-| `bwc-discard-from-hand` | `cardId` | Hand → library limbo |
-| `bwc-draw-from-deck` | `deckId, toHand: bool, pose?` | Draws top card |
-| `bwc-return-to-deck` | `objectId, deckId, position: 'top'\|'bottom'` | |
-| `bwc-shuffle-deck` | `deckId` | |
-| `bwc-form-deck` | `objectIds[], pose` | Combines selected cards into a deck |
-| `bwc-spawn-token` | `color, label?, pose` | |
-| `bwc-spawn-die` | `sides, pose` | |
-| `bwc-roll-die` | `dieId` | Server picks RNG; broadcasts result |
-| `bwc-adjust-token` | `tokenId, delta?, label?` | Score-counter use case |
+All object-targeting messages identify an object by `(surface, objectId)`,
+so the same op works whether the object lives on the shared table or in a
+player's hand. Cross-surface moves are expressed as a single `move-object`
+with a different destination surface — there are no separate
+take-to-hand / play-from-hand messages.
+
+Authorization: any player may freely operate on the table surface and on
+their *own* hand surface. Operations on another player's hand are rejected.
+
+| Message | Fields | Notes |
+|---|---|---|
+| `bwc-create-card` | `ops: DrawOp[], text: string` | Adds to library, returns new CardId |
+| `bwc-edit-card` | `cardId, ops, text` | Replaces art and text |
+| `bwc-spawn-card` | `cardId, surface, pose, faceUp` | Puts a library card onto a surface |
+| `bwc-move-object` | `from: SurfaceId, objectId, to: SurfaceId, pose` | Single complete drag, possibly cross-surface |
+| `bwc-flip-object` | `surface, objectId` | Card or deck |
+| `bwc-bring-to-front` | `surface, objectId` | Updates z within that surface |
+| `bwc-delete-object` | `surface, objectId` | Cards return to library limbo |
+| `bwc-draw-from-deck` | `surface, deckId, to: SurfaceId, pose` | Draws top card to a destination surface |
+| `bwc-return-to-deck` | `srcSurface, objectId, deckSurface, deckId, position: 'top'\|'bottom'` | |
+| `bwc-shuffle-deck` | `surface, deckId` | |
+| `bwc-form-deck` | `surface, objectIds[], pose` | Combines selected cards on one surface into a deck |
+| `bwc-set-score` | `playerId, score` | Set absolute score for any player |
+| `bwc-adjust-score` | `playerId, delta` | Increment/decrement any player's score |
 
 ### Server → client
 
@@ -185,25 +204,37 @@ The client receives `mySeat` and rotates the entire table render so its own
 seat is at the bottom. Other players' avatars/labels are drawn at their
 seat positions.
 
-Late joins during `bwc-playing` are allowed (unlike EPYC) — the joining
-player is assigned the next free seat slot, which may trigger a rebalance
-*only if* no rebalance happens to existing players (rebalancing live seats
-would be visually jarring; better to leave gaps).
+Late joins during `bwc-playing` are not supported for *new* players.
+A previously-seated player who disconnects may always reconnect and reclaim
+their seat + hand (see Player identity below). Seats are never redistributed
+mid-game — card positions on the table may be meaningful "in front of" a
+specific seat, and shuffling seats would be impossible to reconcile cleanly.
+
+## Player identity & reconnection
+
+To distinguish "same player reconnecting" from "new player joining," the
+client generates a stable GUID at first startup and stashes it in
+`localStorage`. The GUID is sent on `join` (alongside handle/password) and
+the server uses it as the durable player identity. This is new infrastructure
+that doesn't exist for the other two games — Step 1 must verify the existing
+reconnect path and add the GUID-based identity if missing. (The other games
+can adopt it later, or not; it's not load-bearing for them.)
+
+During `bwc-playing`, `join` is accepted only if the GUID matches a seated
+player. New GUIDs are rejected with an error.
 
 ---
 
 ## Persistence
 
-Two stores under `server/games/bwc/storage/` (or wherever fits the existing
-project layout — TBD when we look at how `word-stats` is persisted, since
-that's the only existing precedent in the codebase):
+Two stores under `data/bwc/`:
 
 ### Card library (`cards.json`)
 
 ```json
 {
   "cards": {
-    "<cardId>": { "ops": [...], "creator": "alice", "createdAt": 1234 }
+    "<cardId>": { "ops": [...], "creator": "alice", "createdAt": "2026-05-12 ..." }
   }
 }
 ```
@@ -212,7 +243,8 @@ that's the only existing precedent in the codebase):
 - Loaded at server startup.
 - Survives `reset`.
 - Cards "discarded" or "deleted from table" return here, not deleted from
-  the library. (True deletion would need an explicit admin action.)
+  the library. (True deletion would require manual filesystem operations out
+  of the scope of the application)
 
 ### Table snapshot (`table.json`)
 
@@ -235,11 +267,9 @@ client/src/components/bwc/
   TableObject.tsx      — renders one TableObject (dispatch on kind)
   CardView.tsx         — renders a card (DrawOps via shared draw renderer)
   DeckView.tsx
-  TokenView.tsx
-  DieView.tsx
   HandTray.tsx         — own hand at bottom of screen
   OtherHands.tsx       — opaque card-back fans at other seats
-  CreateCardModal.tsx  — wraps DrawingCanvas in stream mode + submit
+  CardEditor.tsx       — DrawingCanvas + text input; used for both create and edit
   Toolbar.tsx          — spawn tokens/dice, new card, etc.
   seating.ts           — shared seating math (or import from server)
 ```
@@ -287,15 +317,21 @@ as completed per CLAUDE.md.
       `waiting → playing` transition, project `mySeat` per player, and
       apply rotation transform on the client. Add seat avatars/labels.
 
-- [ ] **Step 6: Hands & hidden info.** Implement `Hand`, the
-      take/play/discard ops, projection that hides others' hands, and
-      `HandTray` + `OtherHands` components.
+- [ ] **Step 6: Hand surfaces & hidden info.** Each player gets a private
+      `Surface` rendered as a second canvas (the "hand tray"). Cross-surface
+      moves via `bwc-move-object` (drag from table → hand or vice versa).
+      Projection hides other players' hand contents (only count exposed) and
+      hides face-down cards everywhere. Render `OtherHands` as opaque
+      placeholders showing only the count.
 
 - [ ] **Step 7: Decks.** Implement `bwc-form-deck`, `bwc-draw-from-deck`,
       `bwc-return-to-deck`, `bwc-shuffle-deck`, face-down deck projection.
       `DeckView` component.
 
-- [ ] **Step 8: Tokens & dice.** Spawn/adjust/roll. Toolbar additions.
+- [ ] **Step 8: Scores.** First-class per-player score display near each
+      seat with +/- controls. Scores are global `Map<PlayerId, number>`
+      state. Any player can adjust any player's score (trust-based, like
+      the rest of the tabletop).
 
 - [ ] **Step 9: Card editing.** `bwc-edit-card` (re-open DrawingCanvas
       seeded with existing ops). Decide on history (open question below).
@@ -305,7 +341,8 @@ as completed per CLAUDE.md.
 
 - [ ] **Step 11: Polish.** Multi-select drag, visual affordances for
       face-down vs face-up, hover tooltips with card creator, "shuffle"
-      animation, etc. As-needed.
+      animation, a "tidy hand" verb that flips every card in the owner's
+      hand face-up and lays them out in a neat row, etc. As-needed.
 
 ---
 
@@ -315,10 +352,19 @@ as completed per CLAUDE.md.
    Versioning is more faithful to "cards persist forever" but adds storage
    complexity. Suggestion: keep a `history: DrawOp[][]` per card, never UI-
    exposed initially but available for future "undo edit" features.
+
+Answer: No, we don't keep the old version. The `DrawOp[]` itself is a good enough
+record of the sequence of operations.
+
 2. **Deck face-down vs face-up semantics.** A face-up deck reveals the top
    card; a face-down deck reveals nothing. Does flipping a deck reverse its
    order? (Physically, yes — flipping a physical deck inverts it.) Implement
    the physical behavior.
+
+Answer: Yes, we should support face-up *and* face-down states of decks, with
+the "real-world physics" behavior that flipping a deck reversing the
+order of the cards in it.
+
 3. **Card identity when in a hand.** Are the same `CardId`s usable in two
    places at once (e.g. on the table *and* in a hand)? Default: **no.** A
    given CardId has at most one "instance" — either in the library limbo,
@@ -326,6 +372,10 @@ as completed per CLAUDE.md.
    hand. The library tracks *definitions*; the table tracks *locations*.
    This means we need a `cardLocation: Map<CardId, Location>` index for
    sanity checks.
+
+Indeed, I would say "no": tokens can be duplicated, but there is at most
+one copy of any card at any time.
+
 4. **Multiple copies of a card.** Sometimes you want N copies of the same
    card design. Solution: each `TableObject`/hand entry references a
    `CardId`, but the card *definition* in the library is shareable. So
@@ -336,12 +386,28 @@ as completed per CLAUDE.md.
    `CardDefinitionId` (library-level) and `CardInstanceId` (location-level).
    Library stores definitions; table objects/hands hold instances; each
    instance points to a definition.
+
+Answer: No, multiple copies of a card are not supported. This is also
+to correctly simulate "real-world physics".
+
 5. **Right place for persistence helpers.** Look at how `word-stats` is
    persisted in the existing code and follow that convention.
+
+Answer: You can look to the code for precedent for how to manage
+persistent state, but we should put persistent data for BWC in the
+directory `data/bwc/`.
+
 6. **Selection model.** Single-select first; multi-select in polish step.
+
+Answer: Yup, we don't need multi-select in the first iteration.
+
 7. **What happens to a player's hand if they disconnect?** Two options:
    (a) hand stays reserved indefinitely; (b) hand is dumped face-down on
    the table after a grace period. Recommendation: (a), since 1kbwc games
    are long and reconnects should be seamless. The hand is keyed by
    `PlayerId`, so reconnecting with the same handle should reclaim it
    (depends on existing reconnect semantics — verify in step 1).
+
+Answer: (a), their hand should be preserved. Most likely
+disconnections are accidental, and we should permit the same player to
+reconnect seamlessly and resume play.
