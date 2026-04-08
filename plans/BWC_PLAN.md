@@ -312,11 +312,11 @@ as completed per CLAUDE.md.
       games can adopt opt-in.
 
       *Findings from Step 1:* `orchestrator.ts` currently mints a fresh
-      `playerId` on every `join` (no identity match) and resets the entire
-      game state to `createInitialState()` whenever the last connection
-      drops (`orchestrator.ts` ~L176). Both behaviors are wrong for BWC:
-      hands and table state must survive a player briefly disconnecting,
-      and the table must survive an entirely empty room.
+      `playerId` on every `join` (no identity match). Hands and table
+      state must survive *individual* players briefly disconnecting and
+      reconnecting; this requires identity-based reattachment. The
+      existing "wipe state when last client leaves" behavior is fine for
+      BWC too — if every player leaves, the game is over.
 
       Sub-tasks:
 
@@ -330,36 +330,36 @@ as completed per CLAUDE.md.
       2. **Server-side identity match.** Extend `GameModule.addPlayer` to
          take `(state, handle, clientId)` and let each game decide whether
          to (a) match an existing player by `clientId` and reattach
-         (returning the existing `playerId`, marking `connected = true`),
-         or (b) mint a new player. EPYC and Pictionary can ignore
-         `clientId` initially and keep their current "always mint"
-         behavior; BWC will require a match during `bwc-playing` and mint
-         only during `bwc-waiting`. Store `clientId` on `PlayerInfo` (new
-         optional field) so the orchestrator and game modules can find
-         players by it.
+         (returning the existing `playerId`, marking `connected = true`,
+         and updating the handle to the newly-supplied one), or (b) mint
+         a new player. EPYC and Pictionary ignore `clientId` and keep
+         their current "always mint" behavior. BWC matches always (in
+         both `bwc-waiting` and `bwc-playing`): the moment a clientId
+         is bound to a `playerId`, that binding is permanent for the
+         lifetime of the game. Store `clientId` on `PlayerInfo` (new
+         optional field) so games can look players up by it.
 
-      3. **Game-aware empty-room behavior.** Replace the unconditional
-         `state = createInitialState()` in `orchestrator.ts` with a
-         capability flag on `GameModule` (e.g. `resetWhenEmpty: boolean`,
-         default `true` for parity with current behavior). BWC sets
-         `false`. When `false`, the orchestrator leaves `state` untouched
-         when the last client disconnects, and the game continues to live
-         in memory waiting for a reconnect.
+      3. **Reject vs. accept on `bwc-playing` join.** A `clientId` that
+         matches a seated player reattaches seamlessly. A *new* clientId
+         arriving during `bwc-playing` is rejected — BWC's `addPlayer`
+         returns `null` (the orchestrator already turns `null` into a
+         "Game already in progress" error). New clientIds are only
+         accepted during `bwc-waiting`.
 
-      4. **Reject vs. accept on `bwc-playing` join.** When a `clientId`
-         doesn't match any seated player, BWC's `addPlayer` returns
-         `null` (orchestrator already turns `null` into a "Game already
-         in progress" error). Matching `clientId`s reattach seamlessly,
-         re-projecting state to the new connection.
+      4. **Player id, not handle, is the identifier.** Audit existing
+         code (especially anywhere that compares or maps by `handle`)
+         and confirm that `playerId` is the stable identifier everywhere
+         it matters. Reattaching with a new handle should work without
+         dangling references.
 
-      5. **Tests.** Add a small test (in `server/__tests__/` or a
-         `scripts/` debug script per CLAUDE.md) that exercises:
-         join → disconnect → reconnect-with-same-clientId → state preserved.
+      5. **Tests.** Add a test in `server/__tests__/` (vitest) that
+         exercises: join → disconnect → reconnect-with-same-clientId →
+         same playerId, state preserved, updated handle visible.
 
-      End state: a player can disconnect and reconnect into a BWC waiting
-      room and still appear as the same `playerId`; the orchestrator no
-      longer wipes BWC state when the room empties; EPYC and Pictionary
-      behavior is unchanged.
+      End state: a player can disconnect and reconnect into a BWC room
+      (waiting or playing) and resume as the same `playerId`. EPYC and
+      Pictionary remain behaviorally unchanged; they receive a `clientId`
+      from the client and silently ignore it.
 
 - [ ] **Step 2: Data model & protocol types.** Define all `TableObject`,
       `Surface`, `BwcState`, message, and client-state types. No reducer
