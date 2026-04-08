@@ -48,4 +48,9 @@ export type {
   PictionaryClientState,
 } from '../../server/games/pictionary/client-state.js';
 
+export type {
+  BwcClientWaitingState,
+  BwcClientState,
+} from '../../server/games/bwc/client-state.js';
+
 export type { MoveType, GameType } from '../../server/types.js';

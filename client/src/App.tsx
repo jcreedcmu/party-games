@@ -3,8 +3,9 @@ import { useSocket } from './hooks/useSocket';
 import { JoinDialog } from './components/JoinDialog';
 import { EpycGame } from './components/epyc/EpycGame';
 import { PictionaryGame } from './components/pictionary/PictionaryGame';
+import { BwcGame } from './components/bwc/BwcGame';
 import { DrawingCanvas } from './components/DrawingCanvas';
-import type { EpycClientState, PictionaryClientState, GameType, ClientGameState, ClientMessage, RelayPayload } from './types';
+import type { EpycClientState, PictionaryClientState, BwcClientState, GameType, ClientGameState, ClientMessage, RelayPayload } from './types';
 
 function DebugDraw() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -38,11 +39,15 @@ function DebugStream() {
 const base = import.meta.env.BASE_URL;
 
 function getLogo(gameType: GameType | null) {
-  return gameType === 'epyc' ? `${base}epyc.png` : `${base}drawplodocus.png`;
+  if (gameType === 'epyc') return `${base}epyc.png`;
+  if (gameType === 'bwc') return `${base}1kbwc.png`;
+  return `${base}drawplodocus.png`;
 }
 
 function getLogoAlt(gameType: GameType | null) {
-  return gameType === 'epyc' ? 'Eat Poop You Cat' : 'Drawplodocus';
+  if (gameType === 'epyc') return 'Eat Poop You Cat';
+  if (gameType === 'bwc') return '1000 Blank White Cards';
+  return 'Drawplodocus';
 }
 
 type GameShellProps = {
@@ -67,9 +72,14 @@ function GameShell({ gameState, playerId, gameType, connected, reconnect, send, 
 
   const isPicActive = gameState.phase === 'pictionary-active';
 
-  const content = gameType === 'epyc'
-    ? <EpycGame state={gameState as EpycClientState} playerId={playerId} send={send} addWordResult={addWordResult} clearAddWordResult={clearAddWordResult} />
-    : <PictionaryGame state={gameState as PictionaryClientState} playerId={playerId} send={send} onRelay={onRelay} addWordResult={addWordResult} clearAddWordResult={clearAddWordResult} />;
+  let content: React.ReactNode;
+  if (gameType === 'epyc') {
+    content = <EpycGame state={gameState as EpycClientState} playerId={playerId} send={send} addWordResult={addWordResult} clearAddWordResult={clearAddWordResult} />;
+  } else if (gameType === 'bwc') {
+    content = <BwcGame state={gameState as BwcClientState} playerId={playerId} send={send} />;
+  } else {
+    content = <PictionaryGame state={gameState as PictionaryClientState} playerId={playerId} send={send} onRelay={onRelay} addWordResult={addWordResult} clearAddWordResult={clearAddWordResult} />;
+  }
 
   return (
     <div className="app">

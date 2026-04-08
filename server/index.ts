@@ -23,8 +23,8 @@ function parseArgs(args: string[]): { password: string; port: number; host: stri
       i++;
     } else if (args[i] === '--game' && i + 1 < args.length) {
       const g = args[i + 1];
-      if (g !== 'epyc' && g !== 'pictionary') {
-        console.error(`Unknown game type: ${g}. Must be 'epyc' or 'pictionary'.`);
+      if (g !== 'epyc' && g !== 'pictionary' && g !== 'bwc') {
+        console.error(`Unknown game type: ${g}. Must be 'epyc', 'pictionary', or 'bwc'.`);
         process.exit(1);
       }
       game = g;
@@ -33,7 +33,7 @@ function parseArgs(args: string[]): { password: string; port: number; host: stri
   }
 
   if (!password) {
-    console.error('Usage: tsx server/index.ts --password <password> [--port <port>] [--game <epyc|pictionary>]');
+    console.error('Usage: tsx server/index.ts --password <password> [--port <port>] [--game <epyc|pictionary|bwc>]');
     process.exit(1);
   }
 

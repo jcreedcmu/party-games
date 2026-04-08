@@ -301,11 +301,65 @@ Key client concerns:
 Each step ends in a working, type-checking, runnable state. Mark with `[x]`
 as completed per CLAUDE.md.
 
-- [ ] **Step 1: Skeleton & registration.** Create `server/games/bwc/` with
+- [x] **Step 1: Skeleton & registration.** Create `server/games/bwc/` with
       empty `types.ts`, `state.ts` (waiting phase only, no objects), and
       register in `game-module.ts`. Add `'bwc'` to `GameType`. Add
       `make dev-bwc` target. Create stub `BwcGame.tsx` and route in
       `App.tsx`. Verify the lobby works end-to-end.
+
+- [ ] **Step 1.5: Player identity & game-aware empty-room handling.**
+      Cross-cutting infrastructure that BWC depends on but the existing
+      games can adopt opt-in.
+
+      *Findings from Step 1:* `orchestrator.ts` currently mints a fresh
+      `playerId` on every `join` (no identity match) and resets the entire
+      game state to `createInitialState()` whenever the last connection
+      drops (`orchestrator.ts` ~L176). Both behaviors are wrong for BWC:
+      hands and table state must survive a player briefly disconnecting,
+      and the table must survive an entirely empty room.
+
+      Sub-tasks:
+
+      1. **Client-side GUID.** On client startup, generate a v4 UUID if
+         none exists in `localStorage` (key e.g. `poop-deli-client-id`)
+         and reuse it forever. Send it on every `join` as a new
+         `clientId` field on `JoinMessage`. Stash the assigned `playerId`
+         in React state as today; the GUID is used only for the join
+         handshake.
+
+      2. **Server-side identity match.** Extend `GameModule.addPlayer` to
+         take `(state, handle, clientId)` and let each game decide whether
+         to (a) match an existing player by `clientId` and reattach
+         (returning the existing `playerId`, marking `connected = true`),
+         or (b) mint a new player. EPYC and Pictionary can ignore
+         `clientId` initially and keep their current "always mint"
+         behavior; BWC will require a match during `bwc-playing` and mint
+         only during `bwc-waiting`. Store `clientId` on `PlayerInfo` (new
+         optional field) so the orchestrator and game modules can find
+         players by it.
+
+      3. **Game-aware empty-room behavior.** Replace the unconditional
+         `state = createInitialState()` in `orchestrator.ts` with a
+         capability flag on `GameModule` (e.g. `resetWhenEmpty: boolean`,
+         default `true` for parity with current behavior). BWC sets
+         `false`. When `false`, the orchestrator leaves `state` untouched
+         when the last client disconnects, and the game continues to live
+         in memory waiting for a reconnect.
+
+      4. **Reject vs. accept on `bwc-playing` join.** When a `clientId`
+         doesn't match any seated player, BWC's `addPlayer` returns
+         `null` (orchestrator already turns `null` into a "Game already
+         in progress" error). Matching `clientId`s reattach seamlessly,
+         re-projecting state to the new connection.
+
+      5. **Tests.** Add a small test (in `server/__tests__/` or a
+         `scripts/` debug script per CLAUDE.md) that exercises:
+         join → disconnect → reconnect-with-same-clientId → state preserved.
+
+      End state: a player can disconnect and reconnect into a BWC waiting
+      room and still appear as the same `playerId`; the orchestrator no
+      longer wipes BWC state when the room empties; EPYC and Pictionary
+      behavior is unchanged.
 
 - [ ] **Step 2: Data model & protocol types.** Define all `TableObject`,
       `Surface`, `BwcState`, message, and client-state types. No reducer

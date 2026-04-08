@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import type { EpycClientWaitingState, PictionaryClientWaitingState, ClientMessage } from '../types';
+import type { EpycClientWaitingState, PictionaryClientWaitingState, BwcClientWaitingState, ClientMessage } from '../types';
 
 type AddWordResult = { success: boolean; message: string } | null;
 
 type WaitingRoomProps = {
-  state: EpycClientWaitingState | PictionaryClientWaitingState;
+  state: EpycClientWaitingState | PictionaryClientWaitingState | BwcClientWaitingState;
   playerId: string;
   onReady: () => void;
   onUnready: () => void;

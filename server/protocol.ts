@@ -77,4 +77,5 @@ export type ServerMessage = JoinedResponse | ErrorResponse | StateResponse | Rel
 
 import type { EpycClientState } from './games/epyc/client-state.js';
 import type { PictionaryClientState } from './games/pictionary/client-state.js';
-export type ClientGameState = EpycClientState | PictionaryClientState;
+import type { BwcClientState } from './games/bwc/client-state.js';
+export type ClientGameState = EpycClientState | PictionaryClientState | BwcClientState;

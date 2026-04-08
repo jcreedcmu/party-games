@@ -19,6 +19,15 @@ import {
 } from './games/pictionary/state.js';
 import { getClientState as picGetClientState } from './games/pictionary/client-state.js';
 
+import {
+  createInitialState as bwcCreateInitialState,
+  addPlayer as bwcAddPlayer,
+  bwcReduce,
+  bwcReduceDisconnect,
+  bwcReduceTimer,
+} from './games/bwc/state.js';
+import { getClientState as bwcGetClientState } from './games/bwc/client-state.js';
+
 export type GameModule = {
   createInitialState: () => ServerState;
   addPlayer: (state: ServerState, handle: string) => { state: ServerState; playerId: PlayerId } | null;
@@ -62,9 +71,27 @@ export const pictionaryModule: GameModule = {
   reduceTimer: pictionaryReduceTimer,
 };
 
+export const bwcModule: GameModule = {
+  createInitialState: bwcCreateInitialState,
+  addPlayer(state, handle) {
+    if (state.phase !== 'bwc-waiting') return null;
+    return bwcAddPlayer(state, handle);
+  },
+  getClientState(state, playerId) {
+    if (state.phase !== 'bwc-waiting') {
+      throw new Error(`bwcModule.getClientState called with phase ${state.phase}`);
+    }
+    return bwcGetClientState(state, playerId);
+  },
+  reduce: bwcReduce,
+  reduceDisconnect: bwcReduceDisconnect,
+  reduceTimer: bwcReduceTimer,
+};
+
 const gameModules: Record<GameType, GameModule> = {
   epyc: epycModule,
   pictionary: pictionaryModule,
+  bwc: bwcModule,
 };
 
 export function getGameModule(gameType: GameType): GameModule {

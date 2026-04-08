@@ -4,7 +4,7 @@ export type PlayerId = string;
 
 export type MoveType = 'text' | 'drawing';
 
-export type GameType = 'epyc' | 'pictionary';
+export type GameType = 'epyc' | 'pictionary' | 'bwc';
 
 export type PlayerInfo = {
   id: PlayerId;
@@ -21,7 +21,8 @@ export type RelayMessage = {
 // ServerState is the union of all game states
 import type { EpycState } from './games/epyc/types.js';
 import type { PictionaryState } from './games/pictionary/types.js';
-export type ServerState = EpycState | PictionaryState;
+import type { BwcState } from './games/bwc/types.js';
+export type ServerState = EpycState | PictionaryState | BwcState;
 
 import type { ServerMessage } from './protocol.js';
 
