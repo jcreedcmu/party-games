@@ -52,7 +52,12 @@ which neither existing game has.
 ### Core types (`server/games/bwc/types.ts`)
 
 ```ts
-type CardId = string;        // stable across games (library-wide)
+// Stable across games (library-wide). A CardId identifies one *unique*
+// physical card: at any moment a card is in exactly one location (library
+// limbo, on the table, inside a deck, or in some player's hand). There is
+// no notion of "spawning a copy" — to mirror real-world physics, each card
+// exists in exactly one place at a time.
+type CardId = string;
 type ObjectId = string;      // table-instance id
 type SeatIndex = number;     // 0..N-1, assigned at join time
 
@@ -239,12 +244,17 @@ Two stores under `data/bwc/`:
 }
 ```
 
-- Written on every `bwc-create-card` and `bwc-edit-card`.
+- Written on every `bwc-create-card` and `bwc-edit-card`. Edits overwrite
+  the previous `ops`/`text` in place; no version history is retained (the
+  `DrawOp[]` sequence is itself a sufficient record of how the art was
+  drawn).
 - Loaded at server startup.
 - Survives `reset`.
 - Cards "discarded" or "deleted from table" return here, not deleted from
   the library. (True deletion would require manual filesystem operations out
-  of the scope of the application)
+  of the scope of the application.)
+- For implementation precedent on JSON-on-disk persistence, see the
+  existing `word-stats` storage in the pictionary game module.
 
 ### Table snapshot (`table.json`)
 
@@ -298,8 +308,8 @@ as completed per CLAUDE.md.
       `App.tsx`. Verify the lobby works end-to-end.
 
 - [ ] **Step 2: Data model & protocol types.** Define all `TableObject`,
-      `Hand`, `BwcState`, message, and client-state types. No reducer logic
-      yet — type-check only.
+      `Surface`, `BwcState`, message, and client-state types. No reducer
+      logic yet — type-check only.
 
 - [ ] **Step 3: Card library persistence.** Implement load/save of
       `cards.json`. Implement `bwc-create-card` reducer + the projection of
@@ -325,7 +335,11 @@ as completed per CLAUDE.md.
       placeholders showing only the count.
 
 - [ ] **Step 7: Decks.** Implement `bwc-form-deck`, `bwc-draw-from-deck`,
-      `bwc-return-to-deck`, `bwc-shuffle-deck`, face-down deck projection.
+      `bwc-return-to-deck`, `bwc-shuffle-deck`, and `bwc-flip-object` for
+      decks. Decks may be face-up or face-down; flipping a deck physically
+      inverts it (reverses the order of its cards) so that what was the
+      bottom card becomes the new top. Face-up decks reveal their top card
+      in the projection; face-down decks expose only their count. Build the
       `DeckView` component.
 
 - [ ] **Step 8: Scores.** First-class per-player score display near each
@@ -333,8 +347,8 @@ as completed per CLAUDE.md.
       state. Any player can adjust any player's score (trust-based, like
       the rest of the tabletop).
 
-- [ ] **Step 9: Card editing.** `bwc-edit-card` (re-open DrawingCanvas
-      seeded with existing ops). Decide on history (open question below).
+- [ ] **Step 9: Card editing.** `bwc-edit-card` (re-open `CardEditor`
+      seeded with the existing `ops` and `text`). Edits overwrite in place.
 
 - [ ] **Step 10: Table snapshot persistence.** Debounced save, load on
       startup, reset clears table snapshot but not library.
@@ -344,70 +358,3 @@ as completed per CLAUDE.md.
       animation, a "tidy hand" verb that flips every card in the owner's
       hand face-up and lays them out in a neat row, etc. As-needed.
 
----
-
-## Open questions to resolve before / during implementation
-
-1. **Card edit history.** When a card is edited, do we keep the old version?
-   Versioning is more faithful to "cards persist forever" but adds storage
-   complexity. Suggestion: keep a `history: DrawOp[][]` per card, never UI-
-   exposed initially but available for future "undo edit" features.
-
-Answer: No, we don't keep the old version. The `DrawOp[]` itself is a good enough
-record of the sequence of operations.
-
-2. **Deck face-down vs face-up semantics.** A face-up deck reveals the top
-   card; a face-down deck reveals nothing. Does flipping a deck reverse its
-   order? (Physically, yes — flipping a physical deck inverts it.) Implement
-   the physical behavior.
-
-Answer: Yes, we should support face-up *and* face-down states of decks, with
-the "real-world physics" behavior that flipping a deck reversing the
-order of the cards in it.
-
-3. **Card identity when in a hand.** Are the same `CardId`s usable in two
-   places at once (e.g. on the table *and* in a hand)? Default: **no.** A
-   given CardId has at most one "instance" — either in the library limbo,
-   on the table (as a `TableObject` of kind `card`), in a deck, or in a
-   hand. The library tracks *definitions*; the table tracks *locations*.
-   This means we need a `cardLocation: Map<CardId, Location>` index for
-   sanity checks.
-
-Indeed, I would say "no": tokens can be duplicated, but there is at most
-one copy of any card at any time.
-
-4. **Multiple copies of a card.** Sometimes you want N copies of the same
-   card design. Solution: each `TableObject`/hand entry references a
-   `CardId`, but the card *definition* in the library is shareable. So
-   "spawn 5 copies of card X" creates 5 table objects all referencing X.
-   This contradicts (3) — we need to choose: either CardIds are unique
-   per-instance (and share a `definitionId`), or table objects reference
-   `CardId` and (3) is wrong. **Recommendation:** introduce
-   `CardDefinitionId` (library-level) and `CardInstanceId` (location-level).
-   Library stores definitions; table objects/hands hold instances; each
-   instance points to a definition.
-
-Answer: No, multiple copies of a card are not supported. This is also
-to correctly simulate "real-world physics".
-
-5. **Right place for persistence helpers.** Look at how `word-stats` is
-   persisted in the existing code and follow that convention.
-
-Answer: You can look to the code for precedent for how to manage
-persistent state, but we should put persistent data for BWC in the
-directory `data/bwc/`.
-
-6. **Selection model.** Single-select first; multi-select in polish step.
-
-Answer: Yup, we don't need multi-select in the first iteration.
-
-7. **What happens to a player's hand if they disconnect?** Two options:
-   (a) hand stays reserved indefinitely; (b) hand is dumped face-down on
-   the table after a grace period. Recommendation: (a), since 1kbwc games
-   are long and reconnects should be seamless. The hand is keyed by
-   `PlayerId`, so reconnecting with the same handle should reclaim it
-   (depends on existing reconnect semantics — verify in step 1).
-
-Answer: (a), their hand should be preserved. Most likely
-disconnections are accidental, and we should permit the same player to
-reconnect seamlessly and resume play.
