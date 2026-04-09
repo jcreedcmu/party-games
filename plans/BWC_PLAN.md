@@ -365,7 +365,7 @@ as completed per CLAUDE.md.
       `Surface`, `BwcState`, message, and client-state types. No reducer
       logic yet — type-check only.
 
-- [ ] **Step 3: Card creation.** Implement the in-memory card library
+- [x] **Step 3: Card creation.** Implement the in-memory card library
       (a `Map<CardId, Card>` in `BwcPlayingState` for now — persistence
       comes later). Implement `bwc-create-card` reducer and the projection
       of library cards into client state. Build the `CardEditor` component

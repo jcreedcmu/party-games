@@ -1,6 +1,7 @@
+import crypto from 'node:crypto';
 import type { PlayerId, PlayerInfo, ServerState, ReduceResult } from '../../types.js';
 import type { ClientMessage } from '../../protocol.js';
-import type { BwcState, BwcWaitingState } from './types.js';
+import type { BwcState, BwcWaitingState, Card, CardLibrary } from './types.js';
 
 export function createInitialState(): BwcWaitingState {
   return {
@@ -66,6 +67,25 @@ function setReady(
   return { ...state, players };
 }
 
+function createCard(
+  library: CardLibrary,
+  ops: import('../../draw-ops.js').DrawOp[],
+  text: string,
+  creator: PlayerId,
+): { library: CardLibrary; cardId: string } {
+  const cardId = crypto.randomUUID();
+  const card: Card = {
+    id: cardId,
+    ops,
+    text,
+    creator,
+    createdAt: new Date().toISOString(),
+  };
+  const next = new Map(library);
+  next.set(cardId, card);
+  return { library: next, cardId };
+}
+
 export function bwcReduce(state: ServerState, playerId: PlayerId, msg: ClientMessage): ReduceResult {
   if (state.phase !== 'bwc-waiting') return { state, effects: [] };
 
@@ -82,6 +102,13 @@ export function bwcReduce(state: ServerState, playerId: PlayerId, msg: ClientMes
       return {
         state: next,
         effects: [{ type: 'kick', playerId: msg.targetId }, { type: 'broadcast' }],
+      };
+    }
+    case 'bwc-create-card': {
+      const { library, cardId: _cardId } = createCard(state.library, msg.ops, msg.text, playerId);
+      return {
+        state: { ...state, library },
+        effects: [{ type: 'broadcast' }],
       };
     }
     default:

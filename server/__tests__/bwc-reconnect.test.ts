@@ -91,6 +91,48 @@ function createClient(): Promise<Client> {
   });
 }
 
+async function joinBwc(handle: string, clientId: string): Promise<{ client: Client; playerId: string }> {
+  const client = await createClient();
+  client.send({ type: 'join', password: 'secret', handle, clientId });
+  const joined = await client.next();
+  if (joined.type !== 'joined') throw new Error(`Expected joined, got ${joined.type}`);
+  await client.next(); // state
+  return { client, playerId: joined.playerId };
+}
+
+describe('bwc card creation', () => {
+  beforeEach(async () => { await startServer(); });
+  afterEach(async () => { await stopServer(); });
+
+  it('creates a card and broadcasts it in the library', async () => {
+    const { client: c1 } = await joinBwc('Alice', 'cid-A');
+    const { client: c2 } = await joinBwc('Bob', 'cid-B');
+    await c1.next(); // state from Bob joining
+
+    c1.send({
+      type: 'bwc-create-card',
+      ops: [{ type: 'draw-start', color: '#000000', size: 5, x: 10, y: 10 }, { type: 'draw-end' }],
+      text: 'Test card',
+    });
+
+    const stateForAlice = await c1.next();
+    const stateForBob = await c2.next();
+
+    expect(stateForAlice.type).toBe('state');
+    if (stateForAlice.type === 'state' && stateForAlice.state.phase === 'bwc-waiting') {
+      expect(stateForAlice.state.library.length).toBe(1);
+      expect(stateForAlice.state.library[0].text).toBe('Test card');
+      expect(stateForAlice.state.library[0].creatorHandle).toBe('Alice');
+      expect(stateForAlice.state.library[0].ops.length).toBe(2);
+    }
+
+    expect(stateForBob.type).toBe('state');
+    if (stateForBob.type === 'state' && stateForBob.state.phase === 'bwc-waiting') {
+      expect(stateForBob.state.library.length).toBe(1);
+    }
+  });
+});
+
 describe('bwc reconnect', () => {
   beforeEach(async () => {
     await startServer();

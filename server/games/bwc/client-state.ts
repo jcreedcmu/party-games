@@ -23,11 +23,9 @@ export type BwcClientWaitingState = {
 
 // --- Playing phase projection ---
 
-// Lightweight library entry; the full DrawOp[] is only sent on demand
-// (e.g. when opening the editor for an existing card). For the table
-// view we only need the id and a hint of what the card looks like.
 export type BwcClientCardSummary = {
   id: CardId;
+  ops: DrawOp[];
   text: string;
   creatorHandle: string;
   createdAt: string;
@@ -98,6 +96,7 @@ function summarizeLibrary(state: BwcWaitingState | BwcPlayingState): BwcClientCa
     const creatorHandle = state.players.get(card.creator)?.handle ?? 'unknown';
     out.push({
       id: card.id,
+      ops: card.ops,
       text: card.text,
       creatorHandle,
       createdAt: card.createdAt,

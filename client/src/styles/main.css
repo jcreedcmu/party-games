@@ -956,3 +956,78 @@ button:disabled {
   color: #555;
   font-size: 1.1rem;
 }
+
+/* --- BWC --- */
+
+.bwc-card-editor {
+  margin-top: 1rem;
+}
+
+.bwc-card-editor h3 {
+  margin-bottom: 0.5rem;
+}
+
+.bwc-card-editor-text textarea {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  font-family: inherit;
+  font-size: 1rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  resize: vertical;
+}
+
+.bwc-card-editor-actions {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.bwc-library-panel {
+  margin-top: 1.5rem;
+}
+
+.bwc-library-panel h3 {
+  margin-bottom: 0.5rem;
+}
+
+.bwc-library-empty {
+  color: #888;
+  font-style: italic;
+}
+
+.bwc-library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.bwc-library-card {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.bwc-library-card-preview canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.bwc-library-card-info {
+  padding: 0.5rem;
+}
+
+.bwc-library-card-text {
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.bwc-library-card-creator {
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 0.25rem;
+}
