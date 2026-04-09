@@ -50,7 +50,38 @@ export type {
 
 export type {
   BwcClientWaitingState,
+  BwcClientPlayingState,
   BwcClientState,
+  BwcClientSeat,
+  BwcClientCardSummary,
+  BwcClientCardFull,
+  BwcVisibleObject,
+  BwcVisibleSurface,
 } from '../../server/games/bwc/client-state.js';
+
+export type {
+  CardId,
+  ObjectId,
+  SeatIndex,
+  Pose,
+  SurfaceId,
+} from '../../server/games/bwc/types.js';
+
+export type {
+  BwcClientMessage,
+  BwcCreateCardMessage,
+  BwcEditCardMessage,
+  BwcSpawnCardMessage,
+  BwcMoveObjectMessage,
+  BwcFlipObjectMessage,
+  BwcBringToFrontMessage,
+  BwcDeleteObjectMessage,
+  BwcDrawFromDeckMessage,
+  BwcReturnToDeckMessage,
+  BwcShuffleDeckMessage,
+  BwcFormDeckMessage,
+  BwcSetScoreMessage,
+  BwcAdjustScoreMessage,
+} from '../../server/protocol.js';
 
 export type { MoveType, GameType } from '../../server/types.js';

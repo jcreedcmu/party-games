@@ -1,5 +1,6 @@
-import type { MoveType, GameType } from './types.js';
-import type { DrawStartOp, DrawMoveOp, DrawEndOp, DrawFillOp, DrawUndoOp, DrawClearOp } from './draw-ops.js';
+import type { MoveType, GameType, PlayerId } from './types.js';
+import type { DrawStartOp, DrawMoveOp, DrawEndOp, DrawFillOp, DrawUndoOp, DrawClearOp, DrawOp } from './draw-ops.js';
+import type { CardId, ObjectId, Pose, SurfaceId } from './games/bwc/types.js';
 
 // Re-export DrawOp types for convenience
 export type { DrawOp, DrawStartOp, DrawMoveOp, DrawEndOp, DrawFillOp, DrawUndoOp, DrawClearOp } from './draw-ops.js';
@@ -41,7 +42,123 @@ export type EpycClientMessage = SubmitMessage;
 export type DrawClientMessage = DrawStartOp | DrawMoveOp | DrawEndOp | DrawFillOp | DrawUndoOp | DrawClearOp;
 export type PictionaryClientMessage = GuessMessage | TurnDoneMessage | PickWordMessage | AddWordMessage;
 
-export type ClientMessage = CommonClientMessage | EpycClientMessage | DrawClientMessage | PictionaryClientMessage;
+// --- BWC client messages ---
+//
+// All object-targeting messages identify their target by (surface, objectId).
+// Cross-surface moves are expressed by `bwc-move-object` with a different
+// destination surface — there are no separate take-to-hand / play-from-hand
+// messages.
+
+export type BwcCreateCardMessage = {
+  type: 'bwc-create-card';
+  ops: DrawOp[];
+  text: string;
+};
+
+export type BwcEditCardMessage = {
+  type: 'bwc-edit-card';
+  cardId: CardId;
+  ops: DrawOp[];
+  text: string;
+};
+
+export type BwcSpawnCardMessage = {
+  type: 'bwc-spawn-card';
+  cardId: CardId;
+  surface: SurfaceId;
+  pose: Pose;
+  faceUp: boolean;
+};
+
+export type BwcMoveObjectMessage = {
+  type: 'bwc-move-object';
+  from: SurfaceId;
+  objectId: ObjectId;
+  to: SurfaceId;
+  pose: Pose;
+};
+
+export type BwcFlipObjectMessage = {
+  type: 'bwc-flip-object';
+  surface: SurfaceId;
+  objectId: ObjectId;
+};
+
+export type BwcBringToFrontMessage = {
+  type: 'bwc-bring-to-front';
+  surface: SurfaceId;
+  objectId: ObjectId;
+};
+
+export type BwcDeleteObjectMessage = {
+  type: 'bwc-delete-object';
+  surface: SurfaceId;
+  objectId: ObjectId;
+};
+
+export type BwcDrawFromDeckMessage = {
+  type: 'bwc-draw-from-deck';
+  surface: SurfaceId;
+  deckId: ObjectId;
+  to: SurfaceId;
+  pose: Pose;
+};
+
+export type BwcReturnToDeckMessage = {
+  type: 'bwc-return-to-deck';
+  srcSurface: SurfaceId;
+  objectId: ObjectId;
+  deckSurface: SurfaceId;
+  deckId: ObjectId;
+  position: 'top' | 'bottom';
+};
+
+export type BwcShuffleDeckMessage = {
+  type: 'bwc-shuffle-deck';
+  surface: SurfaceId;
+  deckId: ObjectId;
+};
+
+export type BwcFormDeckMessage = {
+  type: 'bwc-form-deck';
+  surface: SurfaceId;
+  objectIds: ObjectId[];
+  pose: Pose;
+};
+
+export type BwcSetScoreMessage = {
+  type: 'bwc-set-score';
+  playerId: PlayerId;
+  score: number;
+};
+
+export type BwcAdjustScoreMessage = {
+  type: 'bwc-adjust-score';
+  playerId: PlayerId;
+  delta: number;
+};
+
+export type BwcClientMessage =
+  | BwcCreateCardMessage
+  | BwcEditCardMessage
+  | BwcSpawnCardMessage
+  | BwcMoveObjectMessage
+  | BwcFlipObjectMessage
+  | BwcBringToFrontMessage
+  | BwcDeleteObjectMessage
+  | BwcDrawFromDeckMessage
+  | BwcReturnToDeckMessage
+  | BwcShuffleDeckMessage
+  | BwcFormDeckMessage
+  | BwcSetScoreMessage
+  | BwcAdjustScoreMessage;
+
+export type ClientMessage =
+  | CommonClientMessage
+  | EpycClientMessage
+  | DrawClientMessage
+  | PictionaryClientMessage
+  | BwcClientMessage;
 
 // --- Server -> Client messages ---
 

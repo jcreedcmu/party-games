@@ -361,7 +361,7 @@ as completed per CLAUDE.md.
       Pictionary remain behaviorally unchanged; they receive a `clientId`
       from the client and silently ignore it.
 
-- [ ] **Step 2: Data model & protocol types.** Define all `TableObject`,
+- [x] **Step 2: Data model & protocol types.** Define all `TableObject`,
       `Surface`, `BwcState`, message, and client-state types. No reducer
       logic yet — type-check only.
 

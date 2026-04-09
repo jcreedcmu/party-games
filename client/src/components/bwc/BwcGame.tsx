@@ -21,5 +21,8 @@ export function BwcGame({ state, playerId, send }: Props) {
           clearAddWordResult={() => {}}
         />
       );
+    case 'bwc-playing':
+      // Playing-phase UI lands in step 4 onward.
+      return <div>BWC playing-phase view not implemented yet.</div>;
   }
 }

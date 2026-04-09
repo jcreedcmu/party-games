@@ -7,6 +7,7 @@ export function createInitialState(): BwcWaitingState {
     phase: 'bwc-waiting',
     players: new Map(),
     nextPlayerId: 1,
+    library: new Map(),
   };
 }
 

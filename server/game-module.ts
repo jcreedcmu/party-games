@@ -78,7 +78,7 @@ export const bwcModule: GameModule = {
     return bwcAddPlayer(state, handle, clientId);
   },
   getClientState(state, playerId) {
-    if (state.phase !== 'bwc-waiting') {
+    if (state.phase !== 'bwc-waiting' && state.phase !== 'bwc-playing') {
       throw new Error(`bwcModule.getClientState called with phase ${state.phase}`);
     }
     return bwcGetClientState(state, playerId);
