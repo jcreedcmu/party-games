@@ -88,7 +88,7 @@ function createClient(): Promise<Client> {
 /** Join a player and consume the joined + state messages. */
 async function joinPlayer(handle: string): Promise<{ client: Client; playerId: string }> {
   const client = await createClient();
-  client.send({ type: 'join', password: 'secret', handle });
+  client.send({ type: 'join', password: 'secret', handle, clientId: `cid-${handle}` });
   const joined = await client.next();
   if (joined.type !== 'joined') throw new Error(`Expected joined, got ${joined.type}`);
   await client.next(); // state broadcast
@@ -106,7 +106,7 @@ describe('server integration', () => {
 
   it('accepts join with correct password', async () => {
     const client = await createClient();
-    client.send({ type: 'join', password: 'secret', handle: 'Alice' });
+    client.send({ type: 'join', password: 'secret', handle: 'Alice', clientId: 'cid-A' });
 
     const joined = await client.next();
     expect(joined.type).toBe('joined');
@@ -121,7 +121,7 @@ describe('server integration', () => {
 
   it('rejects join with wrong password', async () => {
     const client = await createClient();
-    client.send({ type: 'join', password: 'wrong', handle: 'Alice' });
+    client.send({ type: 'join', password: 'wrong', handle: 'Alice', clientId: 'cid-A' });
 
     const msg = await client.next();
     expect(msg.type).toBe('error');
@@ -132,7 +132,7 @@ describe('server integration', () => {
 
   it('rejects double join', async () => {
     const { client } = await joinPlayer('Alice');
-    client.send({ type: 'join', password: 'secret', handle: 'Alice2' });
+    client.send({ type: 'join', password: 'secret', handle: 'Alice2', clientId: 'cid-A2' });
 
     const msg = await client.next();
     expect(msg.type).toBe('error');
@@ -144,7 +144,7 @@ describe('server integration', () => {
   it('broadcasts state to all players when a new player joins', async () => {
     const { client: c1 } = await joinPlayer('Alice');
     const c2 = await createClient();
-    c2.send({ type: 'join', password: 'secret', handle: 'Bob' });
+    c2.send({ type: 'join', password: 'secret', handle: 'Bob', clientId: 'cid-B' });
 
     await c2.next(); // joined response
     const stateForBob = await c2.next();

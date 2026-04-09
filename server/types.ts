@@ -11,6 +11,10 @@ export type PlayerInfo = {
   handle: string;
   ready: boolean;
   connected: boolean;
+  // Stable client identity (browser-local GUID). Used by games that
+  // support reattaching disconnected players to their existing seat.
+  // Optional because not all games consult it.
+  clientId?: string;
 };
 
 export type RelayMessage = {

@@ -307,7 +307,7 @@ as completed per CLAUDE.md.
       `make dev-bwc` target. Create stub `BwcGame.tsx` and route in
       `App.tsx`. Verify the lobby works end-to-end.
 
-- [ ] **Step 1.5: Player identity & game-aware empty-room handling.**
+- [x] **Step 1.5: Player identity & game-aware empty-room handling.**
       Cross-cutting infrastructure that BWC depends on but the existing
       games can adopt opt-in.
 

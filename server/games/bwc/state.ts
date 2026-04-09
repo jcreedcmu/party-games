@@ -13,9 +13,24 @@ export function createInitialState(): BwcWaitingState {
 export function addPlayer(
   state: BwcWaitingState,
   handle: string,
+  clientId: string,
 ): { state: BwcWaitingState; playerId: PlayerId } {
+  // If a player with this clientId already exists, reattach them:
+  // mark them connected, update their handle, return their existing
+  // playerId. This is the "match-always" identity rule for BWC.
+  for (const [existingId, p] of state.players) {
+    if (p.clientId === clientId) {
+      const players = new Map(state.players);
+      players.set(existingId, { ...p, handle, connected: true });
+      return {
+        state: { ...state, players },
+        playerId: existingId,
+      };
+    }
+  }
+
   const playerId = String(state.nextPlayerId);
-  const player: PlayerInfo = { id: playerId, handle, ready: false, connected: true };
+  const player: PlayerInfo = { id: playerId, handle, ready: false, connected: true, clientId };
   const players = new Map(state.players);
   players.set(playerId, player);
   return {
@@ -27,6 +42,14 @@ export function addPlayer(
 function removePlayer(state: BwcWaitingState, playerId: PlayerId): BwcWaitingState {
   const players = new Map(state.players);
   players.delete(playerId);
+  return { ...state, players };
+}
+
+function markDisconnected(state: BwcWaitingState, playerId: PlayerId): BwcWaitingState {
+  const players = new Map(state.players);
+  const p = players.get(playerId);
+  if (!p) return state;
+  players.set(playerId, { ...p, connected: false });
   return { ...state, players };
 }
 
@@ -67,7 +90,10 @@ export function bwcReduce(state: ServerState, playerId: PlayerId, msg: ClientMes
 
 export function bwcReduceDisconnect(state: ServerState, playerId: PlayerId): ReduceResult {
   if (state.phase !== 'bwc-waiting') return { state, effects: [] };
-  const next = removePlayer(state, playerId);
+  // Don't remove — mark disconnected so the player can reattach by
+  // clientId. The orchestrator will wipe state entirely if no clients
+  // remain.
+  const next = markDisconnected(state, playerId);
   return { state: next, effects: [{ type: 'broadcast' }] };
 }
 

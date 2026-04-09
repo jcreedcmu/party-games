@@ -54,9 +54,10 @@ export function createInitialState(): PictionaryWaitingState {
 export function addPlayer<S extends PictionaryState>(
   state: S,
   handle: string,
+  clientId: string,
 ): { state: S; playerId: PlayerId } {
   const playerId = String(state.nextPlayerId);
-  const player: PlayerInfo = { id: playerId, handle, ready: false, connected: true };
+  const player: PlayerInfo = { id: playerId, handle, ready: false, connected: true, clientId };
   const players = new Map(state.players);
   players.set(playerId, player);
   if (state.phase === 'pictionary-active') {

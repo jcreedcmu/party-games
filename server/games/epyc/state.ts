@@ -18,9 +18,10 @@ export function createInitialState(): EpycWaitingState {
 export function addPlayer(
   state: EpycWaitingState,
   handle: string,
+  clientId: string,
 ): { state: EpycWaitingState; playerId: PlayerId } {
   const playerId = String(state.nextPlayerId);
-  const player = { id: playerId, handle, ready: false, connected: true };
+  const player = { id: playerId, handle, ready: false, connected: true, clientId };
   const players = new Map(state.players);
   players.set(playerId, player);
   return {

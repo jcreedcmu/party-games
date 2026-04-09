@@ -6,6 +6,21 @@ import { connectWebSocket } from '../transports/websocket';
 
 type AddWordResult = { success: boolean; message: string } | null;
 
+const CLIENT_ID_KEY = 'poop-deli-client-id';
+
+function getOrCreateClientId(): string {
+  try {
+    const existing = localStorage.getItem(CLIENT_ID_KEY);
+    if (existing) return existing;
+    const fresh = crypto.randomUUID();
+    localStorage.setItem(CLIENT_ID_KEY, fresh);
+    return fresh;
+  } catch {
+    // localStorage unavailable (e.g. private mode); fall back to ephemeral.
+    return crypto.randomUUID();
+  }
+}
+
 type SocketState = {
   gameState: ClientGameState | null;
   playerId: string | null;
@@ -44,7 +59,7 @@ export function useSocket() {
       onOpen() {
         console.log('[ws] connected, sending join');
         setState(s => ({ ...s, connected: true, error: null }));
-        transport.send(JSON.stringify({ type: 'join', password, handle } satisfies ClientMessage));
+        transport.send(JSON.stringify({ type: 'join', password, handle, clientId: getOrCreateClientId() } satisfies ClientMessage));
       },
       onMessage(data) {
         const msg: ServerMessage = JSON.parse(data);

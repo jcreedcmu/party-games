@@ -46,9 +46,9 @@ function makeTwoPlayerPostgame(): PictionaryPostgameState {
 
 function makeTwoPlayerActive(): PictionaryActiveState {
   let state = createInitialState();
-  const r1 = addPlayer(state, 'Alice');
+  const r1 = addPlayer(state, 'Alice', 'cid-Alice');
   state = r1.state;
-  const r2 = addPlayer(state, 'Bob');
+  const r2 = addPlayer(state, 'Bob', 'cid-Bob');
   state = r2.state;
   state = setReady(state, r1.playerId, true);
   state = setReady(state, r2.playerId, true);
@@ -64,11 +64,11 @@ function makeTwoPlayerDrawing(): PictionaryActiveState {
 
 function makeThreePlayerActive() {
   let state = createInitialState();
-  const r1 = addPlayer(state, 'Alice');
+  const r1 = addPlayer(state, 'Alice', 'cid-Alice');
   state = r1.state;
-  const r2 = addPlayer(state, 'Bob');
+  const r2 = addPlayer(state, 'Bob', 'cid-Bob');
   state = r2.state;
-  const r3 = addPlayer(state, 'Carol');
+  const r3 = addPlayer(state, 'Carol', 'cid-Carol');
   state = r3.state;
   state = setReady(state, r1.playerId, true);
   state = setReady(state, r2.playerId, true);
@@ -94,7 +94,7 @@ describe('createInitialState', () => {
 
 describe('addPlayer', () => {
   it('adds a player and returns the new state and id', () => {
-    const result = addPlayer(createInitialState(), 'Alice');
+    const result = addPlayer(createInitialState(), 'Alice', 'cid-Alice');
     expect(result.playerId).toBe('1');
     expect(result.state.players.size).toBe(1);
     expect(result.state.players.get('1')!.handle).toBe('Alice');
@@ -102,8 +102,8 @@ describe('addPlayer', () => {
 
   it('increments nextPlayerId', () => {
     let state = createInitialState();
-    state = addPlayer(state, 'Alice').state;
-    const result = addPlayer(state, 'Bob');
+    state = addPlayer(state, 'Alice', 'cid-Alice').state;
+    const result = addPlayer(state, 'Bob', 'cid-Bob');
     expect(result.playerId).toBe('2');
     expect(result.state.nextPlayerId).toBe(3);
   });
@@ -112,7 +112,7 @@ describe('addPlayer', () => {
 describe('removePlayer', () => {
   it('deletes the player in waiting phase', () => {
     let state = createInitialState();
-    state = addPlayer(state, 'Alice').state;
+    state = addPlayer(state, 'Alice', 'cid-Alice').state;
     const result = removePlayer(state, '1');
     expect(result.players.size).toBe(0);
   });
@@ -129,7 +129,7 @@ describe('removePlayer', () => {
 describe('setReady', () => {
   it('marks a player as ready', () => {
     let state = createInitialState();
-    state = addPlayer(state, 'Alice').state;
+    state = addPlayer(state, 'Alice', 'cid-Alice').state;
     state = setReady(state, '1', true);
     expect(state.players.get('1')!.ready).toBe(true);
   });
@@ -138,15 +138,15 @@ describe('setReady', () => {
 describe('checkAllReady', () => {
   it('does not start with fewer than 2 players', () => {
     let state = createInitialState();
-    state = addPlayer(state, 'Alice').state;
+    state = addPlayer(state, 'Alice', 'cid-Alice').state;
     state = setReady(state, '1', true);
     expect(checkAllReady(state).phase).toBe('pictionary-waiting');
   });
 
   it('does not start if not all players are ready', () => {
     let state = createInitialState();
-    state = addPlayer(state, 'Alice').state;
-    state = addPlayer(state, 'Bob').state;
+    state = addPlayer(state, 'Alice', 'cid-Alice').state;
+    state = addPlayer(state, 'Bob', 'cid-Bob').state;
     state = setReady(state, '1', true);
     expect(checkAllReady(state).phase).toBe('pictionary-waiting');
   });
@@ -167,11 +167,11 @@ describe('checkAllReady', () => {
 
   it('starts the game when an unready player leaves and the rest are ready', () => {
     let state = createInitialState();
-    const r1 = addPlayer(state, 'Alice');
+    const r1 = addPlayer(state, 'Alice', 'cid-Alice');
     state = r1.state;
-    const r2 = addPlayer(state, 'Bob');
+    const r2 = addPlayer(state, 'Bob', 'cid-Bob');
     state = r2.state;
-    const r3 = addPlayer(state, 'Carol');
+    const r3 = addPlayer(state, 'Carol', 'cid-Carol');
     state = r3.state;
     state = setReady(state, r1.playerId, true);
     state = setReady(state, r2.playerId, true);
@@ -450,7 +450,7 @@ describe('resetGame', () => {
 describe('getClientState', () => {
   it('projects waiting state', () => {
     let state = createInitialState();
-    state = addPlayer(state, 'Alice').state;
+    state = addPlayer(state, 'Alice', 'cid-Alice').state;
     const client = getClientState(state, '1');
     expect(client.phase).toBe('pictionary-waiting');
     if (client.phase !== 'pictionary-waiting') throw new Error();

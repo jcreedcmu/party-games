@@ -141,7 +141,7 @@ export function createOrchestrator(config: OrchestratorConfig): Orchestrator {
             sendTo(conn, { type: 'error', message: 'Wrong password' });
             return;
           }
-          const result = gameModule.addPlayer(state, msg.handle);
+          const result = gameModule.addPlayer(state, msg.handle, msg.clientId);
           if (!result) {
             console.log(`[orch] join rejected: conn=${conn.id} handle="${msg.handle}" addPlayer returned null (phase=${state.phase})`);
             sendTo(conn, { type: 'error', message: 'Game already in progress' });

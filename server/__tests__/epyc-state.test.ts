@@ -27,7 +27,7 @@ describe('createInitialState', () => {
 
 describe('addPlayer', () => {
   it('adds a player and returns the new state and id', () => {
-    const result = addPlayer(createInitialState(), 'Alice');
+    const result = addPlayer(createInitialState(), 'Alice', 'cid-Alice');
     expect(result.playerId).toBe('1');
     expect(result.state.players.size).toBe(1);
     expect(result.state.players.get('1')?.handle).toBe('Alice');
@@ -35,8 +35,8 @@ describe('addPlayer', () => {
 
   it('increments player ids', () => {
     let state = createInitialState();
-    state = addPlayer(state, 'Alice').state;
-    const result = addPlayer(state, 'Bob');
+    state = addPlayer(state, 'Alice', 'cid-Alice').state;
+    const result = addPlayer(state, 'Bob', 'cid-Bob');
     expect(result.playerId).toBe('2');
     expect(result.state.players.size).toBe(2);
   });
@@ -45,8 +45,8 @@ describe('addPlayer', () => {
 describe('removePlayer', () => {
   it('removes a player in waiting phase', () => {
     let waitState = createInitialState();
-    waitState = addPlayer(waitState, 'Alice').state;
-    waitState = addPlayer(waitState, 'Bob').state;
+    waitState = addPlayer(waitState, 'Alice', 'cid-Alice').state;
+    waitState = addPlayer(waitState, 'Bob', 'cid-Bob').state;
     const result = removePlayer(waitState, '1');
     expect(result.players.size).toBe(1);
     expect(result.players.has('1')).toBe(false);
@@ -63,14 +63,14 @@ describe('removePlayer', () => {
 describe('setReady', () => {
   it('sets a player as ready', () => {
     let state = createInitialState();
-    state = addPlayer(state, 'Alice').state;
+    state = addPlayer(state, 'Alice', 'cid-Alice').state;
     state = setReady(state, '1', true);
     expect(state.players.get('1')?.ready).toBe(true);
   });
 
   it('sets a player as unready', () => {
     let state = createInitialState();
-    state = addPlayer(state, 'Alice').state;
+    state = addPlayer(state, 'Alice', 'cid-Alice').state;
     state = setReady(state, '1', true);
     state = setReady(state, '1', false);
     expect(state.players.get('1')?.ready).toBe(false);
@@ -78,7 +78,7 @@ describe('setReady', () => {
 
   it('returns state unchanged for unknown player', () => {
     let state = createInitialState();
-    state = addPlayer(state, 'Alice').state;
+    state = addPlayer(state, 'Alice', 'cid-Alice').state;
     const result = setReady(state, '999', true);
     expect(result.players.get('1')?.ready).toBe(false);
   });
@@ -87,23 +87,23 @@ describe('setReady', () => {
 describe('checkAllReady', () => {
   it('does not transition with fewer than 2 players', () => {
     let state = createInitialState();
-    state = addPlayer(state, 'Alice').state;
+    state = addPlayer(state, 'Alice', 'cid-Alice').state;
     state = setReady(state, '1', true);
     expect(checkAllReady(state).phase).toBe('epyc-waiting');
   });
 
   it('does not transition if not all players are ready', () => {
     let state = createInitialState();
-    state = addPlayer(state, 'Alice').state;
-    state = addPlayer(state, 'Bob').state;
+    state = addPlayer(state, 'Alice', 'cid-Alice').state;
+    state = addPlayer(state, 'Bob', 'cid-Bob').state;
     state = setReady(state, '1', true);
     expect(checkAllReady(state).phase).toBe('epyc-waiting');
   });
 
   it('transitions to underway when all players are ready', () => {
     let state = createInitialState();
-    state = addPlayer(state, 'Alice').state;
-    state = addPlayer(state, 'Bob').state;
+    state = addPlayer(state, 'Alice', 'cid-Alice').state;
+    state = addPlayer(state, 'Bob', 'cid-Bob').state;
     state = setReady(state, '1', true);
     state = setReady(state, '2', true);
     const result = checkAllReady(state);
@@ -233,7 +233,7 @@ describe('advanceRound', () => {
 describe('getClientState', () => {
   it('returns waiting state with player list', () => {
     let state = createInitialState();
-    state = addPlayer(state, 'Alice').state;
+    state = addPlayer(state, 'Alice', 'cid-Alice').state;
     state = setReady(state, '1', true);
     const cs = getClientState(state, '1');
     expect(cs.phase).toBe('epyc-waiting');

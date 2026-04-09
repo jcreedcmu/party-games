@@ -16,6 +16,7 @@ export type JoinMessage = {
   type: 'join';
   password: string;
   handle: string;
+  clientId: string;
 };
 
 export type ReadyMessage = { type: 'ready' };

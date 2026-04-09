@@ -30,7 +30,7 @@ import { getClientState as bwcGetClientState } from './games/bwc/client-state.js
 
 export type GameModule = {
   createInitialState: () => ServerState;
-  addPlayer: (state: ServerState, handle: string) => { state: ServerState; playerId: PlayerId } | null;
+  addPlayer: (state: ServerState, handle: string, clientId: string) => { state: ServerState; playerId: PlayerId } | null;
   getClientState: (state: ServerState, playerId: PlayerId) => ClientGameState;
   reduce: (state: ServerState, playerId: PlayerId, msg: ClientMessage) => ReduceResult;
   reduceDisconnect: (state: ServerState, playerId: PlayerId) => ReduceResult;
@@ -39,9 +39,9 @@ export type GameModule = {
 
 export const epycModule: GameModule = {
   createInitialState: epycCreateInitialState,
-  addPlayer(state, handle) {
+  addPlayer(state, handle, clientId) {
     if (state.phase !== 'epyc-waiting') return null;
-    return epycAddPlayer(state, handle);
+    return epycAddPlayer(state, handle, clientId);
   },
   getClientState(state, playerId) {
     if (state.phase !== 'epyc-waiting' && state.phase !== 'epyc-underway' && state.phase !== 'epyc-postgame') {
@@ -56,9 +56,9 @@ export const epycModule: GameModule = {
 
 export const pictionaryModule: GameModule = {
   createInitialState: picCreateInitialState,
-  addPlayer(state, handle) {
+  addPlayer(state, handle, clientId) {
     if (state.phase !== 'pictionary-waiting' && state.phase !== 'pictionary-active' && state.phase !== 'pictionary-postgame') return null;
-    return picAddPlayer(state, handle);
+    return picAddPlayer(state, handle, clientId);
   },
   getClientState(state, playerId) {
     if (state.phase !== 'pictionary-waiting' && state.phase !== 'pictionary-active' && state.phase !== 'pictionary-postgame') {
@@ -73,9 +73,9 @@ export const pictionaryModule: GameModule = {
 
 export const bwcModule: GameModule = {
   createInitialState: bwcCreateInitialState,
-  addPlayer(state, handle) {
+  addPlayer(state, handle, clientId) {
     if (state.phase !== 'bwc-waiting') return null;
-    return bwcAddPlayer(state, handle);
+    return bwcAddPlayer(state, handle, clientId);
   },
   getClientState(state, playerId) {
     if (state.phase !== 'bwc-waiting') {
