@@ -585,6 +585,20 @@ export function bwcReduce(state: ServerState, playerId: PlayerId, msg: ClientMes
       if (state.phase !== 'bwc-playing') return { state, effects: [] };
       return reduceShuffleDeck(state, playerId, msg);
     }
+    case 'bwc-set-score': {
+      if (state.phase !== 'bwc-playing') return { state, effects: [] };
+      if (!state.scores.has(msg.playerId)) return { state, effects: [] };
+      const scores = new Map(state.scores);
+      scores.set(msg.playerId, msg.score);
+      return { state: { ...state, scores }, effects: [{ type: 'broadcast' }] };
+    }
+    case 'bwc-adjust-score': {
+      if (state.phase !== 'bwc-playing') return { state, effects: [] };
+      if (!state.scores.has(msg.playerId)) return { state, effects: [] };
+      const scores = new Map(state.scores);
+      scores.set(msg.playerId, (scores.get(msg.playerId) ?? 0) + msg.delta);
+      return { state: { ...state, scores }, effects: [{ type: 'broadcast' }] };
+    }
     default:
       return { state, effects: [] };
   }

@@ -1146,12 +1146,43 @@ button:disabled {
   padding: 0.15rem 0.5rem;
   border-radius: 4px;
   white-space: nowrap;
-  pointer-events: none;
   z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .bwc-seat-label.disconnected {
   opacity: 0.4;
+}
+
+.bwc-seat-score {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.bwc-score-btn {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: bold;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.bwc-score-btn:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.bwc-score-value {
+  min-width: 1.2rem;
+  text-align: center;
 }
 
 .bwc-deck-view {

@@ -245,8 +245,11 @@ function ObjectView({ ro, onDrop, onDoubleClick, onContextMenu, onPointerEnter, 
 }
 
 // Seat labels positioned in table-logical space, then projected to screen.
-function SeatLabel({ seat, screenOfTable }: { seat: BwcClientSeat; screenOfTable: SE2 }) {
-  // Position along the edge in table-logical space.
+function SeatLabel({ seat, screenOfTable, send }: {
+  seat: BwcClientSeat;
+  screenOfTable: SE2;
+  send: (msg: ClientMessage) => void;
+}) {
   let posInTable: Point;
   const MARGIN = 20;
   switch (seat.side) {
@@ -266,7 +269,18 @@ function SeatLabel({ seat, screenOfTable }: { seat: BwcClientSeat; screenOfTable
         transform: 'translate(-50%, -50%)',
       }}
     >
-      {seat.handle}
+      <span className="bwc-seat-handle">{seat.handle}</span>
+      <span className="bwc-seat-score">
+        <button
+          className="bwc-score-btn"
+          onClick={() => send({ type: 'bwc-adjust-score', playerId: seat.playerId, delta: -1 })}
+        >-</button>
+        <span className="bwc-score-value">{seat.score}</span>
+        <button
+          className="bwc-score-btn"
+          onClick={() => send({ type: 'bwc-adjust-score', playerId: seat.playerId, delta: 1 })}
+        >+</button>
+      </span>
     </div>
   );
 }
@@ -553,6 +567,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
           key={seat.playerId}
           seat={seat}
           screenOfTable={screenOfTable}
+          send={send}
         />
       ))}
 

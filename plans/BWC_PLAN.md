@@ -404,7 +404,7 @@ as completed per CLAUDE.md.
       in the projection; face-down decks expose only their count. Build the
       `DeckView` component.
 
-- [ ] **Step 9: Scores.** First-class per-player score display near each
+- [x] **Step 9: Scores.** First-class per-player score display near each
       seat with +/- controls. Scores are global `Map<PlayerId, number>`
       state. Any player can adjust any player's score (trust-based, like
       the rest of the tabletop).
