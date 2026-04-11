@@ -341,6 +341,155 @@ function reduceDeleteObject(
   return { state: s, effects: [{ type: 'broadcast' }] };
 }
 
+// --- Deck operations ---
+
+function shuffle<T>(arr: T[]): T[] {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+function reduceFormDeck(
+  state: BwcPlayingState,
+  playerId: PlayerId,
+  msg: { surface: SurfaceId; objectIds: ObjectId[]; pose: Pose },
+): ReduceResult {
+  if (!canAccessSurface(playerId, msg.surface)) return { state, effects: [] };
+  const surface = getSurface(state, msg.surface);
+  if (!surface) return { state, effects: [] };
+
+  // Collect card IDs from the selected objects (must all be cards on this surface).
+  const cardIds: CardId[] = [];
+  for (const oid of msg.objectIds) {
+    const obj = surface.objects.get(oid);
+    if (!obj || obj.kind !== 'card') return { state, effects: [] };
+    cardIds.push(obj.cardId);
+  }
+  if (cardIds.length < 2) return { state, effects: [] };
+
+  // Remove the individual card objects.
+  const objects = new Map(surface.objects);
+  for (const oid of msg.objectIds) {
+    objects.delete(oid);
+  }
+
+  // Create a new deck object.
+  const { state: s1, objectId: deckId } = nextObjectId(state);
+  const newZ = surface.zCounter + 1;
+  const deck: TableObject = {
+    kind: 'deck',
+    id: deckId,
+    cardIds,
+    pose: msg.pose,
+    faceUp: false,
+    z: newZ,
+  };
+  objects.set(deckId, deck);
+
+  const s2 = setSurface(s1, { ...surface, objects, zCounter: newZ });
+  return { state: s2, effects: [{ type: 'broadcast' }] };
+}
+
+function reduceDrawFromDeck(
+  state: BwcPlayingState,
+  playerId: PlayerId,
+  msg: { surface: SurfaceId; deckId: ObjectId; to: SurfaceId; pose: Pose },
+): ReduceResult {
+  if (!canAccessSurface(playerId, msg.surface)) return { state, effects: [] };
+  if (!canAccessSurface(playerId, msg.to)) return { state, effects: [] };
+  const surface = getSurface(state, msg.surface);
+  if (!surface) return { state, effects: [] };
+  const obj = surface.objects.get(msg.deckId);
+  if (!obj || obj.kind !== 'deck' || obj.cardIds.length === 0) return { state, effects: [] };
+
+  // Draw the top card (last element).
+  const drawnCardId = obj.cardIds[obj.cardIds.length - 1];
+  const remainingIds = obj.cardIds.slice(0, -1);
+
+  // Update or remove the deck.
+  const objects = new Map(surface.objects);
+  if (remainingIds.length === 0) {
+    objects.delete(msg.deckId);
+  } else {
+    objects.set(msg.deckId, { ...obj, cardIds: remainingIds });
+  }
+  let s = setSurface(state, { ...surface, objects });
+
+  // Place the drawn card on the target surface.
+  const { state: s1, objectId: cardObjId } = nextObjectId(s);
+  const toSurface = getSurface(s1, msg.to);
+  if (!toSurface) return { state, effects: [] };
+  const newZ = toSurface.zCounter + 1;
+  const card: TableObject = {
+    kind: 'card',
+    id: cardObjId,
+    cardId: drawnCardId,
+    pose: msg.pose,
+    faceUp: true,
+    z: newZ,
+  };
+  const toObjects = new Map(toSurface.objects);
+  toObjects.set(cardObjId, card);
+  s = setSurface(s1, { ...toSurface, objects: toObjects, zCounter: newZ });
+
+  return { state: s, effects: [{ type: 'broadcast' }] };
+}
+
+function reduceReturnToDeck(
+  state: BwcPlayingState,
+  playerId: PlayerId,
+  msg: { srcSurface: SurfaceId; objectId: ObjectId; deckSurface: SurfaceId; deckId: ObjectId; position: 'top' | 'bottom' },
+): ReduceResult {
+  if (!canAccessSurface(playerId, msg.srcSurface)) return { state, effects: [] };
+  if (!canAccessSurface(playerId, msg.deckSurface)) return { state, effects: [] };
+
+  const srcSurface = getSurface(state, msg.srcSurface);
+  if (!srcSurface) return { state, effects: [] };
+  const cardObj = srcSurface.objects.get(msg.objectId);
+  if (!cardObj || cardObj.kind !== 'card') return { state, effects: [] };
+
+  const deckSurface = getSurface(state, msg.deckSurface);
+  if (!deckSurface) return { state, effects: [] };
+  const deckObj = deckSurface.objects.get(msg.deckId);
+  if (!deckObj || deckObj.kind !== 'deck') return { state, effects: [] };
+
+  // Remove the card from its source surface.
+  const srcObjects = new Map(srcSurface.objects);
+  srcObjects.delete(msg.objectId);
+  let s = setSurface(state, { ...srcSurface, objects: srcObjects });
+
+  // Add the card to the deck (top = end, bottom = start).
+  const deckSurfaceNow = getSurface(s, msg.deckSurface)!;
+  const deckObjects = new Map(deckSurfaceNow.objects);
+  const newCardIds = msg.position === 'top'
+    ? [...deckObj.cardIds, cardObj.cardId]
+    : [cardObj.cardId, ...deckObj.cardIds];
+  deckObjects.set(msg.deckId, { ...deckObj, cardIds: newCardIds });
+  s = setSurface(s, { ...deckSurfaceNow, objects: deckObjects });
+
+  return { state: s, effects: [{ type: 'broadcast' }] };
+}
+
+function reduceShuffleDeck(
+  state: BwcPlayingState,
+  playerId: PlayerId,
+  msg: { surface: SurfaceId; deckId: ObjectId },
+): ReduceResult {
+  if (!canAccessSurface(playerId, msg.surface)) return { state, effects: [] };
+  const surface = getSurface(state, msg.surface);
+  if (!surface) return { state, effects: [] };
+  const obj = surface.objects.get(msg.deckId);
+  if (!obj || obj.kind !== 'deck') return { state, effects: [] };
+
+  const objects = new Map(surface.objects);
+  objects.set(msg.deckId, { ...obj, cardIds: shuffle(obj.cardIds) });
+  const s = setSurface(state, { ...surface, objects });
+  return { state: s, effects: [{ type: 'broadcast' }] };
+}
+
 // --- Reset ---
 
 function resetGame(state: BwcState): BwcWaitingState {
@@ -419,6 +568,22 @@ export function bwcReduce(state: ServerState, playerId: PlayerId, msg: ClientMes
     case 'bwc-delete-object': {
       if (state.phase !== 'bwc-playing') return { state, effects: [] };
       return reduceDeleteObject(state, playerId, msg);
+    }
+    case 'bwc-form-deck': {
+      if (state.phase !== 'bwc-playing') return { state, effects: [] };
+      return reduceFormDeck(state, playerId, msg);
+    }
+    case 'bwc-draw-from-deck': {
+      if (state.phase !== 'bwc-playing') return { state, effects: [] };
+      return reduceDrawFromDeck(state, playerId, msg);
+    }
+    case 'bwc-return-to-deck': {
+      if (state.phase !== 'bwc-playing') return { state, effects: [] };
+      return reduceReturnToDeck(state, playerId, msg);
+    }
+    case 'bwc-shuffle-deck': {
+      if (state.phase !== 'bwc-playing') return { state, effects: [] };
+      return reduceShuffleDeck(state, playerId, msg);
     }
     default:
       return { state, effects: [] };

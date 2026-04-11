@@ -95,10 +95,41 @@ function CardContent({ obj }: { obj: BwcVisibleObject }) {
   if (obj.kind === 'card') {
     return obj.faceUp && obj.card ? <CardView card={obj.card} /> : <CardBack />;
   }
+  // Deck: show top card (or card back) with stacked isometric 3D effect.
+  const count = obj.count;
+  const PX_PER_CARD = 2;
+  const MIN_OFFSET = 6;
+  const MAX_OFFSET = 24;
+  const stackOffset = Math.min(MIN_OFFSET + (count - 1) * PX_PER_CARD, MAX_OFFSET);
+  // Number of visible shadow layers (bottom cards peeking out).
+  const numLayers = Math.min(count - 1, 3);
+
+  const topCard = obj.faceUp && obj.topCard
+    ? <CardView card={obj.topCard} />
+    : <CardBack />;
+
   return (
     <div className="bwc-deck-view">
-      <CardBack />
-      <div className="bwc-deck-count">{obj.count}</div>
+      {/* Shadow layers — offset up and to the left of the top card */}
+      {Array.from({ length: numLayers }, (_, i) => {
+        const frac = 1 - (i + 1) / (numLayers + 1);
+        return (
+          <div key={i} className="bwc-deck-layer" style={{
+            position: 'absolute',
+            bottom: stackOffset * frac,
+            left: -stackOffset * frac,
+            width: '100%',
+            height: '100%',
+          }}>
+            <CardBack />
+          </div>
+        );
+      })}
+      {/* Top card */}
+      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+        {topCard}
+      </div>
+      <div className="bwc-deck-count">{count}</div>
     </div>
   );
 }
@@ -112,6 +143,7 @@ type ObjectViewProps = {
   onContextMenu: (e: React.MouseEvent, ro: RenderedObject) => void;
   onPointerEnter: (ro: RenderedObject) => void;
   onPointerLeave: (ro: RenderedObject) => void;
+  onDeckAction: (action: 'draw' | 'shuffle', ro: RenderedObject) => void;
   draggingIdRef: React.MutableRefObject<string | null>;
 };
 
@@ -121,7 +153,7 @@ type LocalOverride =
   | { kind: 'dragging'; offset: Point }
   | { kind: 'pending'; center: Point };
 
-function ObjectView({ ro, onDrop, onDoubleClick, onContextMenu, onPointerEnter, onPointerLeave, draggingIdRef }: ObjectViewProps) {
+function ObjectView({ ro, onDrop, onDoubleClick, onContextMenu, onPointerEnter, onPointerLeave, onDeckAction, draggingIdRef }: ObjectViewProps) {
   const [override, setOverride] = useState<LocalOverride | null>(null);
   const startRef = useRef<Point | null>(null);
 
@@ -371,7 +403,33 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
   }, [send]);
 
   const handleContextMenu = useCallback((_e: React.MouseEvent, ro: RenderedObject) => {
-    send({ type: 'bwc-delete-object', surface: ro.surface, objectId: ro.obj.id });
+    if (ro.obj.kind === 'deck') {
+      // Right-click a deck: draw from top.
+      send({
+        type: 'bwc-draw-from-deck',
+        surface: ro.surface,
+        deckId: ro.obj.id,
+        to: ro.surface,
+        pose: { x: ro.obj.pose.x + CARD_W + 10, y: ro.obj.pose.y, rot: ro.obj.pose.rot },
+      });
+    } else {
+      send({ type: 'bwc-delete-object', surface: ro.surface, objectId: ro.obj.id });
+    }
+  }, [send]);
+
+  const handleDeckAction = useCallback((action: 'draw' | 'shuffle', ro: RenderedObject) => {
+    if (ro.obj.kind !== 'deck') return;
+    if (action === 'draw') {
+      send({
+        type: 'bwc-draw-from-deck',
+        surface: ro.surface,
+        deckId: ro.obj.id,
+        to: ro.surface,
+        pose: { x: ro.obj.pose.x + CARD_W + 10, y: ro.obj.pose.y, rot: ro.obj.pose.rot },
+      });
+    } else {
+      send({ type: 'bwc-shuffle-deck', surface: ro.surface, deckId: ro.obj.id });
+    }
   }, [send]);
 
   // "R" key to rotate hovered object.
@@ -402,20 +460,37 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
     }
   }, [send, tableObjects, handObjects, playerId]);
 
+  // Find a rendered object by id.
+  function findRendered(objectId: string): RenderedObject | undefined {
+    return rendered.find(ro => ro.obj.id === objectId);
+  }
+
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      const targetId = draggingIdRef.current ?? hoveredRef.current;
+      if (!targetId) return;
+
       if (e.key === 'r' || e.key === 'R') {
-        const targetId = draggingIdRef.current ?? hoveredRef.current;
-        if (targetId) {
+        e.preventDefault();
+        handleRotate(targetId);
+      } else if (e.key === 'd' || e.key === 'D') {
+        const ro = findRendered(targetId);
+        if (ro && ro.obj.kind === 'deck') {
           e.preventDefault();
-          handleRotate(targetId);
+          handleDeckAction('draw', ro);
+        }
+      } else if (e.key === 's' || e.key === 'S') {
+        const ro = findRendered(targetId);
+        if (ro && ro.obj.kind === 'deck') {
+          e.preventDefault();
+          handleDeckAction('shuffle', ro);
         }
       }
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [handleRotate]);
+  }, [handleRotate, handleDeckAction, rendered]);
 
   const totalHeight = tableScreenH + GAP + HAND_LOGICAL_H * scale;
 
@@ -489,6 +564,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
           onDrop={handleDrop}
           onDoubleClick={handleDoubleClick}
           onContextMenu={handleContextMenu}
+          onDeckAction={handleDeckAction}
           onPointerEnter={ro => { hoveredRef.current = ro.obj.id; }}
           onPointerLeave={ro => { if (hoveredRef.current === ro.obj.id) hoveredRef.current = null; }}
           draggingIdRef={draggingIdRef}

@@ -396,7 +396,7 @@ as completed per CLAUDE.md.
       hides face-down cards everywhere. Render `OtherHands` as opaque
       placeholders showing only the count.
 
-- [ ] **Step 8: Decks.** Implement `bwc-form-deck`, `bwc-draw-from-deck`,
+- [x] **Step 8: Decks.** Implement `bwc-form-deck`, `bwc-draw-from-deck`,
       `bwc-return-to-deck`, `bwc-shuffle-deck`, and `bwc-flip-object` for
       decks. Decks may be face-up or face-down; flipping a deck physically
       inverts it (reverses the order of its cards) so that what was the

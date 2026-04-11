@@ -34,6 +34,22 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
         <button onClick={() => setShowLibrary(l => !l)}>
           {showLibrary ? 'Hide Library' : `Library (${state.library.length})`}
         </button>
+        <button onClick={() => {
+          // Form a deck from all card objects on the table.
+          if (state.table.visibility !== 'full') return;
+          const cardIds = state.table.objects
+            .filter(o => o.kind === 'card')
+            .map(o => o.id);
+          if (cardIds.length < 2) return;
+          send({
+            type: 'bwc-form-deck',
+            surface: { kind: 'table' },
+            objectIds: cardIds,
+            pose: { x: 350, y: 350, rot: 0 },
+          });
+        }}>
+          Form Deck (all table cards)
+        </button>
         <button onClick={() => send({ type: 'reset' })}>
           Reset
         </button>
