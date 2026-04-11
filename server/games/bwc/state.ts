@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import type { PlayerId, PlayerInfo, ServerState, ReduceResult, Effect } from '../../types.js';
 import type { ClientMessage } from '../../protocol.js';
 import type { DrawOp } from '../../draw-ops.js';
+import { persistLibrary, markSnapshotDirty, clearSnapshot } from './storage.js';
 import type {
   BwcState,
   BwcWaitingState,
@@ -20,12 +21,18 @@ import type {
 
 // --- Initial state ---
 
+let preloadedLibrary: CardLibrary = new Map();
+
+export function setPreloadedLibrary(library: CardLibrary): void {
+  preloadedLibrary = library;
+}
+
 export function createInitialState(): BwcWaitingState {
   return {
     phase: 'bwc-waiting',
     players: new Map(),
     nextPlayerId: 1,
-    library: new Map(),
+    library: preloadedLibrary,
   };
 }
 
@@ -81,7 +88,7 @@ function createCard(
   library: CardLibrary,
   ops: DrawOp[],
   text: string,
-  creator: PlayerId,
+  creator: string,
 ): { library: CardLibrary; cardId: string } {
   const cardId = crypto.randomUUID();
   const card: Card = {
@@ -506,6 +513,15 @@ function resetGame(state: BwcState): BwcWaitingState {
   };
 }
 
+// --- Persistence hooks ---
+
+function withSnapshotDirty(result: ReduceResult): ReduceResult {
+  if (result.state.phase === 'bwc-playing') {
+    markSnapshotDirty(result.state);
+  }
+  return result;
+}
+
 // --- Main reduce ---
 
 export function bwcReduce(state: ServerState, playerId: PlayerId, msg: ClientMessage): ReduceResult {
@@ -533,11 +549,14 @@ export function bwcReduce(state: ServerState, playerId: PlayerId, msg: ClientMes
       };
     }
     case 'reset': {
+      clearSnapshot();
       const next = resetGame(state);
       return { state: next, effects: [{ type: 'broadcast' }] };
     }
     case 'bwc-create-card': {
-      const { library } = createCard(state.library, msg.ops, msg.text, playerId);
+      const handle = state.players.get(playerId)?.handle ?? 'unknown';
+      const { library } = createCard(state.library, msg.ops, msg.text, handle);
+      persistLibrary(library);
       return { state: { ...state, library }, effects: [{ type: 'broadcast' }] };
     }
     case 'bwc-edit-card': {
@@ -545,59 +564,60 @@ export function bwcReduce(state: ServerState, playerId: PlayerId, msg: ClientMes
       if (!existing) return { state, effects: [] };
       const library = new Map(state.library);
       library.set(msg.cardId, { ...existing, ops: msg.ops, text: msg.text });
+      persistLibrary(library);
       return { state: { ...state, library }, effects: [{ type: 'broadcast' }] };
     }
 
     // -- Playing-only messages --
     case 'bwc-spawn-card': {
       if (state.phase !== 'bwc-playing') return { state, effects: [] };
-      return reduceSpawnCard(state, playerId, msg);
+      return withSnapshotDirty(reduceSpawnCard(state, playerId, msg));
     }
     case 'bwc-move-object': {
       if (state.phase !== 'bwc-playing') return { state, effects: [] };
-      return reduceMoveObject(state, playerId, msg);
+      return withSnapshotDirty(reduceMoveObject(state, playerId, msg));
     }
     case 'bwc-bring-to-front': {
       if (state.phase !== 'bwc-playing') return { state, effects: [] };
-      return reduceBringToFront(state, playerId, msg);
+      return withSnapshotDirty(reduceBringToFront(state, playerId, msg));
     }
     case 'bwc-flip-object': {
       if (state.phase !== 'bwc-playing') return { state, effects: [] };
-      return reduceFlipObject(state, playerId, msg);
+      return withSnapshotDirty(reduceFlipObject(state, playerId, msg));
     }
     case 'bwc-delete-object': {
       if (state.phase !== 'bwc-playing') return { state, effects: [] };
-      return reduceDeleteObject(state, playerId, msg);
+      return withSnapshotDirty(reduceDeleteObject(state, playerId, msg));
     }
     case 'bwc-form-deck': {
       if (state.phase !== 'bwc-playing') return { state, effects: [] };
-      return reduceFormDeck(state, playerId, msg);
+      return withSnapshotDirty(reduceFormDeck(state, playerId, msg));
     }
     case 'bwc-draw-from-deck': {
       if (state.phase !== 'bwc-playing') return { state, effects: [] };
-      return reduceDrawFromDeck(state, playerId, msg);
+      return withSnapshotDirty(reduceDrawFromDeck(state, playerId, msg));
     }
     case 'bwc-return-to-deck': {
       if (state.phase !== 'bwc-playing') return { state, effects: [] };
-      return reduceReturnToDeck(state, playerId, msg);
+      return withSnapshotDirty(reduceReturnToDeck(state, playerId, msg));
     }
     case 'bwc-shuffle-deck': {
       if (state.phase !== 'bwc-playing') return { state, effects: [] };
-      return reduceShuffleDeck(state, playerId, msg);
+      return withSnapshotDirty(reduceShuffleDeck(state, playerId, msg));
     }
     case 'bwc-set-score': {
       if (state.phase !== 'bwc-playing') return { state, effects: [] };
       if (!state.scores.has(msg.playerId)) return { state, effects: [] };
       const scores = new Map(state.scores);
       scores.set(msg.playerId, msg.score);
-      return { state: { ...state, scores }, effects: [{ type: 'broadcast' }] };
+      return withSnapshotDirty({ state: { ...state, scores }, effects: [{ type: 'broadcast' }] });
     }
     case 'bwc-adjust-score': {
       if (state.phase !== 'bwc-playing') return { state, effects: [] };
       if (!state.scores.has(msg.playerId)) return { state, effects: [] };
       const scores = new Map(state.scores);
       scores.set(msg.playerId, (scores.get(msg.playerId) ?? 0) + msg.delta);
-      return { state: { ...state, scores }, effects: [{ type: 'broadcast' }] };
+      return withSnapshotDirty({ state: { ...state, scores }, effects: [{ type: 'broadcast' }] });
     }
     default:
       return { state, effects: [] };

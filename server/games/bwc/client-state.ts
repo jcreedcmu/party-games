@@ -94,7 +94,7 @@ export type BwcClientState = BwcClientWaitingState | BwcClientPlayingState;
 function summarizeLibrary(state: BwcWaitingState | BwcPlayingState): BwcClientCardSummary[] {
   const out: BwcClientCardSummary[] = [];
   for (const card of state.library.values()) {
-    const creatorHandle = state.players.get(card.creator)?.handle ?? 'unknown';
+    const creatorHandle = card.creator;
     out.push({
       id: card.id,
       ops: card.ops,
@@ -137,7 +137,7 @@ function projectObject(
           id: card.id,
           ops: card.ops,
           text: card.text,
-          creatorHandle: players.get(card.creator)?.handle ?? 'unknown',
+          creatorHandle: card.creator,
         },
       } : {}),
     };
@@ -157,7 +157,7 @@ function projectObject(
         id: topCardDef.id,
         ops: topCardDef.ops,
         text: topCardDef.text,
-        creatorHandle: players.get(topCardDef.creator)?.handle ?? 'unknown',
+        creatorHandle: topCardDef.creator,
       },
     } : {}),
   };

@@ -409,15 +409,13 @@ as completed per CLAUDE.md.
       state. Any player can adjust any player's score (trust-based, like
       the rest of the tabletop).
 
-- [ ] **Step 10: Persistence.** Promote the in-memory card library to
+- [x] **Step 10: Persistence.** Promote the in-memory card library to
       disk-backed storage at `data/bwc/cards.json` (load on startup, write
       on every create/edit). Add the table snapshot at `data/bwc/table.json`
       (debounced save, load on startup). `reset` clears the table snapshot
       but leaves the card library intact. Follow the `word-stats` storage
       pattern from the pictionary game module.
 
-- [ ] **Step 11: Polish.** Multi-select drag, visual affordances for
-      face-down vs face-up, hover tooltips with card creator, "shuffle"
-      animation, a "tidy hand" verb that flips every card in the owner's
-      hand face-up and lays them out in a neat row, etc. As-needed.
-
+- [ ] **Step 11: Polish.** Multi-select drag, a "tidy hand" verb that
+      flips every card in the owner's hand face-up and lays them out
+      in a neat row, etc. As-needed.

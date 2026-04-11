@@ -4,6 +4,8 @@ import { createServer } from './server.js';
 import type { GameType } from './types.js';
 import { configureWords, configureStats } from './games/pictionary/words.js';
 import type { WordStats } from './games/pictionary/words.js';
+import { configureLibrary, configureSnapshot, flushSnapshot } from './games/bwc/storage.js';
+import { setPreloadedLibrary } from './games/bwc/state.js';
 
 function parseArgs(args: string[]): { password: string; port: number; host: string; game: GameType } {
   let password = '';
@@ -71,8 +73,54 @@ configureStats(stats, (updated) => {
   }
 });
 
+// Configure BWC card library persistence
+const bwcDataDir = path.resolve(import.meta.dirname, '..', 'data', 'bwc');
+fs.mkdirSync(bwcDataDir, { recursive: true });
+
+const libraryPath = path.join(bwcDataDir, 'cards.json');
+let libraryData = null;
+try {
+  libraryData = JSON.parse(fs.readFileSync(libraryPath, 'utf-8'));
+  console.log(`Loaded BWC card library from ${libraryPath}`);
+} catch {
+  // No library file yet, start fresh
+}
+const library = configureLibrary(libraryData, (data) => {
+  try {
+    fs.writeFileSync(libraryPath, JSON.stringify(data, null, 2) + '\n');
+  } catch (e) {
+    console.error('Failed to persist BWC card library:', e);
+  }
+});
+setPreloadedLibrary(library);
+
+// Configure BWC table snapshot persistence
+const snapshotPath = path.join(bwcDataDir, 'table.json');
+configureSnapshot((data) => {
+  try {
+    if (data === null) {
+      // Clear snapshot on reset.
+      try { fs.unlinkSync(snapshotPath); } catch { /* ignore if not found */ }
+    } else {
+      fs.writeFileSync(snapshotPath, JSON.stringify(data) + '\n');
+    }
+  } catch (e) {
+    console.error('Failed to persist BWC table snapshot:', e);
+  }
+});
+
 const server = createServer(password, game);
 
 server.listen(port, host, () => {
   console.log(`Server listening on http://${host}:${port} (game: ${game})`);
+});
+
+// Flush snapshot on clean shutdown.
+process.on('SIGINT', () => {
+  flushSnapshot();
+  process.exit(0);
+});
+process.on('SIGTERM', () => {
+  flushSnapshot();
+  process.exit(0);
 });

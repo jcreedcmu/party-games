@@ -33,7 +33,7 @@ export type Card = {
   id: CardId;
   ops: DrawOp[];           // front art
   text: string;            // description of what the card does
-  creator: PlayerId;       // playerId of original author (stable id, not handle)
+  creator: string;          // handle of original author
   createdAt: string;       // stringified Date
 };
 
