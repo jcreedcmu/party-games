@@ -1058,15 +1058,26 @@ button:disabled {
   flex-wrap: wrap;
 }
 
-.bwc-table {
+.bwc-play-area {
   position: relative;
-  background: #2d6a4f;
-  border-radius: 12px;
-  overflow: hidden;
-  aspect-ratio: 1 / 1;
-  max-width: 800px;
+  width: 100%;
   touch-action: none;
   user-select: none;
+}
+
+.bwc-table-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: #2d6a4f;
+  border-radius: 12px;
+}
+
+.bwc-hand-bg {
+  position: absolute;
+  left: 0;
+  background: #1a4731;
+  border-radius: 8px;
 }
 
 .bwc-table-object {
@@ -1081,6 +1092,7 @@ button:disabled {
 
 .bwc-card-face {
   width: 100%;
+  height: 100%;
   background: #fff;
   border: 2px solid #333;
   border-radius: 6px;
@@ -1111,7 +1123,7 @@ button:disabled {
 
 .bwc-card-back-pattern {
   width: 100%;
-  aspect-ratio: 8 / 5;
+  height: 100%;
   background: repeating-linear-gradient(
     45deg,
     transparent,
@@ -1140,27 +1152,6 @@ button:disabled {
 
 .bwc-seat-label.disconnected {
   opacity: 0.4;
-}
-
-.bwc-hand-tray {
-  position: relative;
-  background: #1a4731;
-  border-radius: 8px;
-  margin-top: 0.5rem;
-  max-width: 800px;
-  touch-action: none;
-  user-select: none;
-  overflow: hidden;
-}
-
-.bwc-hand-label {
-  position: absolute;
-  top: 4px;
-  left: 8px;
-  font-size: 0.7rem;
-  color: rgba(255,255,255,0.5);
-  pointer-events: none;
-  z-index: 10000;
 }
 
 .bwc-deck-count {

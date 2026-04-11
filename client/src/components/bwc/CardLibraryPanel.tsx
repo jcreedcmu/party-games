@@ -1,7 +1,10 @@
 import type { BwcClientCardSummary, ClientMessage, CardId, DrawOp, Side } from '../../types';
 import { LiveCanvas } from '../pictionary/LiveCanvas';
 
-const SIDE_ROTATION: Record<Side, number> = { S: 0, E: 90, N: 180, W: 270 };
+// Card rotation in table-logical space so the card appears upright
+// from the spawning player's perspective. This is the inverse of the
+// screen rotation applied for that seat.
+const SPAWN_ROT: Record<Side, number> = { S: 0, N: 180, E: 90, W: 270 };
 
 type Props = {
   cards: BwcClientCardSummary[];
@@ -14,7 +17,7 @@ type Props = {
 export function CardLibraryPanel({ cards, canSpawn, mySide, send, onEdit }: Props) {
   function handleSpawn(cardId: string) {
     if (!send) return;
-    const rot = mySide ? SIDE_ROTATION[mySide] : 0;
+    const rot = mySide ? SPAWN_ROT[mySide] : 0;
     send({
       type: 'bwc-spawn-card',
       cardId,
