@@ -362,6 +362,13 @@ export function bwcReduce(state: ServerState, playerId: PlayerId, msg: ClientMes
       const { library } = createCard(state.library, msg.ops, msg.text, playerId);
       return { state: { ...state, library }, effects: [{ type: 'broadcast' }] };
     }
+    case 'bwc-edit-card': {
+      const existing = state.library.get(msg.cardId);
+      if (!existing) return { state, effects: [] };
+      const library = new Map(state.library);
+      library.set(msg.cardId, { ...existing, ops: msg.ops, text: msg.text });
+      return { state: { ...state, library }, effects: [{ type: 'broadcast' }] };
+    }
 
     // -- Playing-only messages --
     case 'bwc-spawn-card': {

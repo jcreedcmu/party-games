@@ -1,16 +1,16 @@
-import type { BwcClientCardSummary, ClientMessage } from '../../types';
+import type { BwcClientCardSummary, ClientMessage, CardId, DrawOp } from '../../types';
 import { LiveCanvas } from '../pictionary/LiveCanvas';
 
 type Props = {
   cards: BwcClientCardSummary[];
   canSpawn?: boolean;
   send?: (msg: ClientMessage) => void;
+  onEdit?: (cardId: CardId, ops: DrawOp[], text: string) => void;
 };
 
-export function CardLibraryPanel({ cards, canSpawn, send }: Props) {
+export function CardLibraryPanel({ cards, canSpawn, send, onEdit }: Props) {
   function handleSpawn(cardId: string) {
     if (!send) return;
-    // Spawn near center of table, face up.
     send({
       type: 'bwc-spawn-card',
       cardId,
@@ -41,11 +41,18 @@ export function CardLibraryPanel({ cards, canSpawn, send }: Props) {
             <div className="bwc-library-card-info">
               <div className="bwc-library-card-text">{card.text || '(no text)'}</div>
               <div className="bwc-library-card-creator">by {card.creatorHandle}</div>
-              {canSpawn && send && (
-                <button className="bwc-spawn-btn" onClick={() => handleSpawn(card.id)}>
-                  Spawn
-                </button>
-              )}
+              <div className="bwc-library-card-actions">
+                {canSpawn && send && (
+                  <button className="bwc-spawn-btn" onClick={() => handleSpawn(card.id)}>
+                    Spawn
+                  </button>
+                )}
+                {onEdit && (
+                  <button className="bwc-edit-btn" onClick={() => onEdit(card.id, card.ops, card.text)}>
+                    Edit
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ))}

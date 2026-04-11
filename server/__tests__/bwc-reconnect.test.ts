@@ -133,6 +133,55 @@ describe('bwc card creation', () => {
   });
 });
 
+describe('bwc card editing', () => {
+  beforeEach(async () => { await startServer(); });
+  afterEach(async () => { await stopServer(); });
+
+  it('edits a card and broadcasts the updated library', async () => {
+    const { client: c1 } = await joinBwc('Alice', 'cid-A');
+    const { client: c2 } = await joinBwc('Bob', 'cid-B');
+    await c1.next(); // state from Bob
+
+    // Create a card.
+    c1.send({
+      type: 'bwc-create-card',
+      ops: [{ type: 'draw-start', color: '#000', size: 5, x: 10, y: 10 }, { type: 'draw-end' }],
+      text: 'Original',
+    });
+    const afterCreate = await c1.next();
+    await c2.next();
+    let cardId: string | undefined;
+    if (afterCreate.type === 'state' && afterCreate.state.phase === 'bwc-waiting') {
+      cardId = afterCreate.state.library[0]?.id;
+    }
+    expect(cardId).toBeDefined();
+
+    // Edit the card.
+    c1.send({
+      type: 'bwc-edit-card',
+      cardId: cardId!,
+      ops: [
+        { type: 'draw-start', color: '#000', size: 5, x: 10, y: 10 },
+        { type: 'draw-end' },
+        { type: 'draw-start', color: '#ff0000', size: 10, x: 50, y: 50 },
+        { type: 'draw-end' },
+      ],
+      text: 'Edited',
+    });
+    const afterEdit = await c1.next();
+    const afterEditBob = await c2.next();
+
+    if (afterEdit.type === 'state' && afterEdit.state.phase === 'bwc-waiting') {
+      expect(afterEdit.state.library.length).toBe(1);
+      expect(afterEdit.state.library[0].text).toBe('Edited');
+      expect(afterEdit.state.library[0].ops.length).toBe(4);
+    }
+    if (afterEditBob.type === 'state' && afterEditBob.state.phase === 'bwc-waiting') {
+      expect(afterEditBob.state.library[0].text).toBe('Edited');
+    }
+  });
+});
+
 describe('bwc playing phase', () => {
   beforeEach(async () => { await startServer(); });
   afterEach(async () => { await stopServer(); });

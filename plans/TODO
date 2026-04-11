@@ -1,3 +1,11 @@
+1kbwc
+-----
+
+only allow editing your own cards
+organize tests better
+
+pictionary
+----------
 
 make sure guess state is handled like ordinary state, and this propagates to gen-preview
 

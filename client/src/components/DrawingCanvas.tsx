@@ -5,6 +5,7 @@ import {
   parseColor, stampCircle, drawLineSegment, floodFill,
   clearImageData, createBlankImageData, cloneImageData,
 } from '../draw-util';
+import { replayOps } from '../apply-ops';
 
 const COLORS = [
   '#000000', '#555555', '#e74c3c', '#f39c12', '#f1c40f',
@@ -19,11 +20,12 @@ type DrawingCanvasProps = {
   mode?: 'submit' | 'stream';
   onSubmit?: (dataUrl: string) => void;
   onStreamOp?: (op: DrawOp) => void;
+  initialOps?: DrawOp[];
 };
 
 type Tool = 'pen' | 'fill' | 'eyedropper';
 
-export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp }: DrawingCanvasProps) {
+export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp, initialOps }: DrawingCanvasProps) {
   const [color, setColor] = useState(COLORS[0]);
   const [customColor, setCustomColor] = useState<string | null>(null);
   const [size, setSize] = useState(SIZES[1]);
@@ -48,8 +50,15 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
   }
 
   useEffect(() => {
+    if (initialOps && initialOps.length > 0) {
+      const { imageData, snapshots } = replayOps(initialOps);
+      imageDataRef.current = imageData;
+      undoStack.current = snapshots;
+    }
     putImage();
-    saveSnapshot();
+    if (!initialOps || initialOps.length === 0) {
+      saveSnapshot();
+    }
   }, [getCtx]);
 
   useEffect(() => {

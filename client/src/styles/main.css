@@ -1032,8 +1032,14 @@ button:disabled {
   margin-top: 0.25rem;
 }
 
-.bwc-spawn-btn {
+.bwc-library-card-actions {
+  display: flex;
+  gap: 0.25rem;
   margin-top: 0.25rem;
+}
+
+.bwc-spawn-btn,
+.bwc-edit-btn {
   font-size: 0.8rem;
   padding: 0.15rem 0.5rem;
   cursor: pointer;

@@ -379,7 +379,7 @@ as completed per CLAUDE.md.
       pointer drag, and z-ordering. No rotation/seating yet — assume all
       players see the table the same way.
 
-- [ ] **Step 5: Card editing.** `bwc-edit-card` (re-open `CardEditor`
+- [x] **Step 5: Card editing.** `bwc-edit-card` (re-open `CardEditor`
       seeded with the existing `ops` and `text`). Edits overwrite in place.
       This step is intentionally early in the plan because card creation +
       editing is the central authoring loop of 1kbwc and deserves time to
