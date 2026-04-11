@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { useSocket } from './hooks/useSocket';
 import { JoinDialog } from './components/JoinDialog';
 import { EpycGame } from './components/epyc/EpycGame';
@@ -48,6 +48,13 @@ function getLogoAlt(gameType: GameType | null) {
   if (gameType === 'epyc') return 'Eat Poop You Cat';
   if (gameType === 'bwc') return '1000 Blank White Cards';
   return 'Drawplodocus';
+}
+
+function getTitle(gameType: GameType | null) {
+  if (gameType === 'epyc') return 'Eat Poop You Cat';
+  if (gameType === 'bwc') return '1000 Blank White Cards';
+  if (gameType === 'pictionary') return 'Drawplodocus';
+  return 'Party Games';
 }
 
 type GameShellProps = {
@@ -103,6 +110,10 @@ function GameShell({ gameState, playerId, gameType, connected, reconnect, send, 
 
 function ServerApp() {
   const { gameState, playerId, gameType, error, connected, connect, reconnect, send, clearError, clearAddWordResult, addWordResult, onRelay } = useSocket();
+
+  useEffect(() => {
+    document.title = getTitle(gameType);
+  }, [gameType]);
 
   if (playerId && gameState) {
     return <GameShell gameState={gameState} playerId={playerId} gameType={gameType} connected={connected} reconnect={reconnect} send={send} onRelay={onRelay} addWordResult={addWordResult} clearAddWordResult={clearAddWordResult} />;
