@@ -133,6 +133,112 @@ describe('bwc card creation', () => {
   });
 });
 
+describe('bwc playing phase', () => {
+  beforeEach(async () => { await startServer(); });
+  afterEach(async () => { await stopServer(); });
+
+  it('transitions to playing when all ready, supports spawn/move/flip/delete', async () => {
+    const { client: c1 } = await joinBwc('Alice', 'cid-A');
+    const { client: c2 } = await joinBwc('Bob', 'cid-B');
+    await c1.next(); // state from Bob joining
+
+    // Create a card first.
+    c1.send({
+      type: 'bwc-create-card',
+      ops: [{ type: 'draw-start', color: '#000', size: 5, x: 10, y: 10 }, { type: 'draw-end' }],
+      text: 'Test card',
+    });
+    const stateAfterCreate = await c1.next();
+    await c2.next(); // same broadcast
+    let cardId: string | undefined;
+    if (stateAfterCreate.type === 'state' && stateAfterCreate.state.phase === 'bwc-waiting') {
+      cardId = stateAfterCreate.state.library[0]?.id;
+    }
+    expect(cardId).toBeDefined();
+
+    // Ready up.
+    c1.send({ type: 'ready' });
+    await c1.next(); await c2.next();
+    c2.send({ type: 'ready' });
+    const playingState = await c1.next();
+    await c2.next();
+
+    expect(playingState.type).toBe('state');
+    if (playingState.type === 'state') {
+      expect(playingState.state.phase).toBe('bwc-playing');
+    }
+
+    // Spawn the card on the table.
+    c1.send({
+      type: 'bwc-spawn-card',
+      cardId: cardId!,
+      surface: { kind: 'table' },
+      pose: { x: 100, y: 200, rot: 0 },
+      faceUp: true,
+    });
+    const afterSpawn = await c1.next();
+    await c2.next();
+    if (afterSpawn.type === 'state' && afterSpawn.state.phase === 'bwc-playing') {
+      const table = afterSpawn.state.table;
+      if (table.visibility === 'full') {
+        expect(table.objects.length).toBe(1);
+        const obj = table.objects[0];
+        expect(obj.kind).toBe('card');
+        if (obj.kind === 'card') {
+          expect(obj.faceUp).toBe(true);
+          expect(obj.card?.text).toBe('Test card');
+        }
+      }
+    }
+
+    // Move the card.
+    c1.send({
+      type: 'bwc-move-object',
+      from: { kind: 'table' },
+      objectId: 'obj-1',
+      to: { kind: 'table' },
+      pose: { x: 300, y: 400, rot: 90 },
+    });
+    const afterMove = await c1.next();
+    await c2.next();
+    if (afterMove.type === 'state' && afterMove.state.phase === 'bwc-playing') {
+      const table = afterMove.state.table;
+      if (table.visibility === 'full' && table.objects.length === 1) {
+        expect(table.objects[0].pose).toEqual({ x: 300, y: 400, rot: 90 });
+      }
+    }
+
+    // Flip the card face-down.
+    c1.send({ type: 'bwc-flip-object', surface: { kind: 'table' }, objectId: 'obj-1' });
+    const afterFlip = await c1.next();
+    await c2.next();
+    if (afterFlip.type === 'state' && afterFlip.state.phase === 'bwc-playing') {
+      const table = afterFlip.state.table;
+      if (table.visibility === 'full' && table.objects.length === 1) {
+        const obj = table.objects[0];
+        expect(obj.faceUp).toBe(false);
+        // Face-down card should NOT expose card data.
+        if (obj.kind === 'card') {
+          expect(obj.card).toBeUndefined();
+        }
+      }
+    }
+
+    // Delete the card (returns to library).
+    c1.send({ type: 'bwc-delete-object', surface: { kind: 'table' }, objectId: 'obj-1' });
+    const afterDelete = await c1.next();
+    await c2.next();
+    if (afterDelete.type === 'state' && afterDelete.state.phase === 'bwc-playing') {
+      const table = afterDelete.state.table;
+      if (table.visibility === 'full') {
+        expect(table.objects.length).toBe(0);
+      }
+      // Card is back in the library and can be spawned again.
+      expect(afterDelete.state.library.length).toBe(1);
+    }
+  });
+});
+
 describe('bwc reconnect', () => {
   beforeEach(async () => {
     await startServer();

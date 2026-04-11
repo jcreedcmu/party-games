@@ -77,10 +77,14 @@ export type BwcPlayingState = {
   players: Map<PlayerId, PlayerInfo>;
   nextPlayerId: number;
   library: CardLibrary;
+  // CardIds that are currently on a surface, in a deck, or in a hand.
+  // A card can only be spawned if it's NOT in this set.
+  inPlay: Set<CardId>;
   seats: Map<PlayerId, SeatIndex>;
   table: Surface;
   hands: Map<PlayerId, Surface>;
   scores: Map<PlayerId, number>;
+  nextObjectId: number;
 };
 
 export type BwcState = BwcWaitingState | BwcPlayingState;

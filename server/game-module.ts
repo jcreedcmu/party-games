@@ -74,8 +74,21 @@ export const pictionaryModule: GameModule = {
 export const bwcModule: GameModule = {
   createInitialState: bwcCreateInitialState,
   addPlayer(state, handle, clientId) {
-    if (state.phase !== 'bwc-waiting') return null;
-    return bwcAddPlayer(state, handle, clientId);
+    if (state.phase === 'bwc-waiting') {
+      return bwcAddPlayer(state, handle, clientId);
+    }
+    if (state.phase === 'bwc-playing') {
+      // During playing, only allow reattaching by clientId.
+      for (const [existingId, p] of state.players) {
+        if (p.clientId === clientId) {
+          const players = new Map(state.players);
+          players.set(existingId, { ...p, handle, connected: true });
+          return { state: { ...state, players }, playerId: existingId };
+        }
+      }
+      return null; // New player rejected.
+    }
+    return null;
   },
   getClientState(state, playerId) {
     if (state.phase !== 'bwc-waiting' && state.phase !== 'bwc-playing') {

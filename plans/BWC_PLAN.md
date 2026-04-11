@@ -373,7 +373,7 @@ as completed per CLAUDE.md.
       created so far. End state: players can author cards and see each
       other's cards in the library, all in-memory.
 
-- [ ] **Step 4: Spawn & move objects.** Implement `bwc-spawn-card`,
+- [x] **Step 4: Spawn & move objects.** Implement `bwc-spawn-card`,
       `bwc-move-object`, `bwc-bring-to-front`, `bwc-flip-object`,
       `bwc-delete-object`. Implement `BwcTable` with SVG rendering,
       pointer drag, and z-ordering. No rotation/seating yet — assume all

@@ -118,14 +118,104 @@ function getWaitingClientState(state: BwcWaitingState): BwcClientWaitingState {
   };
 }
 
+function projectObject(
+  obj: import('./types.js').TableObject,
+  library: import('./types.js').CardLibrary,
+  players: Map<PlayerId, import('../../types.js').PlayerInfo>,
+): BwcVisibleObject {
+  if (obj.kind === 'card') {
+    const card = library.get(obj.cardId);
+    return {
+      kind: 'card',
+      id: obj.id,
+      pose: obj.pose,
+      z: obj.z,
+      faceUp: obj.faceUp,
+      ...(obj.faceUp && card ? {
+        card: {
+          id: card.id,
+          ops: card.ops,
+          text: card.text,
+          creatorHandle: players.get(card.creator)?.handle ?? 'unknown',
+        },
+      } : {}),
+    };
+  }
+  // deck
+  const topCardId = obj.cardIds.length > 0 ? obj.cardIds[obj.cardIds.length - 1] : undefined;
+  const topCardDef = topCardId ? library.get(topCardId) : undefined;
+  return {
+    kind: 'deck',
+    id: obj.id,
+    pose: obj.pose,
+    z: obj.z,
+    faceUp: obj.faceUp,
+    count: obj.cardIds.length,
+    ...(obj.faceUp && topCardDef ? {
+      topCard: {
+        id: topCardDef.id,
+        ops: topCardDef.ops,
+        text: topCardDef.text,
+        creatorHandle: players.get(topCardDef.creator)?.handle ?? 'unknown',
+      },
+    } : {}),
+  };
+}
+
+function projectSurfaceFull(
+  surface: import('./types.js').Surface,
+  library: import('./types.js').CardLibrary,
+  players: Map<PlayerId, import('../../types.js').PlayerInfo>,
+): BwcVisibleSurface {
+  const objects = Array.from(surface.objects.values()).map(obj =>
+    projectObject(obj, library, players)
+  );
+  return { id: surface.id, visibility: 'full', objects };
+}
+
+function projectSurfaceOpaque(surface: import('./types.js').Surface): BwcVisibleSurface {
+  return { id: surface.id, visibility: 'opaque', objectCount: surface.objects.size };
+}
+
+// Placeholder sides until step 6 implements proper seating.
+const SIDES: Array<'N' | 'E' | 'S' | 'W'> = ['S', 'E', 'N', 'W'];
+
 function getPlayingClientState(
-  _state: BwcPlayingState,
-  _playerId: PlayerId,
+  state: BwcPlayingState,
+  playerId: PlayerId,
 ): BwcClientPlayingState {
-  // Step 2 only declares the type; full projection logic lands alongside
-  // the playing-phase reducer in step 4 onward. Throwing here keeps the
-  // contract honest until then.
-  throw new Error('bwc playing-phase projection not implemented yet');
+  const seats: BwcClientSeat[] = [];
+  for (const [pid, seatIdx] of state.seats) {
+    const p = state.players.get(pid);
+    if (!p) continue;
+    seats.push({
+      playerId: pid,
+      handle: p.handle,
+      seat: seatIdx,
+      side: SIDES[seatIdx % SIDES.length],
+      score: state.scores.get(pid) ?? 0,
+      connected: p.connected,
+    });
+  }
+
+  const myHand = state.hands.get(playerId);
+  const otherHands: BwcVisibleSurface[] = [];
+  for (const [pid, hand] of state.hands) {
+    if (pid === playerId) continue;
+    otherHands.push(projectSurfaceOpaque(hand));
+  }
+
+  return {
+    phase: 'bwc-playing',
+    mySeat: state.seats.get(playerId) ?? 0,
+    seats,
+    table: projectSurfaceFull(state.table, state.library, state.players),
+    myHand: myHand
+      ? projectSurfaceFull(myHand, state.library, state.players)
+      : { id: { kind: 'hand', ownerId: playerId }, visibility: 'full', objects: [] },
+    otherHands,
+    library: summarizeLibrary(state),
+  };
 }
 
 export function getClientState(state: BwcState, playerId: PlayerId): BwcClientState {
