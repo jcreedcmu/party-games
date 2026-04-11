@@ -1,5 +1,7 @@
 # 1000 Blank White Cards — Implementation Plan
 
+status: completed
+
 A third game module for poop-deli, alongside EPYC and Pictionary. The defining
 property of 1000 Blank White Cards (henceforth "1kbwc") is that *the players
 invent the rules as they go*, often by writing them on the cards themselves.

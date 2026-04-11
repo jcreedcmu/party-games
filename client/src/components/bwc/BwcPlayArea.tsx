@@ -41,25 +41,18 @@ function buildScreenOfHand(scale: number, tableScreenH: number): SE2 {
 
 // Given a desired card center in a surface's logical space, find the
 // nearest center that keeps the entire card within [0, W] × [0, H].
-// Returns null if the card can't fit at all (surface too small).
 function fitCardInBounds(
   desiredCenter: Point,
   cardRotDeg: number,
   boundsW: number,
   boundsH: number,
 ): { center: Point; error: number } | null {
-  // AABB half-size depends on whether the card is rotated by 90° or 270°.
   const r = ((cardRotDeg % 360) + 360) % 360;
   const aabbHalfW = (r === 90 || r === 270) ? CARD_H / 2 : CARD_W / 2;
   const aabbHalfH = (r === 90 || r === 270) ? CARD_W / 2 : CARD_H / 2;
-
-  // Check if the card can fit at all.
   if (boundsW < aabbHalfW * 2 || boundsH < aabbHalfH * 2) return null;
-
-  // Clamp center so AABB stays within bounds.
   const cx = Math.max(aabbHalfW, Math.min(desiredCenter.x, boundsW - aabbHalfW));
   const cy = Math.max(aabbHalfH, Math.min(desiredCenter.y, boundsH - aabbHalfH));
-
   const dx = cx - desiredCenter.x;
   const dy = cy - desiredCenter.y;
   return { center: { x: cx, y: cy }, error: dx * dx + dy * dy };
@@ -67,7 +60,6 @@ function fitCardInBounds(
 
 // --- Rendered object ---
 
-// A card's pose in logical space as an oriented rectangle.
 function poseToRect(pose: Pose): OrientedRect {
   return {
     center: { x: pose.x + CARD_W / 2, y: pose.y + CARD_H / 2 },
@@ -76,16 +68,7 @@ function poseToRect(pose: Pose): OrientedRect {
   };
 }
 
-// Recover a Pose (top-left corner + rotation) from a logical-space oriented rect.
-function rectToPose(rect: OrientedRect): Pose {
-  return {
-    x: rect.center.x - CARD_W / 2,
-    y: rect.center.y - CARD_H / 2,
-    rot: ((rect.rotDeg % 360) + 360) % 360,
-  };
-}
-
-type RenderedObject = {
+export type RenderedObject = {
   obj: BwcVisibleObject;
   surface: SurfaceId;
   rectInScreen: OrientedRect;
@@ -95,22 +78,17 @@ function CardContent({ obj }: { obj: BwcVisibleObject }) {
   if (obj.kind === 'card') {
     return obj.faceUp && obj.card ? <CardView card={obj.card} /> : <CardBack />;
   }
-  // Deck: show top card (or card back) with stacked isometric 3D effect.
   const count = obj.count;
   const PX_PER_CARD = 2;
   const MIN_OFFSET = 6;
   const MAX_OFFSET = 24;
   const stackOffset = Math.min(MIN_OFFSET + (count - 1) * PX_PER_CARD, MAX_OFFSET);
-  // Number of visible shadow layers (bottom cards peeking out).
   const numLayers = Math.min(count - 1, 3);
-
   const topCard = obj.faceUp && obj.topCard
     ? <CardView card={obj.topCard} />
     : <CardBack />;
-
   return (
     <div className="bwc-deck-view">
-      {/* Shadow layers — offset up and to the left of the top card */}
       {Array.from({ length: numLayers }, (_, i) => {
         const frac = 1 - (i + 1) / (numLayers + 1);
         return (
@@ -125,7 +103,6 @@ function CardContent({ obj }: { obj: BwcVisibleObject }) {
           </div>
         );
       })}
-      {/* Top card */}
       <div style={{ position: 'relative', width: '100%', height: '100%' }}>
         {topCard}
       </div>
@@ -134,106 +111,32 @@ function CardContent({ obj }: { obj: BwcVisibleObject }) {
   );
 }
 
-// Each ObjectView manages its own drag state internally so the same
-// DOM element persists through the drag and pointer capture is never lost.
+// --- ObjectView: purely presentational ---
+
 type ObjectViewProps = {
   ro: RenderedObject;
-  onDrop: (dropCenterInScreen: Point, fromSurface: SurfaceId, objectId: string, currentRot: number) => void;
+  selected: boolean;
+  displayCenter: Point;  // may differ from ro.rectInScreen.center during drag/pending
+  onPointerDown: (e: React.PointerEvent, ro: RenderedObject) => void;
   onDoubleClick: (ro: RenderedObject) => void;
   onContextMenu: (e: React.MouseEvent, ro: RenderedObject) => void;
   onPointerEnter: (ro: RenderedObject) => void;
   onPointerLeave: (ro: RenderedObject) => void;
-  onDeckAction: (action: 'draw' | 'shuffle', ro: RenderedObject) => void;
-  draggingIdRef: React.MutableRefObject<string | null>;
 };
 
-// Local position override: either actively dragging (offset from server
-// position) or pending server confirmation (fixed screen center).
-type LocalOverride =
-  | { kind: 'dragging'; offset: Point }
-  | { kind: 'pending'; center: Point };
-
-function ObjectView({ ro, onDrop, onDoubleClick, onContextMenu, onPointerEnter, onPointerLeave, onDeckAction, draggingIdRef }: ObjectViewProps) {
-  const [override, setOverride] = useState<LocalOverride | null>(null);
-  const startRef = useRef<Point | null>(null);
-
-  // When the server position changes (broadcast arrived), clear the
-  // pending override so we snap to the server's authoritative position.
-  const prevCenterRef = useRef(ro.rectInScreen.center);
-  useEffect(() => {
-    const prev = prevCenterRef.current;
-    if (prev.x !== ro.rectInScreen.center.x || prev.y !== ro.rectInScreen.center.y) {
-      if (override?.kind === 'pending') {
-        setOverride(null);
-      }
-      prevCenterRef.current = ro.rectInScreen.center;
-    }
-  });
-
-  function handlePointerDown(e: React.PointerEvent) {
-    e.stopPropagation();
-    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
-    startRef.current = { x: e.clientX, y: e.clientY };
-    setOverride({ kind: 'dragging', offset: { x: 0, y: 0 } });
-    draggingIdRef.current = ro.obj.id;
-  }
-
-  function handlePointerMove(e: React.PointerEvent) {
-    const start = startRef.current;
-    if (!start) return;
-    setOverride({
-      kind: 'dragging',
-      offset: { x: e.clientX - start.x, y: e.clientY - start.y },
-    });
-  }
-
-  function handlePointerUp(e: React.PointerEvent) {
-    const start = startRef.current;
-    if (!start) return;
-    startRef.current = null;
-    draggingIdRef.current = null;
-    const dx = e.clientX - start.x;
-    const dy = e.clientY - start.y;
-    const dropCenter: Point = {
-      x: ro.rectInScreen.center.x + dx,
-      y: ro.rectInScreen.center.y + dy,
-    };
-    // Keep showing the card at the drop position until server confirms.
-    setOverride({ kind: 'pending', center: dropCenter });
-    onDrop(
-      dropCenter,
-      ro.surface,
-      ro.obj.id,
-      ro.obj.pose.rot,
-    );
-  }
-
-  let displayCenter: Point;
-  if (override?.kind === 'dragging') {
-    displayCenter = {
-      x: ro.rectInScreen.center.x + override.offset.x,
-      y: ro.rectInScreen.center.y + override.offset.y,
-    };
-  } else if (override?.kind === 'pending') {
-    displayCenter = override.center;
-  } else {
-    displayCenter = ro.rectInScreen.center;
-  }
-
+function ObjectView({ ro, selected, displayCenter, onPointerDown, onDoubleClick, onContextMenu, onPointerEnter, onPointerLeave }: ObjectViewProps) {
   const rect: OrientedRect = { ...ro.rectInScreen, center: displayCenter };
   const style = orientedRectToStyle(rect);
-  const isDragging = override?.kind === 'dragging';
+  const isDragging = displayCenter !== ro.rectInScreen.center;
 
   return (
     <div
-      className={`bwc-table-object${isDragging ? ' bwc-dragging' : ''}`}
+      className={`bwc-table-object${isDragging ? ' bwc-dragging' : ''}${selected ? ' bwc-selected' : ''}`}
       style={{
         ...style,
         zIndex: isDragging ? 50000 : ro.obj.z + (ro.surface.kind === 'hand' ? 20000 : 0),
       }}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
+      onPointerDown={e => { e.stopPropagation(); onPointerDown(e, ro); }}
       onDoubleClick={() => onDoubleClick(ro)}
       onContextMenu={e => { e.preventDefault(); onContextMenu(e, ro); }}
       onPointerEnter={() => onPointerEnter(ro)}
@@ -287,6 +190,17 @@ function SeatLabel({ seat, screenOfTable, send }: {
 
 // --- Main component ---
 
+type Interaction =
+  | { kind: 'idle' }
+  | { kind: 'drag';
+      objectIds: string[];
+      origins: Map<string, Point>;
+      fromSurfaces: Map<string, SurfaceId>;
+      startClient: Point;
+      dx: number;
+      dy: number;
+    };
+
 type Props = {
   table: BwcVisibleSurface;
   myHand: BwcVisibleSurface;
@@ -300,7 +214,6 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(TABLE_LOGICAL);
 
-  // Measure container width.
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -329,55 +242,81 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
 
   const rendered: RenderedObject[] = [];
   for (const obj of tableObjects) {
-    const rectInLogical = poseToRect(obj.pose);
     rendered.push({
       obj,
       surface: { kind: 'table' },
-      rectInScreen: transformRect(screenOfTable, rectInLogical),
+      rectInScreen: transformRect(screenOfTable, poseToRect(obj.pose)),
     });
   }
   for (const obj of handObjects) {
-    const rectInLogical = poseToRect(obj.pose);
     rendered.push({
       obj,
       surface: handSurfaceId,
-      rectInScreen: transformRect(screenOfHand, rectInLogical),
+      rectInScreen: transformRect(screenOfHand, poseToRect(obj.pose)),
     });
   }
   rendered.sort((a, b) => a.obj.z - b.obj.z);
 
-  // --- Drag state ---
-  // Each ObjectView manages its own drag offset internally. The parent
-  // only needs to know which object is being dragged (for the R key).
-  const draggingIdRef = useRef<string | null>(null);
+  // --- Interaction state ---
+  const [interaction, setInteraction] = useState<Interaction>({ kind: 'idle' });
   const hoveredRef = useRef<string | null>(null);
 
-  // Rotation contribution from each surface's SE2 (degrees).
-  const tableRotDeg = seatRot * 90;
-  const handRotDeg = 0;
+  // Pending centers: after a drop, show each card at its expected position
+  // until the server confirms. Maps objectId → expected screen center.
+  const [pendingCenters, setPendingCenters] = useState<Map<string, Point>>(new Map());
 
-  function surfaceRotDeg(s: SurfaceId): number {
-    return s.kind === 'table' ? tableRotDeg : handRotDeg;
+  // Clear pending centers when server positions change.
+  const prevCentersRef = useRef(new Map<string, string>());
+  useEffect(() => {
+    const prev = prevCentersRef.current;
+    const next = new Map<string, string>();
+    for (const ro of rendered) {
+      const key = `${ro.rectInScreen.center.x},${ro.rectInScreen.center.y}`;
+      next.set(ro.obj.id, key);
+      if (prev.get(ro.obj.id) !== key && pendingCenters.has(ro.obj.id)) {
+        setPendingCenters(pc => {
+          const copy = new Map(pc);
+          copy.delete(ro.obj.id);
+          return copy;
+        });
+      }
+    }
+    prevCentersRef.current = next;
+  });
+
+  // Compute display center for each object.
+  function getDisplayCenter(ro: RenderedObject): Point {
+    // If pending, show at pending position.
+    const pending = pendingCenters.get(ro.obj.id);
+    if (pending) return pending;
+    // If being dragged, apply offset.
+    if (interaction.kind === 'drag' && interaction.origins.has(ro.obj.id)) {
+      const origin = interaction.origins.get(ro.obj.id)!;
+      return { x: origin.x + interaction.dx, y: origin.y + interaction.dy };
+    }
+    return ro.rectInScreen.center;
   }
 
-  const handleDrop = useCallback((
+  // --- Surface rotation helpers ---
+  const tableRotDeg = seatRot * 90;
+
+  function surfaceRotDeg(s: SurfaceId): number {
+    return s.kind === 'table' ? tableRotDeg : 0;
+  }
+
+  // --- Drop logic (shared for single and future multi-drag) ---
+  function dropObject(
     dropCenterInScreen: Point,
     fromSurface: SurfaceId,
     objectId: string,
     currentRot: number,
-  ) => {
-    // The card's screen rotation during drag is currentRot + fromSurfaceRot.
-    // When dropping on a target surface, adjust pose.rot to preserve
-    // the same screen rotation: newRot + toSurfaceRot = currentRot + fromSurfaceRot.
+  ): Point | null {
     const fromRotDeg = surfaceRotDeg(fromSurface);
-
     function adjustedRot(toSurface: SurfaceId): number {
       const toRotDeg = surfaceRotDeg(toSurface);
       return ((currentRot + fromRotDeg - toRotDeg) % 360 + 360) % 360;
     }
 
-    // For each surface, inverse-transform the drop center to logical space
-    // and find the nearest fully-in-bounds placement.
     const tableSurface: SurfaceId = { kind: 'table' };
     const tableRot = adjustedRot(tableSurface);
     const centerInTable = apply(tableOfScreen, dropCenterInScreen);
@@ -387,11 +326,10 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
     const centerInHand = apply(handOfScreen, dropCenterInScreen);
     const handFit = fitCardInBounds(centerInHand, handRot, HAND_LOGICAL_W, HAND_LOGICAL_H);
 
-    // Pick the surface with least error.
-    type Candidate = { surface: SurfaceId; center: Point; error: number; rot: number };
+    type Candidate = { surface: SurfaceId; center: Point; error: number; rot: number; se2: SE2 };
     const candidates: Candidate[] = [];
-    if (tableFit) candidates.push({ surface: tableSurface, ...tableFit, rot: tableRot });
-    if (handFit) candidates.push({ surface: handSurfaceId, ...handFit, rot: handRot });
+    if (tableFit) candidates.push({ surface: tableSurface, ...tableFit, rot: tableRot, se2: screenOfTable });
+    if (handFit) candidates.push({ surface: handSurfaceId, ...handFit, rot: handRot, se2: screenOfHand });
 
     if (candidates.length > 0) {
       candidates.sort((a, b) => a.error - b.error);
@@ -407,10 +345,77 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
           rot: best.rot,
         },
       });
+      // Return the expected screen center for pending state.
+      const expectedRect = transformRect(best.se2, {
+        center: best.center,
+        halfSize: { x: CARD_W / 2, y: CARD_H / 2 },
+        rotDeg: best.rot,
+      });
+      return expectedRect.center;
     } else {
       send({ type: 'bwc-bring-to-front', surface: fromSurface, objectId });
+      return null;
     }
-  }, [send, tableOfScreen, handOfScreen, playerId, seatRot]);
+  }
+
+  // --- Pointer handlers ---
+
+  const handleObjectPointerDown = useCallback((e: React.PointerEvent, ro: RenderedObject) => {
+    // Capture on the container so we get move/up even if pointer leaves the object.
+    containerRef.current?.setPointerCapture(e.pointerId);
+
+    // Single-card drag (selection behavior will be added in step B).
+    const origins = new Map<string, Point>();
+    origins.set(ro.obj.id, ro.rectInScreen.center);
+    const fromSurfaces = new Map<string, SurfaceId>();
+    fromSurfaces.set(ro.obj.id, ro.surface);
+
+    setInteraction({
+      kind: 'drag',
+      objectIds: [ro.obj.id],
+      origins,
+      fromSurfaces,
+      startClient: { x: e.clientX, y: e.clientY },
+      dx: 0,
+      dy: 0,
+    });
+  }, []);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    setInteraction(prev => {
+      if (prev.kind !== 'drag') return prev;
+      return {
+        ...prev,
+        dx: e.clientX - prev.startClient.x,
+        dy: e.clientY - prev.startClient.y,
+      };
+    });
+  }, []);
+
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    if (interaction.kind !== 'drag') return;
+
+    const dx = e.clientX - interaction.startClient.x;
+    const dy = e.clientY - interaction.startClient.y;
+
+    const newPending = new Map(pendingCenters);
+    for (const objectId of interaction.objectIds) {
+      const origin = interaction.origins.get(objectId)!;
+      const fromSurface = interaction.fromSurfaces.get(objectId)!;
+      const obj = rendered.find(ro => ro.obj.id === objectId)?.obj;
+      const currentRot = obj?.pose.rot ?? 0;
+
+      const dropCenter: Point = { x: origin.x + dx, y: origin.y + dy };
+      const expectedCenter = dropObject(dropCenter, fromSurface, objectId, currentRot);
+      if (expectedCenter) {
+        newPending.set(objectId, expectedCenter);
+      }
+    }
+    setPendingCenters(newPending);
+    setInteraction({ kind: 'idle' });
+  }, [interaction, rendered, pendingCenters, send, tableOfScreen, handOfScreen, playerId, seatRot]);
+
+  // --- Other actions ---
 
   const handleDoubleClick = useCallback((ro: RenderedObject) => {
     send({ type: 'bwc-flip-object', surface: ro.surface, objectId: ro.obj.id });
@@ -418,7 +423,6 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
 
   const handleContextMenu = useCallback((_e: React.MouseEvent, ro: RenderedObject) => {
     if (ro.obj.kind === 'deck') {
-      // Right-click a deck: draw from top.
       send({
         type: 'bwc-draw-from-deck',
         surface: ro.surface,
@@ -446,43 +450,40 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
     }
   }, [send]);
 
-  // "R" key to rotate hovered object.
   const handleRotate = useCallback((objectId: string) => {
-    // Find the object in either surface.
     const tableObj = tableObjects.find(o => o.id === objectId);
     if (tableObj) {
-      const newRot = (tableObj.pose.rot + 90) % 360;
       send({
         type: 'bwc-move-object',
         from: { kind: 'table' },
         objectId,
         to: { kind: 'table' },
-        pose: { ...tableObj.pose, rot: newRot },
+        pose: { ...tableObj.pose, rot: (tableObj.pose.rot + 90) % 360 },
       });
       return;
     }
     const handObj = handObjects.find(o => o.id === objectId);
     if (handObj) {
-      const newRot = (handObj.pose.rot + 90) % 360;
       send({
         type: 'bwc-move-object',
         from: handSurfaceId,
         objectId,
         to: handSurfaceId,
-        pose: { ...handObj.pose, rot: newRot },
+        pose: { ...handObj.pose, rot: (handObj.pose.rot + 90) % 360 },
       });
     }
   }, [send, tableObjects, handObjects, playerId]);
 
-  // Find a rendered object by id.
   function findRendered(objectId: string): RenderedObject | undefined {
     return rendered.find(ro => ro.obj.id === objectId);
   }
 
+  // Keyboard shortcuts.
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      const targetId = draggingIdRef.current ?? hoveredRef.current;
+      const dragId = interaction.kind === 'drag' ? interaction.objectIds[0] : null;
+      const targetId = dragId ?? hoveredRef.current;
       if (!targetId) return;
 
       if (e.key === 'r' || e.key === 'R') {
@@ -504,13 +505,12 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [handleRotate, handleDeckAction, rendered]);
+  }, [handleRotate, handleDeckAction, rendered, interaction]);
 
   const totalHeight = tableScreenH + GAP + HAND_LOGICAL_H * scale;
 
-  // Debug: verify transforms with a test point.
-  const testPtInTable = { x: 0, y: 0 };
-  const testPtInScreen = apply(screenOfTable, testPtInTable);
+  // Debug
+  const testPtInScreen = apply(screenOfTable, { x: 0, y: 0 });
   const roundTrip = apply(tableOfScreen, testPtInScreen);
 
   return (
@@ -518,6 +518,8 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
       ref={containerRef}
       className="bwc-play-area"
       style={{ maxWidth: TABLE_LOGICAL, height: totalHeight }}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
     >
       {/* Debug overlay */}
       <div className="bwc-debug" style={{
@@ -531,7 +533,8 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
         <div>screenOfTable: rot={screenOfTable.rot} s={screenOfTable.scale.toFixed(3)} t=({screenOfTable.translate.x.toFixed(1)},{screenOfTable.translate.y.toFixed(1)})</div>
         <div>screenOfHand: rot={screenOfHand.rot} s={screenOfHand.scale.toFixed(3)} t=({screenOfHand.translate.x.toFixed(1)},{screenOfHand.translate.y.toFixed(1)})</div>
         <div>test: table(0,0) → screen({testPtInScreen.x.toFixed(1)},{testPtInScreen.y.toFixed(1)}) → table({roundTrip.x.toFixed(1)},{roundTrip.y.toFixed(1)})</div>
-        <div>dragging: (see draggingIdRef)</div>
+        <div>interaction: {interaction.kind}{interaction.kind === 'drag' ? ` [${interaction.objectIds.join(',')}] dx=${interaction.dx.toFixed(0)} dy=${interaction.dy.toFixed(0)}` : ''}</div>
+        <div>pending: {pendingCenters.size}</div>
         <div style={{ marginTop: 4 }}>--- rendered objects ---</div>
         {rendered.map(ro => {
           const s = ro.surface.kind === 'table' ? 'T' : 'H';
@@ -571,18 +574,18 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
         />
       ))}
 
-      {/* All objects — each manages its own drag state internally */}
+      {/* All objects */}
       {rendered.map(ro => (
         <ObjectView
           key={ro.obj.id}
           ro={ro}
-          onDrop={handleDrop}
+          selected={false}
+          displayCenter={getDisplayCenter(ro)}
+          onPointerDown={handleObjectPointerDown}
           onDoubleClick={handleDoubleClick}
           onContextMenu={handleContextMenu}
-          onDeckAction={handleDeckAction}
           onPointerEnter={ro => { hoveredRef.current = ro.obj.id; }}
           onPointerLeave={ro => { if (hoveredRef.current === ro.obj.id) hoveredRef.current = null; }}
-          draggingIdRef={draggingIdRef}
         />
       ))}
     </div>
