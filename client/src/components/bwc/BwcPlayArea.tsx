@@ -258,6 +258,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
   rendered.sort((a, b) => a.obj.z - b.obj.z);
 
   // --- Interaction state ---
+  const [selection, setSelection] = useState<Set<string>>(new Set());
   const [interaction, setInteraction] = useState<Interaction>({ kind: 'idle' });
   const hoveredRef = useRef<string | null>(null);
 
@@ -286,14 +287,15 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
 
   // Compute display center for each object.
   function getDisplayCenter(ro: RenderedObject): Point {
-    // If pending, show at pending position.
-    const pending = pendingCenters.get(ro.obj.id);
-    if (pending) return pending;
-    // If being dragged, apply offset.
+    // Active drag takes priority over everything.
     if (interaction.kind === 'drag' && interaction.origins.has(ro.obj.id)) {
       const origin = interaction.origins.get(ro.obj.id)!;
       return { x: origin.x + interaction.dx, y: origin.y + interaction.dy };
     }
+    // Pending (waiting for server confirmation) is next.
+    const pending = pendingCenters.get(ro.obj.id);
+    if (pending) return pending;
+    // Default: server position.
     return ro.rectInScreen.center;
   }
 
@@ -361,25 +363,55 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
   // --- Pointer handlers ---
 
   const handleObjectPointerDown = useCallback((e: React.PointerEvent, ro: RenderedObject) => {
+    if (e.shiftKey) {
+      // Shift-click: toggle this card's membership in the selection.
+      setSelection(prev => {
+        const next = new Set(prev);
+        if (next.has(ro.obj.id)) {
+          next.delete(ro.obj.id);
+        } else {
+          next.add(ro.obj.id);
+        }
+        return next;
+      });
+      // No drag on shift-click.
+      return;
+    }
+
     // Capture on the container so we get move/up even if pointer leaves the object.
     containerRef.current?.setPointerCapture(e.pointerId);
 
-    // Single-card drag (selection behavior will be added in step B).
+    // Determine which objects to drag.
+    let dragIds: string[];
+    if (selection.has(ro.obj.id)) {
+      // Clicked on a selected card: drag the entire selection.
+      dragIds = Array.from(selection);
+    } else {
+      // Clicked on an unselected card: select just this card, drag it.
+      dragIds = [ro.obj.id];
+      setSelection(new Set([ro.obj.id]));
+    }
+
     const origins = new Map<string, Point>();
-    origins.set(ro.obj.id, ro.rectInScreen.center);
     const fromSurfaces = new Map<string, SurfaceId>();
-    fromSurfaces.set(ro.obj.id, ro.surface);
+    for (const id of dragIds) {
+      const r = rendered.find(r => r.obj.id === id);
+      if (r) {
+        origins.set(id, r.rectInScreen.center);
+        fromSurfaces.set(id, r.surface);
+      }
+    }
 
     setInteraction({
       kind: 'drag',
-      objectIds: [ro.obj.id],
+      objectIds: dragIds,
       origins,
       fromSurfaces,
       startClient: { x: e.clientX, y: e.clientY },
       dx: 0,
       dy: 0,
     });
-  }, []);
+  }, [selection, rendered]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     setInteraction(prev => {
@@ -509,10 +541,6 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
 
   const totalHeight = tableScreenH + GAP + HAND_LOGICAL_H * scale;
 
-  // Debug
-  const testPtInScreen = apply(screenOfTable, { x: 0, y: 0 });
-  const roundTrip = apply(tableOfScreen, testPtInScreen);
-
   return (
     <div
       ref={containerRef}
@@ -528,22 +556,22 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
         zIndex: 99999, maxWidth: '400px', maxHeight: '90vh', overflow: 'auto',
         pointerEvents: 'none',
       }}>
-        <div>mySide={mySide} seatRot={seatRot} seatRotDeg={seatRot * 90}</div>
-        <div>scale={scale.toFixed(3)} containerW={containerWidth}</div>
-        <div>screenOfTable: rot={screenOfTable.rot} s={screenOfTable.scale.toFixed(3)} t=({screenOfTable.translate.x.toFixed(1)},{screenOfTable.translate.y.toFixed(1)})</div>
-        <div>screenOfHand: rot={screenOfHand.rot} s={screenOfHand.scale.toFixed(3)} t=({screenOfHand.translate.x.toFixed(1)},{screenOfHand.translate.y.toFixed(1)})</div>
-        <div>test: table(0,0) → screen({testPtInScreen.x.toFixed(1)},{testPtInScreen.y.toFixed(1)}) → table({roundTrip.x.toFixed(1)},{roundTrip.y.toFixed(1)})</div>
-        <div>interaction: {interaction.kind}{interaction.kind === 'drag' ? ` [${interaction.objectIds.join(',')}] dx=${interaction.dx.toFixed(0)} dy=${interaction.dy.toFixed(0)}` : ''}</div>
-        <div>pending: {pendingCenters.size}</div>
-        <div style={{ marginTop: 4 }}>--- rendered objects ---</div>
+        <div>selection: {selection.size === 0 ? '(none)' : Array.from(selection).join(', ')}</div>
+        <div>interaction: {interaction.kind}
+          {interaction.kind === 'drag' && (
+            <> ids=[{interaction.objectIds.join(',')}] dx={interaction.dx.toFixed(0)} dy={interaction.dy.toFixed(0)}</>
+          )}
+        </div>
+        <div>pending: {pendingCenters.size === 0 ? '(none)' : Array.from(pendingCenters.entries()).map(([id, p]) => `${id}@(${p.x.toFixed(0)},${p.y.toFixed(0)})`).join(', ')}</div>
+        <div style={{ marginTop: 4 }}>--- objects ---</div>
         {rendered.map(ro => {
-          const s = ro.surface.kind === 'table' ? 'T' : 'H';
+          const dc = getDisplayCenter(ro);
+          const sel = selection.has(ro.obj.id) ? ' SEL' : '';
+          const pend = pendingCenters.has(ro.obj.id) ? ' PEND' : '';
+          const dragging = (interaction.kind === 'drag' && interaction.origins.has(ro.obj.id)) ? ' DRAG' : '';
           return (
             <div key={ro.obj.id}>
-              {ro.obj.id}[{s}]: pose=({ro.obj.pose.x.toFixed(0)},{ro.obj.pose.y.toFixed(0)},r{ro.obj.pose.rot})
-              → center=({ro.rectInScreen.center.x.toFixed(0)},{ro.rectInScreen.center.y.toFixed(0)})
-              half=({ro.rectInScreen.halfSize.x.toFixed(0)},{ro.rectInScreen.halfSize.y.toFixed(0)})
-              rot={ro.rectInScreen.rotDeg}
+              {ro.obj.id}{sel}{pend}{dragging}: server=({ro.rectInScreen.center.x.toFixed(0)},{ro.rectInScreen.center.y.toFixed(0)}) display=({dc.x.toFixed(0)},{dc.y.toFixed(0)})
             </div>
           );
         })}
@@ -579,7 +607,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
         <ObjectView
           key={ro.obj.id}
           ro={ro}
-          selected={false}
+          selected={selection.has(ro.obj.id)}
           displayCenter={getDisplayCenter(ro)}
           onPointerDown={handleObjectPointerDown}
           onDoubleClick={handleDoubleClick}

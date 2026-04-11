@@ -120,7 +120,7 @@ type ObjectViewProps = {
 
 - [x] **A. Refactor ObjectView** to be presentational. Move pointer
       handlers to the parent. Add `selected` prop with green outline CSS.
-- [ ] **B. Implement selection state + click/shift-click** in
+- [x] **B. Implement selection state + click/shift-click** in
       `BwcPlayArea`.
 - [ ] **C. Implement marquee selection** (drag from empty space).
 - [ ] **D. Implement multi-drag** (drag from selected card moves all
