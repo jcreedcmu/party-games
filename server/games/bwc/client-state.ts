@@ -72,6 +72,7 @@ export type BwcClientSeat = {
   handle: string;
   seat: SeatIndex;
   side: 'N' | 'E' | 'S' | 'W';
+  fraction: number;  // position along side (0..1)
   score: number;
   connected: boolean;
 };
@@ -177,22 +178,20 @@ function projectSurfaceOpaque(surface: import('./types.js').Surface): BwcVisible
   return { id: surface.id, visibility: 'opaque', objectCount: surface.objects.size };
 }
 
-// Placeholder sides until step 6 implements proper seating.
-const SIDES: Array<'N' | 'E' | 'S' | 'W'> = ['S', 'E', 'N', 'W'];
-
 function getPlayingClientState(
   state: BwcPlayingState,
   playerId: PlayerId,
 ): BwcClientPlayingState {
   const seats: BwcClientSeat[] = [];
-  for (const [pid, seatIdx] of state.seats) {
+  for (const [pid, seat] of state.seats) {
     const p = state.players.get(pid);
     if (!p) continue;
     seats.push({
       playerId: pid,
       handle: p.handle,
-      seat: seatIdx,
-      side: SIDES[seatIdx % SIDES.length],
+      seat: seat.seatIndex,
+      side: seat.side,
+      fraction: seat.fraction,
       score: state.scores.get(pid) ?? 0,
       connected: p.connected,
     });
@@ -207,7 +206,7 @@ function getPlayingClientState(
 
   return {
     phase: 'bwc-playing',
-    mySeat: state.seats.get(playerId) ?? 0,
+    mySeat: state.seats.get(playerId)?.seatIndex ?? 0,
     seats,
     table: projectSurfaceFull(state.table, state.library, state.players),
     myHand: myHand

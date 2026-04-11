@@ -1,21 +1,25 @@
-import type { BwcClientCardSummary, ClientMessage, CardId, DrawOp } from '../../types';
+import type { BwcClientCardSummary, ClientMessage, CardId, DrawOp, Side } from '../../types';
 import { LiveCanvas } from '../pictionary/LiveCanvas';
+
+const SIDE_ROTATION: Record<Side, number> = { S: 0, E: 90, N: 180, W: 270 };
 
 type Props = {
   cards: BwcClientCardSummary[];
   canSpawn?: boolean;
+  mySide?: Side;
   send?: (msg: ClientMessage) => void;
   onEdit?: (cardId: CardId, ops: DrawOp[], text: string) => void;
 };
 
-export function CardLibraryPanel({ cards, canSpawn, send, onEdit }: Props) {
+export function CardLibraryPanel({ cards, canSpawn, mySide, send, onEdit }: Props) {
   function handleSpawn(cardId: string) {
     if (!send) return;
+    const rot = mySide ? SIDE_ROTATION[mySide] : 0;
     send({
       type: 'bwc-spawn-card',
       cardId,
       surface: { kind: 'table' },
-      pose: { x: 300 + Math.random() * 200, y: 300 + Math.random() * 200, rot: 0 },
+      pose: { x: 300 + Math.random() * 200, y: 300 + Math.random() * 200, rot },
       faceUp: true,
     });
   }

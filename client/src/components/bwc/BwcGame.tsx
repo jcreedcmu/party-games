@@ -19,6 +19,7 @@ type Props = {
 function BwcPlaying({ state, send }: { state: BwcClientPlayingState; send: (msg: ClientMessage) => void }) {
   const [editor, setEditor] = useState<EditorState>({ mode: 'closed' });
   const [showLibrary, setShowLibrary] = useState(false);
+  const mySide = state.seats.find(s => s.seat === state.mySeat)?.side ?? 'S';
 
   function handleEdit(cardId: CardId, ops: DrawOp[], text: string) {
     setEditor({ mode: 'edit', cardId, ops, text });
@@ -55,9 +56,15 @@ function BwcPlaying({ state, send }: { state: BwcClientPlayingState; send: (msg:
         />
       )}
       {showLibrary && (
-        <CardLibraryPanel cards={state.library} canSpawn send={send} onEdit={handleEdit} />
+        <CardLibraryPanel cards={state.library} canSpawn mySide={mySide} send={send} onEdit={handleEdit} />
       )}
-      <BwcTable table={state.table} library={state.library} send={send} />
+      <BwcTable
+        table={state.table}
+        library={state.library}
+        seats={state.seats}
+        mySide={mySide}
+        send={send}
+      />
     </div>
   );
 }

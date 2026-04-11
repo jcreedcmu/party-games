@@ -1125,6 +1125,23 @@ button:disabled {
   position: relative;
 }
 
+.bwc-seat-label {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10000;
+}
+
+.bwc-seat-label.disconnected {
+  opacity: 0.4;
+}
+
 .bwc-deck-count {
   position: absolute;
   top: 50%;

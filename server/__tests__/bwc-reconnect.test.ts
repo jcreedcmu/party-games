@@ -133,6 +133,38 @@ describe('bwc card creation', () => {
   });
 });
 
+describe('bwc seating', () => {
+  beforeEach(async () => { await startServer(); });
+  afterEach(async () => { await stopServer(); });
+
+  it('assigns seats with correct sides for 4 players', async () => {
+    const c1 = await joinBwc('Alice', 'cid-A');
+    const c2 = await joinBwc('Bob', 'cid-B');
+    const c3 = await joinBwc('Carol', 'cid-C');
+    const c4 = await joinBwc('Dave', 'cid-D');
+    // Drain join broadcasts.
+    await c1.client.next(); await c1.client.next(); await c1.client.next();
+    await c2.client.next(); await c2.client.next();
+    await c3.client.next();
+
+    // Ready all.
+    for (const c of [c1, c2, c3, c4]) c.client.send({ type: 'ready' });
+    // Drain ready broadcasts (3 individual readies + 1 transition).
+    for (const c of [c1, c2, c3, c4]) {
+      // Read until we get a playing state.
+      let msg;
+      do {
+        msg = await c.client.next();
+      } while (msg.type === 'state' && msg.state.phase === 'bwc-waiting');
+
+      if (msg.type === 'state' && msg.state.phase === 'bwc-playing') {
+        const sides = new Set(msg.state.seats.map(s => s.side));
+        expect(sides).toEqual(new Set(['S', 'N', 'E', 'W']));
+      }
+    }
+  });
+});
+
 describe('bwc card editing', () => {
   beforeEach(async () => { await startServer(); });
   afterEach(async () => { await stopServer(); });

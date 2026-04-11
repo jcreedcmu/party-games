@@ -63,6 +63,7 @@ export type {
   CardId,
   ObjectId,
   SeatIndex,
+  Side,
   Pose,
   SurfaceId,
 } from '../../server/games/bwc/types.js';

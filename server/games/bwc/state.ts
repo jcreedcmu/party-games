@@ -11,6 +11,8 @@ import type {
   CardLibrary,
   ObjectId,
   Pose,
+  SeatAssignment,
+  Side,
   Surface,
   SurfaceId,
   TableObject,
@@ -125,6 +127,38 @@ function nextObjectId(state: BwcPlayingState): { state: BwcPlayingState; objectI
   return { state: { ...state, nextObjectId: state.nextObjectId + 1 }, objectId };
 }
 
+// --- Seating algorithm ---
+
+const SIDES: Side[] = ['S', 'N', 'E', 'W'];
+
+// Distribute N players evenly across 4 sides, filling S first.
+function computeSeats(playerIds: PlayerId[]): Map<PlayerId, SeatAssignment> {
+  const n = playerIds.length;
+  const perSide = [0, 0, 0, 0]; // S, E, N, W
+  const base = Math.floor(n / 4);
+  const remainder = n % 4;
+  for (let i = 0; i < 4; i++) {
+    perSide[i] = base + (i < remainder ? 1 : 0);
+  }
+
+  const seats = new Map<PlayerId, SeatAssignment>();
+  let playerIdx = 0;
+  let seatIndex = 0;
+  for (let sideIdx = 0; sideIdx < 4; sideIdx++) {
+    const count = perSide[sideIdx];
+    for (let k = 0; k < count; k++) {
+      seats.set(playerIds[playerIdx], {
+        seatIndex,
+        side: SIDES[sideIdx],
+        fraction: (k + 1) / (count + 1),
+      });
+      playerIdx++;
+      seatIndex++;
+    }
+  }
+  return seats;
+}
+
 // --- Waiting → Playing transition ---
 
 function checkAllReady(state: BwcWaitingState): BwcWaitingState | BwcPlayingState {
@@ -138,12 +172,7 @@ function checkAllReady(state: BwcWaitingState): BwcWaitingState | BwcPlayingStat
     players.set(id, { ...p, ready: false });
   }
 
-  // Placeholder seats — step 6 will implement proper seating.
-  const seats = new Map<PlayerId, number>();
-  let seatIdx = 0;
-  for (const p of connected) {
-    seats.set(p.id, seatIdx++);
-  }
+  const seats = computeSeats(connected.map(p => p.id));
 
   const hands = new Map<PlayerId, Surface>();
   const scores = new Map<PlayerId, number>();

@@ -18,6 +18,15 @@ export type ObjectId = string;
 // 0..N-1, assigned at the waiting → playing transition.
 export type SeatIndex = number;
 
+export type Side = 'S' | 'E' | 'N' | 'W';
+
+export type SeatAssignment = {
+  seatIndex: SeatIndex;
+  side: Side;
+  // Fractional position along the side (0..1), for even spacing.
+  fraction: number;
+};
+
 // --- Cards (library entries) ---
 
 export type Card = {
@@ -80,7 +89,7 @@ export type BwcPlayingState = {
   // CardIds that are currently on a surface, in a deck, or in a hand.
   // A card can only be spawned if it's NOT in this set.
   inPlay: Set<CardId>;
-  seats: Map<PlayerId, SeatIndex>;
+  seats: Map<PlayerId, SeatAssignment>;
   table: Surface;
   hands: Map<PlayerId, Surface>;
   scores: Map<PlayerId, number>;

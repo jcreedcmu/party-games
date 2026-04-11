@@ -385,7 +385,7 @@ as completed per CLAUDE.md.
       editing is the central authoring loop of 1kbwc and deserves time to
       get right before the more mechanical features pile on.
 
-- [ ] **Step 6: Seating.** Implement seating algorithm, assign seats on
+- [x] **Step 6: Seating.** Implement seating algorithm, assign seats on
       `waiting → playing` transition, project `mySeat` per player, and
       apply rotation transform on the client. Add seat avatars/labels.
 
