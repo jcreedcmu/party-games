@@ -122,7 +122,7 @@ type ObjectViewProps = {
       handlers to the parent. Add `selected` prop with green outline CSS.
 - [x] **B. Implement selection state + click/shift-click** in
       `BwcPlayArea`.
-- [ ] **C. Implement marquee selection** (drag from empty space).
+- [x] **C. Implement marquee selection** (drag from empty space).
 - [ ] **D. Implement multi-drag** (drag from selected card moves all
       selected cards). Include pending-center logic.
 - [ ] **E. Update verbs** (form deck, delete, flip, rotate) to operate

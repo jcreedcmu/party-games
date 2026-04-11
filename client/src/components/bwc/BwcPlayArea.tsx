@@ -10,6 +10,7 @@ import { transformRect, orientedRectToStyle, type OrientedRect } from '../../../
 import {
   reduceInteraction,
   getDisplayCenter,
+  getMarqueeRect,
   initialInteractionState,
   type InteractionState,
   type Interaction,
@@ -258,9 +259,15 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
   const hoveredRef = useRef<string | null>(null);
   const { selection, interaction, pendingCenters } = istate;
 
-  const ictx = useMemo(() => ({ rendered }), [rendered]);
+  function getContainerOffset(): Point {
+    const el = containerRef.current;
+    if (!el) return { x: 0, y: 0 };
+    const rect = el.getBoundingClientRect();
+    return { x: rect.left, y: rect.top };
+  }
 
   function dispatch(event: Parameters<typeof reduceInteraction>[1]) {
+    const ictx = { rendered, containerOffset: getContainerOffset() };
     setIstate(prev => reduceInteraction(prev, event, ictx));
   }
 
@@ -349,9 +356,20 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
 
   // --- Pointer handlers ---
 
+  const handleContainerPointerDown = useCallback((e: React.PointerEvent) => {
+    // Only fires if the click was directly on the container (empty space),
+    // not on a card (which calls stopPropagation).
+    containerRef.current?.setPointerCapture(e.pointerId);
+    dispatch({
+      kind: 'space-pointer-down',
+      shiftKey: e.shiftKey,
+      clientX: e.clientX,
+      clientY: e.clientY,
+    });
+  }, [rendered]);
+
   const handleObjectPointerDown = useCallback((e: React.PointerEvent, ro: RenderedObject) => {
     if (!e.shiftKey) {
-      // Capture on the container so we get move/up even outside the object.
       containerRef.current?.setPointerCapture(e.pointerId);
     }
     dispatch({
@@ -361,39 +379,43 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
       clientX: e.clientX,
       clientY: e.clientY,
     });
-  }, [ictx]);
+  }, [rendered]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     dispatch({ kind: 'pointer-move', clientX: e.clientX, clientY: e.clientY });
-  }, [ictx]);
+  }, [rendered]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
-    if (interaction.kind !== 'drag') return;
+    if (interaction.kind === 'drag') {
+      const dx = e.clientX - interaction.startClient.x;
+      const dy = e.clientY - interaction.startClient.y;
 
-    const dx = e.clientX - interaction.startClient.x;
-    const dy = e.clientY - interaction.startClient.y;
+      // Process drops and set pending centers.
+      const newPending = new Map(pendingCenters);
+      for (const objectId of interaction.objectIds) {
+        const origin = interaction.origins.get(objectId)!;
+        const fromSurface = interaction.fromSurfaces.get(objectId)!;
+        const obj = rendered.find(ro => ro.obj.id === objectId)?.obj;
+        const currentRot = obj?.pose.rot ?? 0;
 
-    // Process drops and set pending centers.
-    const newPending = new Map(pendingCenters);
-    for (const objectId of interaction.objectIds) {
-      const origin = interaction.origins.get(objectId)!;
-      const fromSurface = interaction.fromSurfaces.get(objectId)!;
-      const obj = rendered.find(ro => ro.obj.id === objectId)?.obj;
-      const currentRot = obj?.pose.rot ?? 0;
-
-      const dropCenter: Point = { x: origin.x + dx, y: origin.y + dy };
-      const expectedCenter = dropObject(dropCenter, fromSurface, objectId, currentRot);
-      if (expectedCenter) {
-        newPending.set(objectId, expectedCenter);
+        const dropCenter: Point = { x: origin.x + dx, y: origin.y + dy };
+        const expectedCenter = dropObject(dropCenter, fromSurface, objectId, currentRot);
+        if (expectedCenter) {
+          newPending.set(objectId, expectedCenter);
+        }
       }
-    }
 
-    // Transition to idle and set pending centers atomically.
-    setIstate(prev => ({
-      ...reduceInteraction(prev, { kind: 'pointer-up', clientX: e.clientX, clientY: e.clientY }, ictx),
-      pendingCenters: newPending,
-    }));
-  }, [interaction, rendered, pendingCenters, send, tableOfScreen, handOfScreen, playerId, seatRot, ictx]);
+      // Transition to idle and set pending centers atomically.
+      const ictx = { rendered, containerOffset: getContainerOffset() };
+      setIstate(prev => ({
+        ...reduceInteraction(prev, { kind: 'pointer-up', clientX: e.clientX, clientY: e.clientY }, ictx),
+        pendingCenters: newPending,
+      }));
+    } else {
+      // Marquee up or idle — just dispatch (selection computed by reducer).
+      dispatch({ kind: 'pointer-up', clientX: e.clientX, clientY: e.clientY });
+    }
+  }, [interaction, rendered, pendingCenters, send, tableOfScreen, handOfScreen, playerId, seatRot]);
 
   // --- Other actions ---
 
@@ -494,6 +516,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
       ref={containerRef}
       className="bwc-play-area"
       style={{ maxWidth: TABLE_LOGICAL, height: totalHeight }}
+      onPointerDown={handleContainerPointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
     >
@@ -564,6 +587,21 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
           onPointerLeave={ro => { if (hoveredRef.current === ro.obj.id) hoveredRef.current = null; }}
         />
       ))}
+
+      {/* Marquee selection rectangle */}
+      {(() => {
+        const mr = getMarqueeRect(istate, getContainerOffset());
+        if (!mr) return null;
+        return (
+          <div className="bwc-marquee" style={{
+            position: 'absolute',
+            left: mr.left,
+            top: mr.top,
+            width: mr.width,
+            height: mr.height,
+          }} />
+        );
+      })()}
     </div>
   );
 }

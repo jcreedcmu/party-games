@@ -2,6 +2,7 @@ import { describe, test, expect } from 'vitest';
 import {
   reduceInteraction,
   getDisplayCenter,
+  getMarqueeRect,
   initialInteractionState,
   type InteractionState,
   type InteractionContext,
@@ -30,11 +31,15 @@ function makeRo(id: string, center: Point = { x: 100, y: 100 }): RenderedObject 
 }
 
 function ctx(...ros: RenderedObject[]): InteractionContext {
-  return { rendered: ros };
+  return { rendered: ros, containerOffset: { x: 0, y: 0 } };
 }
 
 function pointerDown(objectId: string, x: number, y: number, shiftKey = false) {
   return { kind: 'object-pointer-down' as const, objectId, shiftKey, clientX: x, clientY: y };
+}
+
+function spaceDown(x: number, y: number, shiftKey = false) {
+  return { kind: 'space-pointer-down' as const, shiftKey, clientX: x, clientY: y };
 }
 
 function pointerMove(x: number, y: number) {
@@ -223,5 +228,83 @@ describe('getDisplayCenter', () => {
     const dc = getDisplayCenter(cardA, s);
     // Origin was (100,100), delta is (30,40)
     expect(dc).toEqual({ x: 130, y: 140 });
+  });
+});
+
+describe('marquee selection', () => {
+  // Cards at known screen centers (containerOffset = 0,0 so client = container coords).
+  const cardA = makeRo('a', { x: 100, y: 100 }); // AABB: [50,30] to [150,170]
+  const cardB = makeRo('b', { x: 300, y: 100 }); // AABB: [250,30] to [350,170]
+  const cardC = makeRo('c', { x: 100, y: 300 }); // AABB: [50,230] to [150,370]
+  const c = ctx(cardA, cardB, cardC);
+
+  test('click on empty space clears selection', () => {
+    const s0: InteractionState = {
+      ...initialInteractionState(),
+      selection: new Set(['a', 'b']),
+    };
+    // Pointer down on empty space (no shift).
+    let s = reduceInteraction(s0, spaceDown(400, 400), c);
+    expect(s.selection.size).toBe(0);
+    expect(s.interaction.kind).toBe('marquee');
+    // Pointer up immediately (zero-size marquee hits nothing).
+    s = reduceInteraction(s, pointerUp(400, 400), c);
+    expect(s.selection.size).toBe(0);
+    expect(s.interaction.kind).toBe('idle');
+  });
+
+  test('drag marquee selects intersecting cards', () => {
+    let s = initialInteractionState();
+    // Drag a rectangle from (40, 20) to (160, 180) — should hit card A.
+    s = reduceInteraction(s, spaceDown(40, 20), c);
+    s = reduceInteraction(s, pointerMove(160, 180), c);
+    expect(s.selection).toEqual(new Set(['a']));
+    s = reduceInteraction(s, pointerUp(160, 180), c);
+    expect(s.selection).toEqual(new Set(['a']));
+    expect(s.interaction.kind).toBe('idle');
+  });
+
+  test('large marquee selects multiple cards', () => {
+    let s = initialInteractionState();
+    // Drag a rectangle that covers A and B but not C.
+    s = reduceInteraction(s, spaceDown(0, 0), c);
+    s = reduceInteraction(s, pointerMove(400, 180), c);
+    expect(s.selection).toEqual(new Set(['a', 'b']));
+  });
+
+  test('shift-marquee adds to existing selection', () => {
+    const s0: InteractionState = {
+      ...initialInteractionState(),
+      selection: new Set(['c']),
+    };
+    // Shift-drag over card A — should add A while keeping C.
+    let s = reduceInteraction(s0, spaceDown(40, 20, true), c);
+    s = reduceInteraction(s, pointerMove(160, 180), c);
+    expect(s.selection).toEqual(new Set(['a', 'c']));
+    s = reduceInteraction(s, pointerUp(160, 180), c);
+    expect(s.selection).toEqual(new Set(['a', 'c']));
+  });
+
+  test('marquee that hits nothing results in empty selection', () => {
+    let s: InteractionState = {
+      ...initialInteractionState(),
+      selection: new Set(['a']),
+    };
+    // Drag in empty area.
+    s = reduceInteraction(s, spaceDown(500, 500), c);
+    s = reduceInteraction(s, pointerUp(600, 600), c);
+    expect(s.selection.size).toBe(0);
+  });
+
+  test('getMarqueeRect returns rect during marquee', () => {
+    let s = initialInteractionState();
+    s = reduceInteraction(s, spaceDown(100, 200), c);
+    s = reduceInteraction(s, pointerMove(300, 50), c);
+    const mr = getMarqueeRect(s, { x: 0, y: 0 });
+    expect(mr).toEqual({ left: 100, top: 50, width: 200, height: 150 });
+  });
+
+  test('getMarqueeRect returns null when idle', () => {
+    expect(getMarqueeRect(initialInteractionState(), { x: 0, y: 0 })).toBeNull();
   });
 });

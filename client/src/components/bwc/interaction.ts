@@ -16,6 +16,13 @@ export type Interaction =
       startClient: Point;
       dx: number;
       dy: number;
+    }
+  | { kind: 'marquee';
+      startClient: Point;
+      endClient: Point;
+      shift: boolean;
+      // Selection as it was before the marquee started (for shift-marquee).
+      priorSelection: Set<string>;
     };
 
 export type InteractionState = {
@@ -36,6 +43,7 @@ export function initialInteractionState(): InteractionState {
 
 export type InteractionEvent =
   | { kind: 'object-pointer-down'; objectId: string; shiftKey: boolean; clientX: number; clientY: number }
+  | { kind: 'space-pointer-down'; shiftKey: boolean; clientX: number; clientY: number }
   | { kind: 'pointer-move'; clientX: number; clientY: number }
   | { kind: 'pointer-up'; clientX: number; clientY: number };
 
@@ -43,7 +51,70 @@ export type InteractionEvent =
 
 export type InteractionContext = {
   rendered: RenderedObject[];
+  // The container's bounding rect origin, so we can convert clientX/Y
+  // to container-local coords for marquee rendering and intersection tests.
+  containerOffset: Point;
 };
+
+// --- AABB intersection ---
+
+type AABB = { minX: number; minY: number; maxX: number; maxY: number };
+
+function aabbOfRendered(ro: RenderedObject): AABB {
+  const { center, halfSize, rotDeg } = ro.rectInScreen;
+  // For 90/270° rotations, width and height swap.
+  const r = ((rotDeg % 360) + 360) % 360;
+  const hw = (r === 90 || r === 270) ? halfSize.y : halfSize.x;
+  const hh = (r === 90 || r === 270) ? halfSize.x : halfSize.y;
+  return {
+    minX: center.x - hw,
+    minY: center.y - hh,
+    maxX: center.x + hw,
+    maxY: center.y + hh,
+  };
+}
+
+function aabbIntersects(a: AABB, b: AABB): boolean {
+  return a.minX <= b.maxX && a.maxX >= b.minX
+    && a.minY <= b.maxY && a.maxY >= b.minY;
+}
+
+function marqueeAABB(start: Point, end: Point, containerOffset: Point): AABB {
+  // Convert from client coords to container-local coords.
+  const x1 = start.x - containerOffset.x;
+  const y1 = start.y - containerOffset.y;
+  const x2 = end.x - containerOffset.x;
+  const y2 = end.y - containerOffset.y;
+  return {
+    minX: Math.min(x1, x2),
+    minY: Math.min(y1, y2),
+    maxX: Math.max(x1, x2),
+    maxY: Math.max(y1, y2),
+  };
+}
+
+function computeMarqueeSelection(
+  start: Point,
+  end: Point,
+  shift: boolean,
+  priorSelection: Set<string>,
+  ctx: InteractionContext,
+): Set<string> {
+  const mAABB = marqueeAABB(start, end, ctx.containerOffset);
+  const hit = new Set<string>();
+  for (const ro of ctx.rendered) {
+    if (aabbIntersects(mAABB, aabbOfRendered(ro))) {
+      hit.add(ro.obj.id);
+    }
+  }
+  if (shift) {
+    // Add to prior selection.
+    const result = new Set(priorSelection);
+    for (const id of hit) result.add(id);
+    return result;
+  }
+  return hit;
+}
 
 // --- Reducer ---
 
@@ -103,26 +174,74 @@ export function reduceInteraction(
       };
     }
 
-    case 'pointer-move': {
-      if (state.interaction.kind !== 'drag') return state;
+    case 'space-pointer-down': {
       return {
         ...state,
+        // If not shift, clear selection immediately (will be replaced on up).
+        selection: event.shiftKey ? state.selection : new Set(),
         interaction: {
-          ...state.interaction,
-          dx: event.clientX - state.interaction.startClient.x,
-          dy: event.clientY - state.interaction.startClient.y,
+          kind: 'marquee',
+          startClient: { x: event.clientX, y: event.clientY },
+          endClient: { x: event.clientX, y: event.clientY },
+          shift: event.shiftKey,
+          priorSelection: event.shiftKey ? state.selection : new Set(),
         },
       };
     }
 
+    case 'pointer-move': {
+      if (state.interaction.kind === 'drag') {
+        return {
+          ...state,
+          interaction: {
+            ...state.interaction,
+            dx: event.clientX - state.interaction.startClient.x,
+            dy: event.clientY - state.interaction.startClient.y,
+          },
+        };
+      }
+      if (state.interaction.kind === 'marquee') {
+        const newInteraction = {
+          ...state.interaction,
+          endClient: { x: event.clientX, y: event.clientY },
+        };
+        // Live-update selection during marquee drag.
+        const newSelection = computeMarqueeSelection(
+          state.interaction.startClient,
+          { x: event.clientX, y: event.clientY },
+          state.interaction.shift,
+          state.interaction.priorSelection,
+          ctx,
+        );
+        return {
+          ...state,
+          selection: newSelection,
+          interaction: newInteraction,
+        };
+      }
+      return state;
+    }
+
     case 'pointer-up': {
-      if (state.interaction.kind !== 'drag') return state;
-      // The actual drop (sending messages, computing pending centers) is
-      // handled by the caller — we just transition back to idle.
-      return {
-        ...state,
-        interaction: { kind: 'idle' },
-      };
+      if (state.interaction.kind === 'drag') {
+        return { ...state, interaction: { kind: 'idle' } };
+      }
+      if (state.interaction.kind === 'marquee') {
+        // Final selection from the marquee.
+        const finalSelection = computeMarqueeSelection(
+          state.interaction.startClient,
+          { x: event.clientX, y: event.clientY },
+          state.interaction.shift,
+          state.interaction.priorSelection,
+          ctx,
+        );
+        return {
+          ...state,
+          selection: finalSelection,
+          interaction: { kind: 'idle' },
+        };
+      }
+      return state;
     }
   }
 }
@@ -146,4 +265,23 @@ export function getDisplayCenter(
   if (pending) return pending;
   // Default: server position.
   return ro.rectInScreen.center;
+}
+
+// --- Marquee rect in container-local coords (for rendering) ---
+
+export function getMarqueeRect(
+  state: InteractionState,
+  containerOffset: Point,
+): { left: number; top: number; width: number; height: number } | null {
+  if (state.interaction.kind !== 'marquee') return null;
+  const x1 = state.interaction.startClient.x - containerOffset.x;
+  const y1 = state.interaction.startClient.y - containerOffset.y;
+  const x2 = state.interaction.endClient.x - containerOffset.x;
+  const y2 = state.interaction.endClient.y - containerOffset.y;
+  return {
+    left: Math.min(x1, x2),
+    top: Math.min(y1, y2),
+    width: Math.abs(x2 - x1),
+    height: Math.abs(y2 - y1),
+  };
 }
