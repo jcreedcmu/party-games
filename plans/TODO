@@ -5,6 +5,7 @@ only allow editing your own cards
 organize tests better
 applyOp/replayOp doesn't seem totally coherent, can you undo a clear?
 improve card design. dimensions must be constant regardless of flipping.
+unit test for east-west card spawning?
 
 pictionary
 ----------

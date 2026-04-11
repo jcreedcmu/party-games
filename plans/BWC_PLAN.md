@@ -389,7 +389,7 @@ as completed per CLAUDE.md.
       `waiting → playing` transition, project `mySeat` per player, and
       apply rotation transform on the client. Add seat avatars/labels.
 
-- [ ] **Step 7: Hand surfaces & hidden info.** Each player gets a private
+- [x] **Step 7: Hand surfaces & hidden info.** Each player gets a private
       `Surface` rendered as a second canvas (the "hand tray"). Cross-surface
       moves via `bwc-move-object` (drag from table → hand or vice versa).
       Projection hides other players' hand contents (only count exposed) and

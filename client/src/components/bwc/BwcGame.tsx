@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { BwcClientState, BwcClientPlayingState, ClientMessage, CardId, DrawOp } from '../../types';
 import { WaitingRoom } from '../WaitingRoom';
 import { CardEditor } from './CardEditor';
 import { CardLibraryPanel } from './CardLibraryPanel';
 import { BwcTable } from './BwcTable';
+import { HandTray } from './HandTray';
 
 type EditorState =
   | { mode: 'closed' }
@@ -16,7 +17,7 @@ type Props = {
   send: (msg: ClientMessage) => void;
 };
 
-function BwcPlaying({ state, send }: { state: BwcClientPlayingState; send: (msg: ClientMessage) => void }) {
+function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; playerId: string; send: (msg: ClientMessage) => void }) {
   const [editor, setEditor] = useState<EditorState>({ mode: 'closed' });
   const [showLibrary, setShowLibrary] = useState(false);
   const mySide = state.seats.find(s => s.seat === state.mySeat)?.side ?? 'S';
@@ -62,6 +63,12 @@ function BwcPlaying({ state, send }: { state: BwcClientPlayingState; send: (msg:
         table={state.table}
         library={state.library}
         seats={state.seats}
+        mySide={mySide}
+        send={send}
+      />
+      <HandTray
+        hand={state.myHand}
+        playerId={playerId}
         mySide={mySide}
         send={send}
       />
@@ -115,6 +122,6 @@ export function BwcGame({ state, playerId, send }: Props) {
         </div>
       );
     case 'bwc-playing':
-      return <BwcPlaying state={state} send={send} />;
+      return <BwcPlaying state={state} playerId={playerId} send={send} />;
   }
 }

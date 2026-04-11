@@ -1142,6 +1142,27 @@ button:disabled {
   opacity: 0.4;
 }
 
+.bwc-hand-tray {
+  position: relative;
+  background: #1a4731;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+  max-width: 800px;
+  touch-action: none;
+  user-select: none;
+  overflow: hidden;
+}
+
+.bwc-hand-label {
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.5);
+  pointer-events: none;
+  z-index: 10000;
+}
+
 .bwc-deck-count {
   position: absolute;
   top: 50%;
