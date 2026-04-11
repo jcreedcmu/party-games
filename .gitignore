@@ -3,3 +3,4 @@ dist
 .vite
 preview-dist
 test-results
+data/bwc/table.json

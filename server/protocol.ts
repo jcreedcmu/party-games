@@ -138,6 +138,10 @@ export type BwcAdjustScoreMessage = {
   delta: number;
 };
 
+export type BwcTidyHandMessage = {
+  type: 'bwc-tidy-hand';
+};
+
 export type BwcClientMessage =
   | BwcCreateCardMessage
   | BwcEditCardMessage
@@ -151,7 +155,8 @@ export type BwcClientMessage =
   | BwcShuffleDeckMessage
   | BwcFormDeckMessage
   | BwcSetScoreMessage
-  | BwcAdjustScoreMessage;
+  | BwcAdjustScoreMessage
+  | BwcTidyHandMessage;
 
 export type ClientMessage =
   | CommonClientMessage

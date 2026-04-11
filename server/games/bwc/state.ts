@@ -513,6 +513,43 @@ function resetGame(state: BwcState): BwcWaitingState {
   };
 }
 
+// --- Tidy hand ---
+
+const HAND_LOGICAL_W = 800;
+const HAND_LOGICAL_H = 200;
+const TIDY_CARD_W = 100;
+const TIDY_CARD_H = 140;
+const TIDY_PADDING = 10;
+
+function reduceTidyHand(state: BwcPlayingState, playerId: PlayerId): ReduceResult {
+  const hand = state.hands.get(playerId);
+  if (!hand) return { state, effects: [] };
+
+  const objects = new Map(hand.objects);
+  const sorted = Array.from(objects.values()).sort((a, b) => a.z - b.z);
+
+  // Lay out in a row, centered vertically, starting from the left with padding.
+  const spacing = TIDY_CARD_W + TIDY_PADDING;
+  const totalWidth = sorted.length * TIDY_CARD_W + (sorted.length - 1) * TIDY_PADDING;
+  const startX = Math.max(TIDY_PADDING, (HAND_LOGICAL_W - totalWidth) / 2);
+  const y = (HAND_LOGICAL_H - TIDY_CARD_H) / 2;
+
+  for (let i = 0; i < sorted.length; i++) {
+    const obj = sorted[i];
+    const tidied = {
+      ...obj,
+      pose: { x: startX + i * spacing, y, rot: 0 },
+      z: i + 1,
+      ...(obj.kind === 'card' ? { faceUp: true } : {}),
+    };
+    objects.set(obj.id, tidied as TableObject);
+  }
+
+  const updatedHand: Surface = { ...hand, objects, zCounter: sorted.length + 1 };
+  const s = setSurface(state, updatedHand);
+  return { state: s, effects: [{ type: 'broadcast' }] };
+}
+
 // --- Persistence hooks ---
 
 function withSnapshotDirty(result: ReduceResult): ReduceResult {
@@ -618,6 +655,10 @@ export function bwcReduce(state: ServerState, playerId: PlayerId, msg: ClientMes
       const scores = new Map(state.scores);
       scores.set(msg.playerId, (scores.get(msg.playerId) ?? 0) + msg.delta);
       return withSnapshotDirty({ state: { ...state, scores }, effects: [{ type: 'broadcast' }] });
+    }
+    case 'bwc-tidy-hand': {
+      if (state.phase !== 'bwc-playing') return { state, effects: [] };
+      return withSnapshotDirty(reduceTidyHand(state, playerId));
     }
     default:
       return { state, effects: [] };

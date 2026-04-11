@@ -416,6 +416,6 @@ as completed per CLAUDE.md.
       but leaves the card library intact. Follow the `word-stats` storage
       pattern from the pictionary game module.
 
-- [ ] **Step 11: Polish.** Multi-select drag, a "tidy hand" verb that
+- [x] **Step 11: Polish.** Multi-select drag, a "tidy hand" verb that
       flips every card in the owner's hand face-up and lays them out
       in a neat row, etc. As-needed.

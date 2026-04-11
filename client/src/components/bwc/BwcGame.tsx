@@ -50,6 +50,9 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
         }}>
           Form Deck (all table cards)
         </button>
+        <button onClick={() => send({ type: 'bwc-tidy-hand' })}>
+          Tidy Hand
+        </button>
         <button onClick={() => send({ type: 'reset' })}>
           Reset
         </button>
