@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, useState } from 'react';
+import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import type {
   BwcVisibleObject, BwcVisibleSurface, BwcClientSeat,
   ClientMessage, Pose, Side, SurfaceId,
@@ -7,6 +7,13 @@ import { CardView, CardBack } from './CardView';
 import { SE2, apply, composen, inverse, mkTranslate, mkScale, mkRotate, type Rot } from '../../../../util/se2';
 import type { Point } from '../../../../util/types';
 import { transformRect, orientedRectToStyle, type OrientedRect } from '../../../../util/oriented-rect';
+import {
+  reduceInteraction,
+  getDisplayCenter,
+  initialInteractionState,
+  type InteractionState,
+  type Interaction,
+} from './interaction';
 
 // Logical dimensions.
 const TABLE_LOGICAL = 800;
@@ -190,17 +197,6 @@ function SeatLabel({ seat, screenOfTable, send }: {
 
 // --- Main component ---
 
-type Interaction =
-  | { kind: 'idle' }
-  | { kind: 'drag';
-      objectIds: string[];
-      origins: Map<string, Point>;
-      fromSurfaces: Map<string, SurfaceId>;
-      startClient: Point;
-      dx: number;
-      dy: number;
-    };
-
 type Props = {
   table: BwcVisibleSurface;
   myHand: BwcVisibleSurface;
@@ -257,14 +253,16 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
   }
   rendered.sort((a, b) => a.obj.z - b.obj.z);
 
-  // --- Interaction state ---
-  const [selection, setSelection] = useState<Set<string>>(new Set());
-  const [interaction, setInteraction] = useState<Interaction>({ kind: 'idle' });
+  // --- Interaction state (pure reducer + React wrapper) ---
+  const [istate, setIstate] = useState<InteractionState>(initialInteractionState);
   const hoveredRef = useRef<string | null>(null);
+  const { selection, interaction, pendingCenters } = istate;
 
-  // Pending centers: after a drop, show each card at its expected position
-  // until the server confirms. Maps objectId → expected screen center.
-  const [pendingCenters, setPendingCenters] = useState<Map<string, Point>>(new Map());
+  const ictx = useMemo(() => ({ rendered }), [rendered]);
+
+  function dispatch(event: Parameters<typeof reduceInteraction>[1]) {
+    setIstate(prev => reduceInteraction(prev, event, ictx));
+  }
 
   // Clear pending centers when server positions change.
   const prevCentersRef = useRef(new Map<string, string>());
@@ -274,30 +272,19 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
     for (const ro of rendered) {
       const key = `${ro.rectInScreen.center.x},${ro.rectInScreen.center.y}`;
       next.set(ro.obj.id, key);
-      if (prev.get(ro.obj.id) !== key && pendingCenters.has(ro.obj.id)) {
-        setPendingCenters(pc => {
-          const copy = new Map(pc);
-          copy.delete(ro.obj.id);
-          return copy;
-        });
+      if (prev.get(ro.obj.id) !== key && istate.pendingCenters.has(ro.obj.id)) {
+        setIstate(s => ({
+          ...s,
+          pendingCenters: (() => {
+            const copy = new Map(s.pendingCenters);
+            copy.delete(ro.obj.id);
+            return copy;
+          })(),
+        }));
       }
     }
     prevCentersRef.current = next;
   });
-
-  // Compute display center for each object.
-  function getDisplayCenter(ro: RenderedObject): Point {
-    // Active drag takes priority over everything.
-    if (interaction.kind === 'drag' && interaction.origins.has(ro.obj.id)) {
-      const origin = interaction.origins.get(ro.obj.id)!;
-      return { x: origin.x + interaction.dx, y: origin.y + interaction.dy };
-    }
-    // Pending (waiting for server confirmation) is next.
-    const pending = pendingCenters.get(ro.obj.id);
-    if (pending) return pending;
-    // Default: server position.
-    return ro.rectInScreen.center;
-  }
 
   // --- Surface rotation helpers ---
   const tableRotDeg = seatRot * 90;
@@ -363,66 +350,22 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
   // --- Pointer handlers ---
 
   const handleObjectPointerDown = useCallback((e: React.PointerEvent, ro: RenderedObject) => {
-    if (e.shiftKey) {
-      // Shift-click: toggle this card's membership in the selection.
-      setSelection(prev => {
-        const next = new Set(prev);
-        if (next.has(ro.obj.id)) {
-          next.delete(ro.obj.id);
-        } else {
-          next.add(ro.obj.id);
-        }
-        return next;
-      });
-      // No drag on shift-click.
-      return;
+    if (!e.shiftKey) {
+      // Capture on the container so we get move/up even outside the object.
+      containerRef.current?.setPointerCapture(e.pointerId);
     }
-
-    // Capture on the container so we get move/up even if pointer leaves the object.
-    containerRef.current?.setPointerCapture(e.pointerId);
-
-    // Determine which objects to drag.
-    let dragIds: string[];
-    if (selection.has(ro.obj.id)) {
-      // Clicked on a selected card: drag the entire selection.
-      dragIds = Array.from(selection);
-    } else {
-      // Clicked on an unselected card: select just this card, drag it.
-      dragIds = [ro.obj.id];
-      setSelection(new Set([ro.obj.id]));
-    }
-
-    const origins = new Map<string, Point>();
-    const fromSurfaces = new Map<string, SurfaceId>();
-    for (const id of dragIds) {
-      const r = rendered.find(r => r.obj.id === id);
-      if (r) {
-        origins.set(id, r.rectInScreen.center);
-        fromSurfaces.set(id, r.surface);
-      }
-    }
-
-    setInteraction({
-      kind: 'drag',
-      objectIds: dragIds,
-      origins,
-      fromSurfaces,
-      startClient: { x: e.clientX, y: e.clientY },
-      dx: 0,
-      dy: 0,
+    dispatch({
+      kind: 'object-pointer-down',
+      objectId: ro.obj.id,
+      shiftKey: e.shiftKey,
+      clientX: e.clientX,
+      clientY: e.clientY,
     });
-  }, [selection, rendered]);
+  }, [ictx]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    setInteraction(prev => {
-      if (prev.kind !== 'drag') return prev;
-      return {
-        ...prev,
-        dx: e.clientX - prev.startClient.x,
-        dy: e.clientY - prev.startClient.y,
-      };
-    });
-  }, []);
+    dispatch({ kind: 'pointer-move', clientX: e.clientX, clientY: e.clientY });
+  }, [ictx]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (interaction.kind !== 'drag') return;
@@ -430,6 +373,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
     const dx = e.clientX - interaction.startClient.x;
     const dy = e.clientY - interaction.startClient.y;
 
+    // Process drops and set pending centers.
     const newPending = new Map(pendingCenters);
     for (const objectId of interaction.objectIds) {
       const origin = interaction.origins.get(objectId)!;
@@ -443,9 +387,13 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
         newPending.set(objectId, expectedCenter);
       }
     }
-    setPendingCenters(newPending);
-    setInteraction({ kind: 'idle' });
-  }, [interaction, rendered, pendingCenters, send, tableOfScreen, handOfScreen, playerId, seatRot]);
+
+    // Transition to idle and set pending centers atomically.
+    setIstate(prev => ({
+      ...reduceInteraction(prev, { kind: 'pointer-up', clientX: e.clientX, clientY: e.clientY }, ictx),
+      pendingCenters: newPending,
+    }));
+  }, [interaction, rendered, pendingCenters, send, tableOfScreen, handOfScreen, playerId, seatRot, ictx]);
 
   // --- Other actions ---
 
@@ -514,7 +462,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      const dragId = interaction.kind === 'drag' ? interaction.objectIds[0] : null;
+      const dragId = istate.interaction.kind === 'drag' ? istate.interaction.objectIds[0] : null;
       const targetId = dragId ?? hoveredRef.current;
       if (!targetId) return;
 
@@ -537,7 +485,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [handleRotate, handleDeckAction, rendered, interaction]);
+  }, [handleRotate, handleDeckAction, rendered, istate.interaction]);
 
   const totalHeight = tableScreenH + GAP + HAND_LOGICAL_H * scale;
 
@@ -565,7 +513,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
         <div>pending: {pendingCenters.size === 0 ? '(none)' : Array.from(pendingCenters.entries()).map(([id, p]) => `${id}@(${p.x.toFixed(0)},${p.y.toFixed(0)})`).join(', ')}</div>
         <div style={{ marginTop: 4 }}>--- objects ---</div>
         {rendered.map(ro => {
-          const dc = getDisplayCenter(ro);
+          const dc = getDisplayCenter(ro, istate);
           const sel = selection.has(ro.obj.id) ? ' SEL' : '';
           const pend = pendingCenters.has(ro.obj.id) ? ' PEND' : '';
           const dragging = (interaction.kind === 'drag' && interaction.origins.has(ro.obj.id)) ? ' DRAG' : '';
@@ -608,7 +556,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
           key={ro.obj.id}
           ro={ro}
           selected={selection.has(ro.obj.id)}
-          displayCenter={getDisplayCenter(ro)}
+          displayCenter={getDisplayCenter(ro, istate)}
           onPointerDown={handleObjectPointerDown}
           onDoubleClick={handleDoubleClick}
           onContextMenu={handleContextMenu}
