@@ -30,7 +30,7 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
   return (
     <div className="bwc-page">
       <div className="bwc-topbar">
-        <img src={`${base}1kbwc.png`} alt="1000 Blank White Cards" className="bwc-topbar-logo" />
+        <img src={`${base}1kbwc-titlebar.png`} alt="1000 Blank White Cards" className="bwc-topbar-logo" />
       </div>
       <div className="bwc-body">
         <div className="bwc-main">

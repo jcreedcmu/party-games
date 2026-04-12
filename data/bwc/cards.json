@@ -4156,7 +4156,7 @@
         }
       ],
       "name": "Dinsosaur",
-      "cardType": "",
+      "cardType": "Critter",
       "text": "+100",
       "creator": "Jason",
       "createdAt": "2026-04-11T22:13:03.234Z"
