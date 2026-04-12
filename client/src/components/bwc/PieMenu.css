@@ -1,0 +1,33 @@
+.pie-menu {
+  position: absolute;
+  z-index: 60000;
+  pointer-events: none;
+}
+
+.pie-menu svg {
+  overflow: visible;
+}
+
+.pie-slice {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.pie-slice path {
+  fill: rgba(0, 0, 0, 0.8);
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 1;
+  transition: fill 0.1s;
+}
+
+.pie-slice:hover path {
+  fill: rgba(74, 222, 128, 0.9);
+}
+
+.pie-slice text {
+  fill: #fff;
+  font-size: 9px;
+  font-weight: bold;
+  pointer-events: none;
+  user-select: none;
+}

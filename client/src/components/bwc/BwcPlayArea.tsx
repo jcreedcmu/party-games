@@ -4,6 +4,7 @@ import type {
   ClientMessage, Pose, Side, SurfaceId,
 } from '../../types';
 import { CardView, CardBack } from './CardView';
+import { PieMenu, type PieMenuItem } from './PieMenu';
 import { SE2, apply, composen, inverse, mkTranslate, mkScale, mkRotate, type Rot } from '../../../../util/se2';
 import type { Point } from '../../../../util/types';
 import { transformRect, orientedRectToStyle, type OrientedRect } from '../../../../util/oriented-rect';
@@ -249,6 +250,10 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
   }
   rendered.sort((a, b) => a.obj.z - b.obj.z);
 
+  // --- Pie menu state ---
+  type PieMenuState = { position: Point; items: PieMenuItem[] } | null;
+  const [pieMenu, setPieMenu] = useState<PieMenuState>(null);
+
   // --- Interaction state (pure reducer + React wrapper) ---
   const [istate, setIstate] = useState<InteractionState>(initialInteractionState);
   const hoveredRef = useRef<string | null>(null);
@@ -362,6 +367,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
   const handleContainerPointerDown = useCallback((e: React.PointerEvent) => {
     // Only fires if the click was directly on the container (empty space),
     // not on a card (which calls stopPropagation).
+    setPieMenu(null);
     containerRef.current?.setPointerCapture(e.pointerId);
     dispatch({
       kind: 'space-pointer-down',
@@ -424,20 +430,6 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
 
   const handleDoubleClick = useCallback((ro: RenderedObject) => {
     send({ type: 'bwc-flip-object', surface: ro.surface, objectId: ro.obj.id });
-  }, [send]);
-
-  const handleContextMenu = useCallback((_e: React.MouseEvent, ro: RenderedObject) => {
-    if (ro.obj.kind === 'deck') {
-      send({
-        type: 'bwc-draw-from-deck',
-        surface: ro.surface,
-        deckId: ro.obj.id,
-        to: ro.surface,
-        pose: { x: ro.obj.pose.x + CARD_W + 10, y: ro.obj.pose.y, rot: ro.obj.pose.rot },
-      });
-    } else {
-      send({ type: 'bwc-delete-object', surface: ro.surface, objectId: ro.obj.id });
-    }
   }, [send]);
 
   const handleDeckAction = useCallback((action: 'draw' | 'shuffle', ro: RenderedObject) => {
@@ -527,6 +519,45 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
       });
     }
   }, [send, rendered, rotateSingle]);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent, ro: RenderedObject) => {
+    const containerOffset = getContainerOffset();
+    const pos: Point = { x: e.clientX - containerOffset.x, y: e.clientY - containerOffset.y };
+
+    const items: PieMenuItem[] = [];
+
+    if (ro.obj.kind === 'deck') {
+      items.push({
+        label: 'Draw',
+        action: () => send({
+          type: 'bwc-draw-from-deck',
+          surface: ro.surface,
+          deckId: ro.obj.id,
+          to: ro.surface,
+          pose: { x: ro.obj.pose.x + CARD_W + 10, y: ro.obj.pose.y, rot: ro.obj.pose.rot },
+        }),
+      });
+      items.push({
+        label: 'Shuffle',
+        action: () => send({ type: 'bwc-shuffle-deck', surface: ro.surface, deckId: ro.obj.id }),
+      });
+    }
+
+    items.push({
+      label: 'Flip',
+      action: () => send({ type: 'bwc-flip-object', surface: ro.surface, objectId: ro.obj.id }),
+    });
+    items.push({
+      label: 'Rotate',
+      action: () => rotateSingle(ro.obj.id),
+    });
+    items.push({
+      label: 'Delete',
+      action: () => send({ type: 'bwc-delete-object', surface: ro.surface, objectId: ro.obj.id }),
+    });
+
+    setPieMenu({ position: pos, items });
+  }, [send, rotateSingle]);
 
   function findRendered(objectId: string): RenderedObject | undefined {
     return rendered.find(ro => ro.obj.id === objectId);
@@ -663,6 +694,15 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
           }} />
         );
       })()}
+
+      {/* Pie menu */}
+      {pieMenu && (
+        <PieMenu
+          position={pieMenu.position}
+          items={pieMenu.items}
+          onClose={() => setPieMenu(null)}
+        />
+      )}
     </div>
   );
 }
