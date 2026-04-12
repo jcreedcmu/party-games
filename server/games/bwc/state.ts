@@ -192,17 +192,40 @@ function checkAllReady(state: BwcWaitingState): BwcWaitingState | BwcPlayingStat
     scores.set(p.id, 0);
   }
 
+  // Start with all library cards in a single shuffled deck at the center.
+  const table = emptySurface({ kind: 'table' });
+  const inPlay = new Set<CardId>();
+  let nextObjId = 1;
+  const allCardIds = shuffle(Array.from(state.library.keys()));
+
+  if (allCardIds.length > 0) {
+    const deckId = `obj-${nextObjId++}`;
+    const deck: TableObject = {
+      kind: 'deck',
+      id: deckId,
+      cardIds: allCardIds,
+      pose: { x: 450 - 50, y: 450 - 70, rot: 0 },
+      faceUp: false,
+      z: 1,
+    };
+    table.objects.set(deckId, deck);
+    table.zCounter = 1;
+    for (const cid of allCardIds) {
+      inPlay.add(cid);
+    }
+  }
+
   return {
     phase: 'bwc-playing',
     players,
     nextPlayerId: state.nextPlayerId,
     library: state.library,
-    inPlay: new Set(),
+    inPlay,
     seats,
-    table: emptySurface({ kind: 'table' }),
+    table,
     hands,
     scores,
-    nextObjectId: 1,
+    nextObjectId: nextObjId,
   };
 }
 

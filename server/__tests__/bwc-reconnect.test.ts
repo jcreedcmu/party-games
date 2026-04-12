@@ -254,18 +254,30 @@ describe('bwc playing phase', () => {
       expect(playingState.state.phase).toBe('bwc-playing');
     }
 
-    // Spawn the card on the table.
+    // The card should be in a shuffled deck on the table (initial state).
+    // The deck object id is 'obj-1' since it's created first.
+    if (playingState.type === 'state' && playingState.state.phase === 'bwc-playing') {
+      const table = playingState.state.table;
+      if (table.visibility === 'full') {
+        expect(table.objects.length).toBe(1);
+        expect(table.objects[0].kind).toBe('deck');
+      }
+    }
+
+    // Draw the card from the deck.
     c1.send({
-      type: 'bwc-spawn-card',
-      cardId: cardId!,
+      type: 'bwc-draw-from-deck',
       surface: { kind: 'table' },
+      deckId: 'obj-1',
+      to: { kind: 'table' },
       pose: { x: 100, y: 200, rot: 0 },
-      faceUp: true,
     });
-    const afterSpawn = await c1.next();
+    const afterDraw = await c1.next();
     await c2.next();
-    if (afterSpawn.type === 'state' && afterSpawn.state.phase === 'bwc-playing') {
-      const table = afterSpawn.state.table;
+    // Deck had 1 card, so it's removed after draw. Card is now on the table.
+    let drawnObjId: string | undefined;
+    if (afterDraw.type === 'state' && afterDraw.state.phase === 'bwc-playing') {
+      const table = afterDraw.state.table;
       if (table.visibility === 'full') {
         expect(table.objects.length).toBe(1);
         const obj = table.objects[0];
@@ -273,15 +285,17 @@ describe('bwc playing phase', () => {
         if (obj.kind === 'card') {
           expect(obj.faceUp).toBe(true);
           expect(obj.card?.text).toBe('Test card');
+          drawnObjId = obj.id;
         }
       }
     }
+    expect(drawnObjId).toBeDefined();
 
     // Move the card.
     c1.send({
       type: 'bwc-move-object',
       from: { kind: 'table' },
-      objectId: 'obj-1',
+      objectId: drawnObjId!,
       to: { kind: 'table' },
       pose: { x: 300, y: 400, rot: 90 },
     });
@@ -295,7 +309,7 @@ describe('bwc playing phase', () => {
     }
 
     // Flip the card face-down.
-    c1.send({ type: 'bwc-flip-object', surface: { kind: 'table' }, objectId: 'obj-1' });
+    c1.send({ type: 'bwc-flip-object', surface: { kind: 'table' }, objectId: drawnObjId! });
     const afterFlip = await c1.next();
     await c2.next();
     if (afterFlip.type === 'state' && afterFlip.state.phase === 'bwc-playing') {
@@ -303,7 +317,6 @@ describe('bwc playing phase', () => {
       if (table.visibility === 'full' && table.objects.length === 1) {
         const obj = table.objects[0];
         expect(obj.faceUp).toBe(false);
-        // Face-down card should NOT expose card data.
         if (obj.kind === 'card') {
           expect(obj.card).toBeUndefined();
         }
@@ -311,7 +324,7 @@ describe('bwc playing phase', () => {
     }
 
     // Delete the card (returns to library).
-    c1.send({ type: 'bwc-delete-object', surface: { kind: 'table' }, objectId: 'obj-1' });
+    c1.send({ type: 'bwc-delete-object', surface: { kind: 'table' }, objectId: drawnObjId! });
     const afterDelete = await c1.next();
     await c2.next();
     if (afterDelete.type === 'state' && afterDelete.state.phase === 'bwc-playing') {
@@ -319,7 +332,6 @@ describe('bwc playing phase', () => {
       if (table.visibility === 'full') {
         expect(table.objects.length).toBe(0);
       }
-      // Card is back in the library and can be spawned again.
       expect(afterDelete.state.library.length).toBe(1);
     }
   });
