@@ -89,22 +89,9 @@ function GameShell({ gameState, playerId, gameType, connected, reconnect, send, 
     content = <PictionaryGame state={gameState as PictionaryClientState} playerId={playerId} send={send} onRelay={onRelay} addWordResult={addWordResult} clearAddWordResult={clearAddWordResult} />;
   }
 
-  // BWC playing phase gets its own full-page layout.
+  // BWC playing phase provides its own full-page layout.
   if (isBwcPlaying) {
-    return (
-      <div className="bwc-page">
-        <div className="bwc-topbar">
-          <img src={getLogo(gameType)} alt={getLogoAlt(gameType)} className="bwc-topbar-logo" />
-          {disconnectBanner}
-        </div>
-        <div className="bwc-body">
-          <div className="bwc-main">
-            {content}
-          </div>
-          <div className="bwc-sidebar" />
-        </div>
-      </div>
-    );
+    return <>{disconnectBanner}{content}</>;
   }
 
   return (

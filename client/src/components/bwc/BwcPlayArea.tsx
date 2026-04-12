@@ -17,10 +17,10 @@ import {
 } from './interaction';
 
 // Logical dimensions.
+// The combined spaces aspect ratio is 6:7 (table is 6:6 square, hand is 6:1).
 const TABLE_LOGICAL = 800;
 const HAND_LOGICAL_W = 800;
-const HAND_LOGICAL_H = 200;
-const GAP = 8; // screen px between table and hand
+const HAND_LOGICAL_H = 800 / 6;  // 1/6 of the table width = 1 unit in the 6:7 ratio
 const CARD_W = 100;  // logical width of a card
 const CARD_H = 140;  // logical height (5:7 aspect ratio, matching standard playing cards)
 
@@ -42,7 +42,7 @@ function buildScreenOfTable(scale: number, seatRot: Rot): SE2 {
 // Build the SE2 that maps hand-logical coords → screen coords.
 function buildScreenOfHand(scale: number, tableScreenH: number): SE2 {
   return composen(
-    mkTranslate({ x: 0, y: tableScreenH + GAP }),
+    mkTranslate({ x: 0, y: tableScreenH }),
     mkScale(scale),
   );
 }
@@ -229,7 +229,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
   const screenOfTable = buildScreenOfTable(scale, seatRot);
   const tableOfScreen = inverse(screenOfTable);
   const tableScreenH = TABLE_LOGICAL * scale;
-  const screenOfHand = buildScreenOfHand(scale, tableScreenH);
+  const screenOfHand = buildScreenOfHand(scale, tableScreenH); // hand starts right below the table
   const handOfScreen = inverse(screenOfHand);
   const handSurfaceId: SurfaceId = { kind: 'hand', ownerId: playerId };
 
@@ -574,13 +574,10 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
     return () => window.removeEventListener('keydown', handleKey);
   }, [rotateSingle, rotateGroup, handleDeckAction, rendered, istate.selection]);
 
-  const totalHeight = tableScreenH + GAP + HAND_LOGICAL_H * scale;
-
   return (
     <div
       ref={containerRef}
-      className="bwc-play-area"
-      style={{ height: totalHeight }}
+      className="bwc-spaces"
       onPointerDown={handleContainerPointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -627,19 +624,9 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
       })()}
 
       {/* Table background */}
-      <div
-        className="bwc-table-bg"
-        style={{ width: containerWidth, height: tableScreenH }}
-      />
+      <div className="bwc-table" />
       {/* Hand background */}
-      <div
-        className="bwc-hand-bg"
-        style={{
-          width: containerWidth,
-          height: HAND_LOGICAL_H * scale,
-          top: tableScreenH + GAP,
-        }}
-      />
+      <div className="bwc-hand" />
 
       {/* Seat labels */}
       {seats.map(seat => (

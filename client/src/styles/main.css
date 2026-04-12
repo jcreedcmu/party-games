@@ -960,18 +960,22 @@ button:disabled {
 /* --- BWC page layout --- */
 
 .bwc-page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
 }
 
 .bwc-topbar {
+  height: 3em;
+  background: #3ecfa5;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  padding: 0.25rem 1rem;
-  background: #2d6a4f;
-  flex-shrink: 0;
+  padding: 0 1rem;
 }
 
 .bwc-topbar-logo {
@@ -981,23 +985,45 @@ button:disabled {
 
 .bwc-body {
   display: flex;
-  flex: 1;
+  flex-direction: row;
+  flex-grow: 1;
+  flex-shrink: 1;
   min-height: 0;
-  padding: 0.5rem;
-  gap: 0.5rem;
 }
 
 .bwc-main {
-  flex: 1;
-  min-width: 0;
-  overflow: auto;
+  padding: 1em;
+  container-type: size;
+  background-color: #333;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .bwc-sidebar {
+  background-color: #ddd;
   width: 10rem;
   flex-shrink: 0;
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 8px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  overflow-y: auto;
+}
+
+.bwc-sidebar button {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  background: #eee;
+}
+
+.bwc-sidebar button:hover {
+  background: #ddd;
 }
 
 /* --- BWC --- */
@@ -1100,39 +1126,28 @@ button:disabled {
   cursor: pointer;
 }
 
-/* --- BWC Playing --- */
 
-.bwc-playing {
-  width: 100%;
-}
-
-.bwc-playing-toolbar {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.bwc-play-area {
+.bwc-spaces {
+  --ar-w: 6;
+  --ar-h: 7;
+  aspect-ratio: var(--ar-w) / var(--ar-h);
+  width: min(100cqw, calc(100cqh * var(--ar-w) / var(--ar-h)));
   position: relative;
-  width: 100%;
   touch-action: none;
   user-select: none;
 }
 
-.bwc-table-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  background: #2d6a4f;
-  border-radius: 12px;
+.bwc-table {
+  aspect-ratio: 1;
+  background-color: #070;
+  border-radius: 1em;
 }
 
-.bwc-hand-bg {
-  position: absolute;
-  left: 0;
-  background: #1a4731;
-  border-radius: 8px;
+.bwc-hand {
+  aspect-ratio: 6 / 1;
+  border-top: 1px solid #333;
+  background-color: #070;
+  border-radius: 1em;
 }
 
 .bwc-table-object {

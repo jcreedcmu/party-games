@@ -4126,10 +4126,37 @@
           "x": 16,
           "y": 11,
           "color": "#3498db"
+        },
+        {
+          "type": "draw-undo"
+        },
+        {
+          "type": "draw-undo"
+        },
+        {
+          "type": "draw-undo"
+        },
+        {
+          "type": "draw-undo"
+        },
+        {
+          "type": "draw-undo"
+        },
+        {
+          "type": "draw-undo"
+        },
+        {
+          "type": "draw-undo"
+        },
+        {
+          "type": "draw-undo"
+        },
+        {
+          "type": "draw-undo"
         }
       ],
-      "name": "Dinosaur",
-      "cardType": "Critter",
+      "name": "",
+      "cardType": "",
       "text": "+100",
       "creator": "Jason",
       "createdAt": "2026-04-11T22:13:03.234Z"

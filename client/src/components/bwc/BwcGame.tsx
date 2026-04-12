@@ -25,52 +25,61 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
     setEditor({ mode: 'edit', cardId, ops, name, cardType, text });
   }
 
+  const base = import.meta.env.BASE_URL;
+
   return (
-    <div className="bwc-playing">
-      <div className="bwc-playing-toolbar">
-        <button onClick={() => setEditor(e => e.mode === 'create' ? { mode: 'closed' } : { mode: 'create' })}>
-          {editor.mode === 'create' ? 'Close Editor' : 'New Card'}
-        </button>
-        <button onClick={() => setShowLibrary(l => !l)}>
-          {showLibrary ? 'Hide Library' : `Library (${state.library.length})`}
-        </button>
-        <button onClick={() => send({ type: 'bwc-tidy-hand' })}>
-          Tidy Hand
-        </button>
-        <button onClick={() => send({ type: 'reset' })}>
-          Reset
-        </button>
+    <div className="bwc-page">
+      <div className="bwc-topbar">
+        <img src={`${base}1kbwc.png`} alt="1000 Blank White Cards" className="bwc-topbar-logo" />
       </div>
-      {editor.mode === 'create' && (
-        <CardEditor
-          key="create"
-          send={send}
-          onDone={() => setEditor({ mode: 'closed' })}
-        />
-      )}
-      {editor.mode === 'edit' && (
-        <CardEditor
-          key={`edit-${editor.cardId}`}
-          send={send}
-          onDone={() => setEditor({ mode: 'closed' })}
-          editingCardId={editor.cardId}
-          initialOps={editor.ops}
-          initialName={editor.name}
-          initialCardType={editor.cardType}
-          initialText={editor.text}
-        />
-      )}
-      {showLibrary && (
-        <CardLibraryPanel cards={state.library} canSpawn mySide={mySide} send={send} onEdit={handleEdit} />
-      )}
-      <BwcPlayArea
-        table={state.table}
-        myHand={state.myHand}
-        seats={state.seats}
-        mySide={mySide}
-        playerId={playerId}
-        send={send}
-      />
+      <div className="bwc-body">
+        <div className="bwc-main">
+          <BwcPlayArea
+            table={state.table}
+            myHand={state.myHand}
+            seats={state.seats}
+            mySide={mySide}
+            playerId={playerId}
+            send={send}
+          />
+        </div>
+        <div className="bwc-sidebar">
+          <button onClick={() => setEditor(e => e.mode === 'create' ? { mode: 'closed' } : { mode: 'create' })}>
+            {editor.mode === 'create' ? 'Close Editor' : 'New Card'}
+          </button>
+          <button onClick={() => setShowLibrary(l => !l)}>
+            {showLibrary ? 'Hide Library' : `Library (${state.library.length})`}
+          </button>
+          <button onClick={() => send({ type: 'bwc-tidy-hand' })}>
+            Tidy Hand
+          </button>
+          <button onClick={() => send({ type: 'reset' })}>
+            Reset
+          </button>
+          {editor.mode === 'create' && (
+            <CardEditor
+              key="create"
+              send={send}
+              onDone={() => setEditor({ mode: 'closed' })}
+            />
+          )}
+          {editor.mode === 'edit' && (
+            <CardEditor
+              key={`edit-${editor.cardId}`}
+              send={send}
+              onDone={() => setEditor({ mode: 'closed' })}
+              editingCardId={editor.cardId}
+              initialOps={editor.ops}
+              initialName={editor.name}
+              initialCardType={editor.cardType}
+              initialText={editor.text}
+            />
+          )}
+          {showLibrary && (
+            <CardLibraryPanel cards={state.library} canSpawn mySide={mySide} send={send} onEdit={handleEdit} />
+          )}
+        </div>
+      </div>
     </div>
   );
 }
