@@ -654,9 +654,9 @@ function reduceTidyHand(state: BwcPlayingState, playerId: PlayerId): ReduceResul
   if (!hand) return { state, effects: [] };
 
   const objects = new Map(hand.objects);
-  const sorted = Array.from(objects.values()).sort((a, b) => a.z - b.z);
+  const sorted = Array.from(objects.values()).sort((a, b) => a.pose.x - b.pose.x);
 
-  // Lay out in a row, centered vertically, starting from the left with padding.
+  // Lay out in a row preserving relative x-order, centered vertically.
   const spacing = TIDY_CARD_W + TIDY_PADDING;
   const totalWidth = sorted.length * TIDY_CARD_W + (sorted.length - 1) * TIDY_PADDING;
   const startX = Math.max(TIDY_PADDING, (HAND_LOGICAL_W - totalWidth) / 2);
