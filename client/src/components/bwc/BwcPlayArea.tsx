@@ -585,34 +585,6 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
     >
-      {/* Debug overlay */}
-      <div className="bwc-debug" style={{
-        position: 'fixed', top: 0, right: 0, background: 'rgba(0,0,0,0.85)',
-        color: '#0f0', fontFamily: 'monospace', fontSize: '11px', padding: '8px',
-        zIndex: 99999, maxWidth: '400px', maxHeight: '90vh', overflow: 'auto',
-        pointerEvents: 'none',
-      }}>
-        <div>selection: {selection.size === 0 ? '(none)' : Array.from(selection).join(', ')}</div>
-        <div>interaction: {interaction.kind}
-          {interaction.kind === 'drag' && (
-            <> ids=[{interaction.objectIds.join(',')}] dx={interaction.dx.toFixed(0)} dy={interaction.dy.toFixed(0)}</>
-          )}
-        </div>
-        <div>pending: {pendingCenters.size === 0 ? '(none)' : Array.from(pendingCenters.entries()).map(([id, p]) => `${id}@(${p.x.toFixed(0)},${p.y.toFixed(0)})`).join(', ')}</div>
-        <div style={{ marginTop: 4 }}>--- objects ---</div>
-        {rendered.map(ro => {
-          const dc = getDisplayCenter(ro, istate);
-          const sel = selection.has(ro.obj.id) ? ' SEL' : '';
-          const pend = pendingCenters.has(ro.obj.id) ? ' PEND' : '';
-          const dragging = (interaction.kind === 'drag' && interaction.origins.has(ro.obj.id)) ? ' DRAG' : '';
-          return (
-            <div key={ro.obj.id}>
-              {ro.obj.id}{sel}{pend}{dragging}: server=({ro.rectInScreen.center.x.toFixed(0)},{ro.rectInScreen.center.y.toFixed(0)}) display=({dc.x.toFixed(0)},{dc.y.toFixed(0)})
-            </div>
-          );
-        })}
-      </div>
-
       {/* Selection actions */}
       {istate.selection.size >= 2 && (() => {
         // Check if selection is all cards on the same surface.

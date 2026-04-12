@@ -1,19 +1,19 @@
 1kbwc
 -----
 
+full frame the table? (or at least close to)
+always increase z-index to max
+pie menus for context actions?
+
 only allow editing your own cards
 organize tests better
 applyOp/replayOp doesn't seem totally coherent, can you undo a clear?
-make sure drawing widget aspect ratio is right
 unit test for east-west card spawning?
-always increase z-index to max
-full frame the table? (or at least close to)
-drop debugging
-pie menus for context actions?
 push player badges off of the table onto the border
 account for all key shortcuts; there shouldn't be any that magically move cards between hand and table
 account for all uses of card centers geometrically
 player scores off to the side
+players all oriented the same way
 
 pictionary
 ----------
