@@ -293,7 +293,14 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
     prevCentersRef.current = next;
   });
 
-  // --- Surface rotation helpers ---
+  // --- Surface helpers ---
+
+  function surfaceBounds(s: SurfaceId): { w: number; h: number } {
+    return s.kind === 'table'
+      ? { w: TABLE_LOGICAL, h: TABLE_LOGICAL }
+      : { w: HAND_LOGICAL_W, h: HAND_LOGICAL_H };
+  }
+
   const tableRotDeg = seatRot * 90;
 
   function surfaceRotDeg(s: SurfaceId): number {
@@ -452,29 +459,78 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
     }
   }, [send]);
 
-  const handleRotate = useCallback((objectId: string) => {
-    const tableObj = tableObjects.find(o => o.id === objectId);
-    if (tableObj) {
-      send({
-        type: 'bwc-move-object',
-        from: { kind: 'table' },
-        objectId,
-        to: { kind: 'table' },
-        pose: { ...tableObj.pose, rot: (tableObj.pose.rot + 90) % 360 },
-      });
+  // Rotate a single object around its own center, clamping to bounds.
+  const rotateSingle = useCallback((objectId: string) => {
+    const ro = rendered.find(r => r.obj.id === objectId);
+    if (!ro) return;
+    const newRot = (ro.obj.pose.rot + 90) % 360;
+    const { w: boundsW, h: boundsH } = surfaceBounds(ro.surface);
+    const center = { x: ro.obj.pose.x + CARD_W / 2, y: ro.obj.pose.y + CARD_H / 2 };
+    const fit = fitCardInBounds(center, newRot, boundsW, boundsH);
+    const finalCenter = fit ? fit.center : center;
+    send({
+      type: 'bwc-move-object',
+      from: ro.surface,
+      objectId,
+      to: ro.surface,
+      pose: {
+        x: finalCenter.x - CARD_W / 2,
+        y: finalCenter.y - CARD_H / 2,
+        rot: newRot,
+      },
+    });
+  }, [send, rendered]);
+
+  // Rotate a group of objects around their collective center.
+  // Each object's center is rotated 90° CW around the centroid,
+  // and each object's individual rotation increases by 90°.
+  // Final positions are clamped to stay in bounds.
+  const rotateGroup = useCallback((objectIds: Set<string>) => {
+    const ros = rendered.filter(r => objectIds.has(r.obj.id));
+    if (ros.length === 0) return;
+    if (ros.length === 1) {
+      rotateSingle(ros[0].obj.id);
       return;
     }
-    const handObj = handObjects.find(o => o.id === objectId);
-    if (handObj) {
+
+    const surface = ros[0].surface;
+    const { w: boundsW, h: boundsH } = surfaceBounds(surface);
+
+    // Compute centroid in logical space.
+    let cx = 0, cy = 0;
+    for (const ro of ros) {
+      cx += ro.obj.pose.x + CARD_W / 2;
+      cy += ro.obj.pose.y + CARD_H / 2;
+    }
+    cx /= ros.length;
+    cy /= ros.length;
+
+    for (const ro of ros) {
+      const centerX = ro.obj.pose.x + CARD_W / 2;
+      const centerY = ro.obj.pose.y + CARD_H / 2;
+      const dx = centerX - cx;
+      const dy = centerY - cy;
+      const newCenterX = cx + dy;
+      const newCenterY = cy - dx;
+      const newRot = (ro.obj.pose.rot + 90) % 360;
+
+      // Clamp to keep card in bounds.
+      const fit = fitCardInBounds({ x: newCenterX, y: newCenterY }, newRot, boundsW, boundsH);
+      const finalCenter = fit ? fit.center : { x: newCenterX, y: newCenterY };
+
       send({
         type: 'bwc-move-object',
-        from: handSurfaceId,
-        objectId,
-        to: handSurfaceId,
-        pose: { ...handObj.pose, rot: (handObj.pose.rot + 90) % 360 },
+        from: surface,
+        objectId: ro.obj.id,
+        to: surface,
+        pose: {
+          x: finalCenter.x - CARD_W / 2,
+          y: finalCenter.y - CARD_H / 2,
+          rot: newRot,
+        },
       });
     }
-  }, [send, tableObjects, handObjects, playerId]);
+  }, [send, rendered, rotateSingle]);
 
   function findRendered(objectId: string): RenderedObject | undefined {
     return rendered.find(ro => ro.obj.id === objectId);
@@ -484,14 +540,23 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      const dragId = istate.interaction.kind === 'drag' ? istate.interaction.objectIds[0] : null;
-      const targetId = dragId ?? hoveredRef.current;
-      if (!targetId) return;
 
       if (e.key === 'r' || e.key === 'R') {
         e.preventDefault();
-        handleRotate(targetId);
-      } else if (e.key === 'd' || e.key === 'D') {
+        if (istate.selection.size > 0) {
+          // Selection takes priority: rotate the group.
+          rotateGroup(istate.selection);
+        } else if (hoveredRef.current) {
+          // No selection: rotate the hovered card.
+          rotateSingle(hoveredRef.current);
+        }
+        return;
+      }
+
+      // D and S target hovered object only.
+      const targetId = hoveredRef.current;
+      if (!targetId) return;
+      if (e.key === 'd' || e.key === 'D') {
         const ro = findRendered(targetId);
         if (ro && ro.obj.kind === 'deck') {
           e.preventDefault();
@@ -507,7 +572,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [handleRotate, handleDeckAction, rendered, istate.interaction]);
+  }, [rotateSingle, rotateGroup, handleDeckAction, rendered, istate.selection]);
 
   const totalHeight = tableScreenH + GAP + HAND_LOGICAL_H * scale;
 
@@ -547,6 +612,47 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
           );
         })}
       </div>
+
+      {/* Selection actions */}
+      {istate.selection.size >= 2 && (() => {
+        // Check if selection is all cards on the same surface.
+        const selectedRos = rendered.filter(r => istate.selection.has(r.obj.id));
+        const allCards = selectedRos.every(r => r.obj.kind === 'card');
+        const surface = selectedRos[0]?.surface;
+        const sameSurface = surface && selectedRos.every(r =>
+          r.surface.kind === surface.kind &&
+          (r.surface.kind === 'table' || (r.surface.kind === 'hand' && surface.kind === 'hand' && r.surface.ownerId === surface.ownerId))
+        );
+        if (!allCards || !sameSurface) return null;
+
+        // Compute centroid for deck placement.
+        let cx = 0, cy = 0;
+        for (const ro of selectedRos) {
+          cx += ro.obj.pose.x + CARD_W / 2;
+          cy += ro.obj.pose.y + CARD_H / 2;
+        }
+        cx /= selectedRos.length;
+        cy /= selectedRos.length;
+
+        return (
+          <div className="bwc-selection-actions">
+            <button
+              onPointerDown={e => e.stopPropagation()}
+              onClick={() => {
+                send({
+                  type: 'bwc-form-deck',
+                  surface,
+                  objectIds: selectedRos.map(r => r.obj.id),
+                  pose: { x: cx - CARD_W / 2, y: cy - CARD_H / 2, rot: 0 },
+                });
+                setIstate(s => ({ ...s, selection: new Set() }));
+              }}
+            >
+              Form Deck ({selectedRos.length} cards)
+            </button>
+          </div>
+        );
+      })()}
 
       {/* Table background */}
       <div

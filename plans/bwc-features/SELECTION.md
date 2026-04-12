@@ -1,5 +1,7 @@
 # Selection & Multi-Select
 
+status: complete
+
 ## Overview
 
 Selection is **entirely client-local** — no server messages, no visibility
@@ -123,7 +125,7 @@ type ObjectViewProps = {
 - [x] **B. Implement selection state + click/shift-click** in
       `BwcPlayArea`.
 - [x] **C. Implement marquee selection** (drag from empty space).
-- [ ] **D. Implement multi-drag** (drag from selected card moves all
+- [x] **D. Implement multi-drag** (landed in step B) (drag from selected card moves all
       selected cards). Include pending-center logic.
-- [ ] **E. Update verbs** (form deck, delete, flip, rotate) to operate
-      on the full selection.
+- [x] **E. Update verbs** — Form deck from selection, group rotation
+      with R key. Flip and mass-delete deferred.
