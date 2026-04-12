@@ -66,6 +66,7 @@ function poseToRect(pose: Pose): OrientedRect {
   return {
     center: { x: pose.x + CARD_W / 2, y: pose.y + CARD_H / 2 },
     halfSize: { x: CARD_W / 2, y: CARD_H / 2 },
+    scale: 1,
     rotDeg: pose.rot,
   };
 }
@@ -346,6 +347,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
       const expectedRect = transformRect(best.se2, {
         center: best.center,
         halfSize: { x: CARD_W / 2, y: CARD_H / 2 },
+        scale: 1,
         rotDeg: best.rot,
       });
       return expectedRect.center;

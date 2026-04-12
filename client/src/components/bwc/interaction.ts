@@ -61,11 +61,11 @@ export type InteractionContext = {
 type AABB = { minX: number; minY: number; maxX: number; maxY: number };
 
 function aabbOfRendered(ro: RenderedObject): AABB {
-  const { center, halfSize, rotDeg } = ro.rectInScreen;
+  const { center, halfSize, scale, rotDeg } = ro.rectInScreen;
   // For 90/270° rotations, width and height swap.
   const r = ((rotDeg % 360) + 360) % 360;
-  const hw = (r === 90 || r === 270) ? halfSize.y : halfSize.x;
-  const hh = (r === 90 || r === 270) ? halfSize.x : halfSize.y;
+  const hw = ((r === 90 || r === 270) ? halfSize.y : halfSize.x) * scale;
+  const hh = ((r === 90 || r === 270) ? halfSize.x : halfSize.y) * scale;
   return {
     minX: center.x - hw,
     minY: center.y - hh,

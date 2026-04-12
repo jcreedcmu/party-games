@@ -25,6 +25,7 @@ function makeRo(id: string, center: Point = { x: 100, y: 100 }): RenderedObject 
     rectInScreen: {
       center,
       halfSize: { x: 50, y: 70 },
+      scale: 1,
       rotDeg: 0,
     },
   };
