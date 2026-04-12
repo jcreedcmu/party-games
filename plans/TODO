@@ -7,11 +7,10 @@ only allow editing your own cards
 organize tests better
 applyOp/replayOp doesn't seem totally coherent, can you undo a clear?
 unit test for east-west card spawning?
-push player badges off of the table onto the border
 account for all key shortcuts; there shouldn't be any that magically move cards between hand and table
 account for all uses of card centers geometrically
 player scores off to the side
-players all oriented the same way
+players all oriented the same way?
 
 pictionary
 ----------

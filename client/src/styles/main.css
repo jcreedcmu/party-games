@@ -1139,14 +1139,14 @@ button:disabled {
 
 .bwc-table {
   aspect-ratio: 1;
-  background-color: #070;
+  background-color: #2d6a4f;
   border-radius: 1em;
 }
 
 .bwc-hand {
   aspect-ratio: 6 / 1;
   border-top: 1px solid #333;
-  background-color: #070;
+  background-color: #1a4731;
   border-radius: 1em;
 }
 

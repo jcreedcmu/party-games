@@ -142,7 +142,7 @@ function ObjectView({ ro, selected, displayCenter, onPointerDown, onDoubleClick,
       }}
       onPointerDown={e => { e.stopPropagation(); onPointerDown(e, ro); }}
       onDoubleClick={() => onDoubleClick(ro)}
-      onContextMenu={e => { e.preventDefault(); onContextMenu(e, ro); }}
+      onContextMenu={e => { e.preventDefault(); e.stopPropagation(); onContextMenu(e, ro); }}
       onPointerEnter={() => onPointerEnter(ro)}
       onPointerLeave={() => onPointerLeave(ro)}
     >
@@ -520,9 +520,75 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
     }
   }, [send, rendered, rotateSingle]);
 
+  function buildSelectionPieItems(selectedRos: RenderedObject[]): PieMenuItem[] {
+    const items: PieMenuItem[] = [];
+    const ids = new Set(selectedRos.map(r => r.obj.id));
+
+    items.push({
+      label: 'Rotate',
+      action: () => rotateGroup(ids),
+    });
+
+    // Form Deck: only if all selected are cards on the same surface.
+    const allCards = selectedRos.every(r => r.obj.kind === 'card');
+    const surface = selectedRos[0]?.surface;
+    const sameSurface = surface && selectedRos.every(r =>
+      r.surface.kind === surface.kind &&
+      (r.surface.kind === 'table' || (r.surface.kind === 'hand' && surface.kind === 'hand' && r.surface.ownerId === surface.ownerId))
+    );
+    if (allCards && sameSurface && selectedRos.length >= 2) {
+      items.push({
+        label: 'Form Deck',
+        action: () => {
+          let cx = 0, cy = 0;
+          for (const ro of selectedRos) {
+            cx += ro.obj.pose.x + CARD_W / 2;
+            cy += ro.obj.pose.y + CARD_H / 2;
+          }
+          cx /= selectedRos.length;
+          cy /= selectedRos.length;
+          send({
+            type: 'bwc-form-deck',
+            surface,
+            objectIds: selectedRos.map(r => r.obj.id),
+            pose: { x: cx - CARD_W / 2, y: cy - CARD_H / 2, rot: 0 },
+          });
+          setIstate(s => ({ ...s, selection: new Set() }));
+        },
+      });
+    }
+
+    items.push({
+      label: 'Flip',
+      action: () => {
+        for (const ro of selectedRos) {
+          send({ type: 'bwc-flip-object', surface: ro.surface, objectId: ro.obj.id });
+        }
+      },
+    });
+    items.push({
+      label: 'Delete',
+      action: () => {
+        for (const ro of selectedRos) {
+          send({ type: 'bwc-delete-object', surface: ro.surface, objectId: ro.obj.id });
+        }
+        setIstate(s => ({ ...s, selection: new Set() }));
+      },
+    });
+
+    return items;
+  }
+
   const handleContextMenu = useCallback((e: React.MouseEvent, ro: RenderedObject) => {
     const containerOffset = getContainerOffset();
     const pos: Point = { x: e.clientX - containerOffset.x, y: e.clientY - containerOffset.y };
+
+    // If there's a selection and we didn't right-click a deck, target the selection.
+    if (istate.selection.size > 0 && ro.obj.kind !== 'deck') {
+      const selectedRos = rendered.filter(r => istate.selection.has(r.obj.id));
+      setPieMenu({ position: pos, items: buildSelectionPieItems(selectedRos) });
+      return;
+    }
 
     const items: PieMenuItem[] = [];
 
@@ -557,7 +623,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
     });
 
     setPieMenu({ position: pos, items });
-  }, [send, rotateSingle]);
+  }, [send, rotateSingle, istate.selection, rendered]);
 
   function findRendered(objectId: string): RenderedObject | undefined {
     return rendered.find(ro => ro.obj.id === objectId);
@@ -608,48 +674,16 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
       onPointerDown={handleContainerPointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-    >
-      {/* Selection actions */}
-      {istate.selection.size >= 2 && (() => {
-        // Check if selection is all cards on the same surface.
-        const selectedRos = rendered.filter(r => istate.selection.has(r.obj.id));
-        const allCards = selectedRos.every(r => r.obj.kind === 'card');
-        const surface = selectedRos[0]?.surface;
-        const sameSurface = surface && selectedRos.every(r =>
-          r.surface.kind === surface.kind &&
-          (r.surface.kind === 'table' || (r.surface.kind === 'hand' && surface.kind === 'hand' && r.surface.ownerId === surface.ownerId))
-        );
-        if (!allCards || !sameSurface) return null;
-
-        // Compute centroid for deck placement.
-        let cx = 0, cy = 0;
-        for (const ro of selectedRos) {
-          cx += ro.obj.pose.x + CARD_W / 2;
-          cy += ro.obj.pose.y + CARD_H / 2;
+      onContextMenu={e => {
+        e.preventDefault();
+        if (istate.selection.size > 0) {
+          const containerOffset = getContainerOffset();
+          const pos: Point = { x: e.clientX - containerOffset.x, y: e.clientY - containerOffset.y };
+          const selectedRos = rendered.filter(r => istate.selection.has(r.obj.id));
+          setPieMenu({ position: pos, items: buildSelectionPieItems(selectedRos) });
         }
-        cx /= selectedRos.length;
-        cy /= selectedRos.length;
-
-        return (
-          <div className="bwc-selection-actions">
-            <button
-              onPointerDown={e => e.stopPropagation()}
-              onClick={() => {
-                send({
-                  type: 'bwc-form-deck',
-                  surface,
-                  objectIds: selectedRos.map(r => r.obj.id),
-                  pose: { x: cx - CARD_W / 2, y: cy - CARD_H / 2, rot: 0 },
-                });
-                setIstate(s => ({ ...s, selection: new Set() }));
-              }}
-            >
-              Form Deck ({selectedRos.length} cards)
-            </button>
-          </div>
-        );
-      })()}
-
+      }}
+    >
       {/* Table background */}
       <div className="bwc-table" />
       {/* Hand background */}
