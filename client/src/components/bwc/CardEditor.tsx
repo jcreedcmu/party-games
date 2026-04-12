@@ -46,6 +46,8 @@ export function CardEditor({ send, onDone, editingCardId, initialOps, initialTex
         mode="stream"
         onStreamOp={handleStreamOp}
         initialOps={initialOps}
+        canvasWidth={800}
+        canvasHeight={600}
       />
       <div className="bwc-card-editor-text">
         <textarea

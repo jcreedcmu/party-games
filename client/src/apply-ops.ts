@@ -1,5 +1,5 @@
 import type { DrawOp } from './types';
-import { parseColor, stampCircle, drawLineSegment, floodFill, clearImageData, createBlankImageData, cloneImageData } from './draw-util';
+import { parseColor, stampCircle, drawLineSegment, floodFill, clearImageData, createBlankImageData, cloneImageData, CANVAS_WIDTH, CANVAS_HEIGHT } from './draw-util';
 
 export type DrawState = {
   color: string;
@@ -24,6 +24,8 @@ export function applyOp(
   snapshots: ImageData[],
 ): boolean {
   const data = imageData.data;
+  const w = imageData.width;
+  const h = imageData.height;
   switch (op.type) {
     case 'draw-start': {
       const rgb = parseColor(op.color);
@@ -35,14 +37,14 @@ export function applyOp(
       drawState.started = true;
       drawState.lastX = op.x;
       drawState.lastY = op.y;
-      stampCircle(data, op.x, op.y, radius, rgb[0], rgb[1], rgb[2]);
+      stampCircle(data, op.x, op.y, radius, rgb[0], rgb[1], rgb[2], w, h);
       return false;
     }
     case 'draw-move': {
       if (!drawState.started) return false;
       const [r, g, b] = drawState.rgb;
       for (const pt of op.points) {
-        drawLineSegment(data, drawState.lastX, drawState.lastY, pt.x, pt.y, drawState.radius, r, g, b);
+        drawLineSegment(data, drawState.lastX, drawState.lastY, pt.x, pt.y, drawState.radius, r, g, b, w, h);
         drawState.lastX = pt.x;
         drawState.lastY = pt.y;
       }
@@ -52,7 +54,7 @@ export function applyOp(
       drawState.started = false;
       return true;
     case 'draw-fill':
-      floodFill(data, op.x, op.y, op.color);
+      floodFill(data, op.x, op.y, op.color, w, h);
       return true;
     case 'draw-undo':
       if (snapshots.length > 1) {
@@ -73,8 +75,8 @@ export function applyOp(
 }
 
 // Replay all ops onto a fresh imageData, returning the final imageData and snapshots.
-export function replayOps(ops: DrawOp[]): { imageData: ImageData; snapshots: ImageData[] } {
-  const imageData = createBlankImageData();
+export function replayOps(ops: DrawOp[], w = CANVAS_WIDTH, h = CANVAS_HEIGHT): { imageData: ImageData; snapshots: ImageData[] } {
+  const imageData = createBlankImageData(w, h);
   const snapshots: ImageData[] = [cloneImageData(imageData)];
   const drawState = createDrawState();
   for (const op of ops) {

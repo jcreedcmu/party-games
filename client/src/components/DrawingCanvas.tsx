@@ -21,11 +21,13 @@ type DrawingCanvasProps = {
   onSubmit?: (dataUrl: string) => void;
   onStreamOp?: (op: DrawOp) => void;
   initialOps?: DrawOp[];
+  canvasWidth?: number;
+  canvasHeight?: number;
 };
 
 type Tool = 'pen' | 'fill' | 'eyedropper';
 
-export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp, initialOps }: DrawingCanvasProps) {
+export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp, initialOps, canvasWidth = CANVAS_WIDTH, canvasHeight = CANVAS_HEIGHT }: DrawingCanvasProps) {
   const [color, setColor] = useState(COLORS[0]);
   const [customColor, setCustomColor] = useState<string | null>(null);
   const [size, setSize] = useState(SIZES[1]);
@@ -35,7 +37,7 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
   const pointBuffer = useRef<Array<{ x: number; y: number }>>([]);
   const batchIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const colorInputRef = useRef<HTMLInputElement>(null);
-  const imageDataRef = useRef<ImageData>(createBlankImageData());
+  const imageDataRef = useRef<ImageData>(createBlankImageData(canvasWidth, canvasHeight));
   const lastPosRef = useRef<{ x: number; y: number } | null>(null);
 
   const isStream = mode === 'stream';
@@ -51,7 +53,7 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
 
   useEffect(() => {
     if (initialOps && initialOps.length > 0) {
-      const { imageData, snapshots } = replayOps(initialOps);
+      const { imageData, snapshots } = replayOps(initialOps, canvasWidth, canvasHeight);
       imageDataRef.current = imageData;
       undoStack.current = snapshots;
     }
@@ -120,8 +122,8 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
     if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
     return {
-      x: Math.round((e.clientX - rect.left) * (CANVAS_WIDTH / rect.width)),
-      y: Math.round((e.clientY - rect.top) * (CANVAS_HEIGHT / rect.height)),
+      x: Math.round((e.clientX - rect.left) * (canvasWidth / rect.width)),
+      y: Math.round((e.clientY - rect.top) * (canvasHeight / rect.height)),
     };
   }
 
@@ -134,8 +136,8 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
     if (tool === 'eyedropper') {
       const px = Math.round(pt.x);
       const py = Math.round(pt.y);
-      if (px >= 0 && px < CANVAS_WIDTH && py >= 0 && py < CANVAS_HEIGHT) {
-        const i = (py * CANVAS_WIDTH + px) * 4;
+      if (px >= 0 && px < canvasWidth && py >= 0 && py < canvasHeight) {
+        const i = (py * canvasWidth + px) * 4;
         const d = imageDataRef.current.data;
         const hex = '#' + [d[i], d[i + 1], d[i + 2]].map(v => v.toString(16).padStart(2, '0')).join('');
         setColor(hex);
@@ -146,7 +148,7 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
     }
 
     if (tool === 'fill') {
-      floodFill(imageDataRef.current.data, pt.x, pt.y, color);
+      floodFill(imageDataRef.current.data, pt.x, pt.y, color, canvasWidth, canvasHeight);
       putImage();
       saveSnapshot();
       if (isStream) onStreamOp?.({ type: 'draw-fill', x: pt.x, y: pt.y, color });
@@ -159,7 +161,7 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
 
     const [r, g, b] = parseColor(color);
     const radius = Math.max(0, size / 2 - 0.5);
-    stampCircle(imageDataRef.current.data, pt.x, pt.y, radius, r, g, b);
+    stampCircle(imageDataRef.current.data, pt.x, pt.y, radius, r, g, b, canvasWidth, canvasHeight);
     putImage();
     lastPosRef.current = pt;
 
@@ -178,7 +180,7 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
 
     const [r, g, b] = parseColor(color);
     const radius = Math.max(0, size / 2 - 0.5);
-    drawLineSegment(imageDataRef.current.data, last.x, last.y, pt.x, pt.y, radius, r, g, b);
+    drawLineSegment(imageDataRef.current.data, last.x, last.y, pt.x, pt.y, radius, r, g, b, canvasWidth, canvasHeight);
     putImage();
     lastPosRef.current = pt;
 
@@ -227,8 +229,8 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
     <div className="drawing-canvas">
       <canvas
         ref={canvasRef as RefObject<HTMLCanvasElement>}
-        width={CANVAS_WIDTH}
-        height={CANVAS_HEIGHT}
+        width={canvasWidth}
+        height={canvasHeight}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

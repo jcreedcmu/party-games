@@ -12,9 +12,9 @@ export function parseColor(color: string): [number, number, number] {
   return [r, g, b];
 }
 
-function setPixel(data: Uint8ClampedArray, x: number, y: number, r: number, g: number, b: number): void {
-  if (x < 0 || x >= CANVAS_WIDTH || y < 0 || y >= CANVAS_HEIGHT) return;
-  const i = (y * CANVAS_WIDTH + x) * 4;
+function setPixel(data: Uint8ClampedArray, x: number, y: number, r: number, g: number, b: number, w: number, h: number): void {
+  if (x < 0 || x >= w || y < 0 || y >= h) return;
+  const i = (y * w + x) * 4;
   data[i] = r;
   data[i + 1] = g;
   data[i + 2] = b;
@@ -26,6 +26,7 @@ export function stampCircle(
   cx: number, cy: number,
   radius: number,
   r: number, g: number, b: number,
+  w = CANVAS_WIDTH, h = CANVAS_HEIGHT,
 ): void {
   const icx = Math.round(cx);
   const icy = Math.round(cy);
@@ -34,7 +35,7 @@ export function stampCircle(
   for (let dy = -ir; dy <= ir; dy++) {
     for (let dx = -ir; dx <= ir; dx++) {
       if (dx * dx + dy * dy <= r2) {
-        setPixel(data, icx + dx, icy + dy, r, g, b);
+        setPixel(data, icx + dx, icy + dy, r, g, b, w, h);
       }
     }
   }
@@ -46,6 +47,7 @@ export function drawLineSegment(
   x1: number, y1: number,
   radius: number,
   r: number, g: number, b: number,
+  w = CANVAS_WIDTH, h = CANVAS_HEIGHT,
 ): void {
   const ix0 = Math.round(x0), iy0 = Math.round(y0);
   const ix1 = Math.round(x1), iy1 = Math.round(y1);
@@ -58,7 +60,7 @@ export function drawLineSegment(
   let cy = iy0;
 
   for (;;) {
-    stampCircle(data, cx, cy, radius, r, g, b);
+    stampCircle(data, cx, cy, radius, r, g, b, w, h);
     if (cx === ix1 && cy === iy1) break;
     const e2 = 2 * err;
     if (e2 > -dy) { err -= dy; cx += sx; }
@@ -70,14 +72,15 @@ export function floodFill(
   data: Uint8ClampedArray,
   startX: number, startY: number,
   fillColor: string,
+  w = CANVAS_WIDTH, h = CANVAS_HEIGHT,
 ): void {
   const [fr, fg, fb] = parseColor(fillColor);
 
   const sx = Math.floor(startX);
   const sy = Math.floor(startY);
-  if (sx < 0 || sx >= CANVAS_WIDTH || sy < 0 || sy >= CANVAS_HEIGHT) return;
+  if (sx < 0 || sx >= w || sy < 0 || sy >= h) return;
 
-  const idx = (sy * CANVAS_WIDTH + sx) * 4;
+  const idx = (sy * w + sx) * 4;
   const tr = data[idx], tg = data[idx + 1], tb = data[idx + 2], ta = data[idx + 3];
 
   if (tr === fr && tg === fg && tb === fb && ta === 255) return;
@@ -87,12 +90,12 @@ export function floodFill(
   }
 
   const stack = [sx, sy];
-  const visited = new Uint8Array(CANVAS_WIDTH * CANVAS_HEIGHT);
+  const visited = new Uint8Array(w * h);
 
   while (stack.length > 0) {
     const cy = stack.pop()!;
     const cx = stack.pop()!;
-    const pi = cy * CANVAS_WIDTH + cx;
+    const pi = cy * w + cx;
     if (visited[pi]) continue;
     visited[pi] = 1;
 
@@ -105,9 +108,9 @@ export function floodFill(
     data[di + 3] = 255;
 
     if (cx > 0) stack.push(cx - 1, cy);
-    if (cx < CANVAS_WIDTH - 1) stack.push(cx + 1, cy);
+    if (cx < w - 1) stack.push(cx + 1, cy);
     if (cy > 0) stack.push(cx, cy - 1);
-    if (cy < CANVAS_HEIGHT - 1) stack.push(cx, cy + 1);
+    if (cy < h - 1) stack.push(cx, cy + 1);
   }
 }
 
@@ -120,16 +123,15 @@ export function clearImageData(data: Uint8ClampedArray): void {
   }
 }
 
-export function createBlankImageData(): ImageData {
+export function createBlankImageData(w = CANVAS_WIDTH, h = CANVAS_HEIGHT): ImageData {
   if (typeof ImageData === 'undefined') {
-    // SSR stub — canvas components won't render meaningfully server-side
-    return { data: new Uint8ClampedArray(0), width: CANVAS_WIDTH, height: CANVAS_HEIGHT, colorSpace: 'srgb' } as ImageData;
+    return { data: new Uint8ClampedArray(0), width: w, height: h, colorSpace: 'srgb' } as ImageData;
   }
-  const img = new ImageData(CANVAS_WIDTH, CANVAS_HEIGHT);
+  const img = new ImageData(w, h);
   clearImageData(img.data);
   return img;
 }
 
 export function cloneImageData(src: ImageData): ImageData {
-  return new ImageData(new Uint8ClampedArray(src.data), CANVAS_WIDTH, CANVAS_HEIGHT);
+  return new ImageData(new Uint8ClampedArray(src.data), src.width, src.height);
 }

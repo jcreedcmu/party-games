@@ -13,13 +13,15 @@ type LiveCanvasProps = {
   ops: DrawOp[];
   animated?: boolean;
   playing?: boolean;
+  canvasWidth?: number;
+  canvasHeight?: number;
 };
 
-export function LiveCanvas({ ops, animated = false, playing = false }: LiveCanvasProps) {
+export function LiveCanvas({ ops, animated = false, playing = false, canvasWidth = CANVAS_WIDTH, canvasHeight = CANVAS_HEIGHT }: LiveCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const appliedRef = useRef(0);
   const snapshotsRef = useRef<ImageData[]>([]);
-  const imageDataRef = useRef<ImageData>(createBlankImageData());
+  const imageDataRef = useRef<ImageData>(createBlankImageData(canvasWidth, canvasHeight));
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const drawStateRef = useRef<DrawState>(createDrawState());
 
@@ -47,7 +49,7 @@ export function LiveCanvas({ ops, animated = false, playing = false }: LiveCanva
   }
 
   function applyAllOps() {
-    imageDataRef.current = createBlankImageData();
+    imageDataRef.current = createBlankImageData(canvasWidth, canvasHeight);
     snapshotsRef.current = [];
     saveSnapshot();
     drawStateRef.current = createDrawState();
@@ -59,7 +61,7 @@ export function LiveCanvas({ ops, animated = false, playing = false }: LiveCanva
   }
 
   function startAnimatedPlayback() {
-    imageDataRef.current = createBlankImageData();
+    imageDataRef.current = createBlankImageData(canvasWidth, canvasHeight);
     snapshotsRef.current = [];
     saveSnapshot();
     drawStateRef.current = { color: '#000000', rgb: [0, 0, 0], size: 5, radius: 2, lastX: 0, lastY: 0, started: false };
@@ -138,8 +140,8 @@ export function LiveCanvas({ ops, animated = false, playing = false }: LiveCanva
   return (
     <canvas
       ref={canvasRef}
-      width={CANVAS_WIDTH}
-      height={CANVAS_HEIGHT}
+      width={canvasWidth}
+      height={canvasHeight}
       className="live-canvas"
     />
   );
