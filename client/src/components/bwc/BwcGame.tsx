@@ -8,7 +8,7 @@ import { BwcPlayArea } from './BwcPlayArea';
 type EditorState =
   | { mode: 'closed' }
   | { mode: 'create' }
-  | { mode: 'edit'; cardId: CardId; ops: DrawOp[]; text: string };
+  | { mode: 'edit'; cardId: CardId; ops: DrawOp[]; name: string; cardType: string; text: string };
 
 type Props = {
   state: BwcClientState;
@@ -21,8 +21,8 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
   const [showLibrary, setShowLibrary] = useState(false);
   const mySide: Side = state.seats.find(s => s.seat === state.mySeat)?.side ?? 'S';
 
-  function handleEdit(cardId: CardId, ops: DrawOp[], text: string) {
-    setEditor({ mode: 'edit', cardId, ops, text });
+  function handleEdit(cardId: CardId, ops: DrawOp[], name: string, cardType: string, text: string) {
+    setEditor({ mode: 'edit', cardId, ops, name, cardType, text });
   }
 
   return (
@@ -55,6 +55,8 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
           onDone={() => setEditor({ mode: 'closed' })}
           editingCardId={editor.cardId}
           initialOps={editor.ops}
+          initialName={editor.name}
+          initialCardType={editor.cardType}
           initialText={editor.text}
         />
       )}
@@ -76,8 +78,8 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
 export function BwcGame({ state, playerId, send }: Props) {
   const [editor, setEditor] = useState<EditorState>({ mode: 'closed' });
 
-  function handleEdit(cardId: CardId, ops: DrawOp[], text: string) {
-    setEditor({ mode: 'edit', cardId, ops, text });
+  function handleEdit(cardId: CardId, ops: DrawOp[], name: string, cardType: string, text: string) {
+    setEditor({ mode: 'edit', cardId, ops, name, cardType, text });
   }
 
   switch (state.phase) {

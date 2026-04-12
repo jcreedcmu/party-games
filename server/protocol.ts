@@ -52,6 +52,8 @@ export type PictionaryClientMessage = GuessMessage | TurnDoneMessage | PickWordM
 export type BwcCreateCardMessage = {
   type: 'bwc-create-card';
   ops: DrawOp[];
+  name: string;
+  cardType: string;
   text: string;
 };
 
@@ -59,6 +61,8 @@ export type BwcEditCardMessage = {
   type: 'bwc-edit-card';
   cardId: CardId;
   ops: DrawOp[];
+  name: string;
+  cardType: string;
   text: string;
 };
 

@@ -87,6 +87,8 @@ function setReady(state: BwcWaitingState, playerId: PlayerId, ready: boolean): B
 function createCard(
   library: CardLibrary,
   ops: DrawOp[],
+  name: string,
+  cardType: string,
   text: string,
   creator: string,
 ): { library: CardLibrary; cardId: string } {
@@ -94,6 +96,8 @@ function createCard(
   const card: Card = {
     id: cardId,
     ops,
+    name,
+    cardType,
     text,
     creator,
     createdAt: new Date().toISOString(),
@@ -592,7 +596,7 @@ export function bwcReduce(state: ServerState, playerId: PlayerId, msg: ClientMes
     }
     case 'bwc-create-card': {
       const handle = state.players.get(playerId)?.handle ?? 'unknown';
-      const { library } = createCard(state.library, msg.ops, msg.text, handle);
+      const { library } = createCard(state.library, msg.ops, msg.name, msg.cardType, msg.text, handle);
       persistLibrary(library);
       return { state: { ...state, library }, effects: [{ type: 'broadcast' }] };
     }
@@ -600,7 +604,7 @@ export function bwcReduce(state: ServerState, playerId: PlayerId, msg: ClientMes
       const existing = state.library.get(msg.cardId);
       if (!existing) return { state, effects: [] };
       const library = new Map(state.library);
-      library.set(msg.cardId, { ...existing, ops: msg.ops, text: msg.text });
+      library.set(msg.cardId, { ...existing, ops: msg.ops, name: msg.name, cardType: msg.cardType, text: msg.text });
       persistLibrary(library);
       return { state: { ...state, library }, effects: [{ type: 'broadcast' }] };
     }

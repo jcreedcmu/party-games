@@ -5,6 +5,8 @@ import type { Card, CardId, CardLibrary } from './types.js';
 type SerializedLibrary = {
   cards: Record<string, {
     ops: unknown[];
+    name: string;
+    cardType: string;
     text: string;
     creator: string;
     createdAt: string;
@@ -24,6 +26,8 @@ export function configureLibrary(
     library.set(id, {
       id,
       ops: entry.ops as Card['ops'],
+      name: entry.name ?? '',
+      cardType: entry.cardType ?? '',
       text: entry.text,
       creator: entry.creator,
       createdAt: entry.createdAt,
@@ -38,6 +42,8 @@ export function persistLibrary(library: CardLibrary): void {
   for (const [id, card] of library) {
     cards[id] = {
       ops: card.ops,
+      name: card.name,
+      cardType: card.cardType,
       text: card.text,
       creator: card.creator,
       createdAt: card.createdAt,

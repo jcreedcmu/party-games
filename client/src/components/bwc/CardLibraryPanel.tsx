@@ -11,7 +11,7 @@ type Props = {
   canSpawn?: boolean;
   mySide?: Side;
   send?: (msg: ClientMessage) => void;
-  onEdit?: (cardId: CardId, ops: DrawOp[], text: string) => void;
+  onEdit?: (cardId: CardId, ops: DrawOp[], name: string, cardType: string, text: string) => void;
 };
 
 export function CardLibraryPanel({ cards, canSpawn, mySide, send, onEdit }: Props) {
@@ -46,6 +46,7 @@ export function CardLibraryPanel({ cards, canSpawn, mySide, send, onEdit }: Prop
               <LiveCanvas ops={card.ops} canvasWidth={800} canvasHeight={600} />
             </div>
             <div className="bwc-library-card-info">
+              <div className="bwc-library-card-name">{card.name || '(unnamed)'}</div>
               <div className="bwc-library-card-text">{card.text || '(no text)'}</div>
               <div className="bwc-library-card-creator">by {card.creatorHandle}</div>
               <div className="bwc-library-card-actions">
@@ -55,7 +56,7 @@ export function CardLibraryPanel({ cards, canSpawn, mySide, send, onEdit }: Prop
                   </button>
                 )}
                 {onEdit && (
-                  <button className="bwc-edit-btn" onClick={() => onEdit(card.id, card.ops, card.text)}>
+                  <button className="bwc-edit-btn" onClick={() => onEdit(card.id, card.ops, card.name, card.cardType, card.text)}>
                     Edit
                   </button>
                 )}

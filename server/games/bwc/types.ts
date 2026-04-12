@@ -32,7 +32,9 @@ export type SeatAssignment = {
 export type Card = {
   id: CardId;
   ops: DrawOp[];           // front art
-  text: string;            // description of what the card does
+  name: string;            // card name (top of card)
+  cardType: string;        // card type (between art and rules)
+  text: string;            // rules text (main text box)
   creator: string;          // handle of original author
   createdAt: string;       // stringified Date
 };

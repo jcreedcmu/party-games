@@ -111,6 +111,7 @@ describe('bwc card creation', () => {
 
     c1.send({
       type: 'bwc-create-card',
+      name: '', cardType: '',
       ops: [{ type: 'draw-start', color: '#000000', size: 5, x: 10, y: 10 }, { type: 'draw-end' }],
       text: 'Test card',
     });
@@ -177,6 +178,7 @@ describe('bwc card editing', () => {
     // Create a card.
     c1.send({
       type: 'bwc-create-card',
+      name: '', cardType: '',
       ops: [{ type: 'draw-start', color: '#000', size: 5, x: 10, y: 10 }, { type: 'draw-end' }],
       text: 'Original',
     });
@@ -198,6 +200,8 @@ describe('bwc card editing', () => {
         { type: 'draw-start', color: '#ff0000', size: 10, x: 50, y: 50 },
         { type: 'draw-end' },
       ],
+      name: 'Edited Name',
+      cardType: 'Edited Type',
       text: 'Edited',
     });
     const afterEdit = await c1.next();
@@ -226,6 +230,7 @@ describe('bwc playing phase', () => {
     // Create a card first.
     c1.send({
       type: 'bwc-create-card',
+      name: '', cardType: '',
       ops: [{ type: 'draw-start', color: '#000', size: 5, x: 10, y: 10 }, { type: 'draw-end' }],
       text: 'Test card',
     });
