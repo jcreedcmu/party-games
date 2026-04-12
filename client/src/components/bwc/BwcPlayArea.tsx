@@ -18,11 +18,12 @@ import {
 
 // Logical dimensions.
 // The combined spaces aspect ratio is 6:7 (table is 6:6 square, hand is 6:1).
-const TABLE_LOGICAL = 800;
-const HAND_LOGICAL_W = 800;
-const HAND_LOGICAL_H = 800 / 6;  // 1/6 of the table width = 1 unit in the 6:7 ratio
-const CARD_W = 100;  // logical width of a card
-const CARD_H = 140;  // logical height (5:7 aspect ratio, matching standard playing cards)
+// TABLE_LOGICAL = 900 so HAND_LOGICAL_H = 900/6 = 150 > CARD_H = 140.
+const TABLE_LOGICAL = 900;
+const HAND_LOGICAL_W = 900;
+const HAND_LOGICAL_H = TABLE_LOGICAL / 6;  // = 150
+const CARD_W = 100;
+const CARD_H = 140;
 
 // To bring a player's edge to the bottom of the screen, we need:
 // S=0 (already at bottom), N=2 (180°), E=3 (270° CW = 90° CCW), W=1 (90° CW)
