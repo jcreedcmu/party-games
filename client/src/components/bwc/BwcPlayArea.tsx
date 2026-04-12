@@ -580,7 +580,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
     <div
       ref={containerRef}
       className="bwc-play-area"
-      style={{ maxWidth: TABLE_LOGICAL, height: totalHeight }}
+      style={{ height: totalHeight }}
       onPointerDown={handleContainerPointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}

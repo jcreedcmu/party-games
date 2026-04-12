@@ -78,6 +78,7 @@ function GameShell({ gameState, playerId, gameType, connected, reconnect, send, 
   ) : null;
 
   const isPicActive = gameState.phase === 'pictionary-active';
+  const isBwcPlaying = gameType === 'bwc' && gameState.phase === 'bwc-playing';
 
   let content: React.ReactNode;
   if (gameType === 'epyc') {
@@ -86,6 +87,24 @@ function GameShell({ gameState, playerId, gameType, connected, reconnect, send, 
     content = <BwcGame state={gameState as BwcClientState} playerId={playerId} send={send} />;
   } else {
     content = <PictionaryGame state={gameState as PictionaryClientState} playerId={playerId} send={send} onRelay={onRelay} addWordResult={addWordResult} clearAddWordResult={clearAddWordResult} />;
+  }
+
+  // BWC playing phase gets its own full-page layout.
+  if (isBwcPlaying) {
+    return (
+      <div className="bwc-page">
+        <div className="bwc-topbar">
+          <img src={getLogo(gameType)} alt={getLogoAlt(gameType)} className="bwc-topbar-logo" />
+          {disconnectBanner}
+        </div>
+        <div className="bwc-body">
+          <div className="bwc-main">
+            {content}
+          </div>
+          <div className="bwc-sidebar" />
+        </div>
+      </div>
+    );
   }
 
   return (

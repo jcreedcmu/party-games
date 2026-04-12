@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BWC Layout Experiment</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: sans-serif;  }
+.bwc-page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+.bwc-topbar {
+  height: 3em;
+  background: #3ecfa5;
+  flex-shrink: 0;
+}
+.bwc-body {
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
+  flex-shrink: 1;
+}
+.bwc-main {
+  padding: 1em;
+  container-type: size;
+  background-color: #333;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
+}
+
+.bwc-spaces {
+  --ar-w: 6;
+  --ar-h: 7;
+
+  aspect-ratio: var(--ar-w) / var(--ar-h);
+  width: min(100cqw, calc(100cqh * var(--ar-w) / var(--ar-h)));
+  border-radius: 1em;
+}
+
+.bwc-table {
+  aspect-ratio: 1;
+  background-color: #070;
+  border-radius: 1em;
+}
+
+.bwc-hand {
+  aspect-ratio: 6/1;
+  border-top: 1px solid #333;
+  background-color: #070;
+  border-radius: 1em;
+}
+
+.bwc-sidebar {
+  background-color: #ddd;
+  width: 10rem;
+}
+</style>
+</head>
+<body>
+  <div class="bwc-page">
+    <div class="bwc-topbar">
+      1000 Blank White Cards
+    </div>
+    <div class="bwc-body">
+      <div class="bwc-main">
+        <div class="bwc-spaces">
+        <div class="bwc-table">
+
+        </div>
+        <div class="bwc-hand">
+
+        </div>
+        </div>
+      </div>
+      <div class="bwc-sidebar">sidebar</div>
+    </div>
+  </div>
+</body>
+</html>
