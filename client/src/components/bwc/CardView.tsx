@@ -10,7 +10,7 @@ export function CardView({ card }: Props) {
     <div className="bwc-card-face">
       <div className="bwc-card-name">{card.name}</div>
       <div className="bwc-card-art">
-        <LiveCanvas ops={card.ops} canvasWidth={800} canvasHeight={600} />
+        <LiveCanvas ops={card.ops} canvasWidth={800} canvasHeight={600} canvasClassName="bwc-card-canvas" />
       </div>
       <div className="bwc-card-type">{card.cardType}</div>
       <div className="bwc-card-rules">{card.text}</div>

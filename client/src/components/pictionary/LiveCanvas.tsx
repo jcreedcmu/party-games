@@ -15,9 +15,10 @@ type LiveCanvasProps = {
   playing?: boolean;
   canvasWidth?: number;
   canvasHeight?: number;
+  canvasClassName?: string;
 };
 
-export function LiveCanvas({ ops, animated = false, playing = false, canvasWidth = CANVAS_WIDTH, canvasHeight = CANVAS_HEIGHT }: LiveCanvasProps) {
+export function LiveCanvas({ ops, animated = false, playing = false, canvasWidth = CANVAS_WIDTH, canvasHeight = CANVAS_HEIGHT, canvasClassName }: LiveCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const appliedRef = useRef(0);
   const snapshotsRef = useRef<ImageData[]>([]);
@@ -142,7 +143,7 @@ export function LiveCanvas({ ops, animated = false, playing = false, canvasWidth
       ref={canvasRef}
       width={canvasWidth}
       height={canvasHeight}
-      className="live-canvas"
+      className={canvasClassName ?? 'live-canvas'}
     />
   );
 }
