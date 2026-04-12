@@ -120,8 +120,8 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
     if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
     return {
-      x: (e.clientX - rect.left) * (CANVAS_WIDTH / rect.width),
-      y: (e.clientY - rect.top) * (CANVAS_HEIGHT / rect.height),
+      x: Math.round((e.clientX - rect.left) * (CANVAS_WIDTH / rect.width)),
+      y: Math.round((e.clientY - rect.top) * (CANVAS_HEIGHT / rect.height)),
     };
   }
 
