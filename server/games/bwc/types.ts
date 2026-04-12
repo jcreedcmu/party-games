@@ -65,7 +65,6 @@ export type TableObject =
 export type Surface = {
   id: SurfaceId;
   objects: Map<ObjectId, TableObject>;
-  zCounter: number;
 };
 
 // --- Phase states ---
@@ -96,6 +95,8 @@ export type BwcPlayingState = {
   hands: Map<PlayerId, Surface>;
   scores: Map<PlayerId, number>;
   nextObjectId: number;
+  zCounter: number;       // next z-index to allocate
+  zBatchCount: number;    // number of z-batch allocations since last GC
 };
 
 export type BwcState = BwcWaitingState | BwcPlayingState;

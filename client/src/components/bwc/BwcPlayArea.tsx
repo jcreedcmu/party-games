@@ -16,14 +16,7 @@ import {
   type Interaction,
 } from './interaction';
 
-// Logical dimensions.
-// The combined spaces aspect ratio is 6:7 (table is 6:6 square, hand is 6:1).
-// TABLE_LOGICAL = 900 so HAND_LOGICAL_H = 900/6 = 150 > CARD_H = 140.
-const TABLE_LOGICAL = 900;
-const HAND_LOGICAL_W = 900;
-const HAND_LOGICAL_H = TABLE_LOGICAL / 6;  // = 150
-const CARD_W = 100;
-const CARD_H = 140;
+import { TABLE_LOGICAL, HAND_LOGICAL_W, HAND_LOGICAL_H, CARD_W, CARD_H } from '../../../../server/games/bwc/constants';
 
 // To bring a player's edge to the bottom of the screen, we need:
 // S=0 (already at bottom), N=2 (180°), E=3 (270° CW = 90° CCW), W=1 (90° CW)

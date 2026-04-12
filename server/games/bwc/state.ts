@@ -110,7 +110,112 @@ function createCard(
 // --- Surface helpers ---
 
 function emptySurface(id: SurfaceId): Surface {
-  return { id, objects: new Map(), zCounter: 0 };
+  return { id, objects: new Map() };
+}
+
+const Z_GC_INTERVAL = 100;
+
+// Allocate z-indices for a batch of object IDs, bringing them above
+// everything else while preserving their relative order. Immutable.
+function allocateZBatch(state: BwcPlayingState, objectIds: string[]): BwcPlayingState {
+  if (objectIds.length === 0) return state;
+
+  // Collect current z for each object.
+  const entries: Array<{ id: string; z: number }> = [];
+  for (const id of objectIds) {
+    const obj = findObject(state, id);
+    if (obj) entries.push({ id, z: obj.z });
+  }
+  entries.sort((a, b) => a.z - b.z);
+
+  // Assign new z-indices above everything else, preserving relative order.
+  let zCounter = state.zCounter;
+  let s = state;
+  for (const entry of entries) {
+    s = updateObjectZ(s, entry.id, zCounter++);
+  }
+
+  const batchCount = s.zBatchCount + 1;
+  s = { ...s, zCounter, zBatchCount: batchCount };
+
+  if (batchCount >= Z_GC_INTERVAL) {
+    s = gcZIndices(s);
+  }
+  return s;
+}
+
+// Find an object across all surfaces.
+function findObject(state: BwcPlayingState, objectId: string): TableObject | undefined {
+  const t = state.table.objects.get(objectId);
+  if (t) return t;
+  for (const hand of state.hands.values()) {
+    const h = hand.objects.get(objectId);
+    if (h) return h;
+  }
+  return undefined;
+}
+
+// Immutably update an object's z-index wherever it lives.
+function updateObjectZ(state: BwcPlayingState, objectId: string, z: number): BwcPlayingState {
+  if (state.table.objects.has(objectId)) {
+    const obj = state.table.objects.get(objectId)!;
+    const objects = new Map(state.table.objects);
+    objects.set(objectId, { ...obj, z });
+    return { ...state, table: { ...state.table, objects } };
+  }
+  for (const [pid, hand] of state.hands) {
+    if (hand.objects.has(objectId)) {
+      const obj = hand.objects.get(objectId)!;
+      const objects = new Map(hand.objects);
+      objects.set(objectId, { ...obj, z });
+      const hands = new Map(state.hands);
+      hands.set(pid, { ...hand, objects });
+      return { ...state, hands };
+    }
+  }
+  return state;
+}
+
+// Compress all z-indices across all surfaces to consecutive integers.
+function gcZIndices(state: BwcPlayingState): BwcPlayingState {
+  // Collect all objects from all surfaces with their location.
+  const all: Array<{ id: string; z: number; surface: 'table' | PlayerId }> = [];
+  for (const obj of state.table.objects.values()) {
+    all.push({ id: obj.id, z: obj.z, surface: 'table' });
+  }
+  for (const [pid, hand] of state.hands) {
+    for (const obj of hand.objects.values()) {
+      all.push({ id: obj.id, z: obj.z, surface: pid });
+    }
+  }
+  all.sort((a, b) => a.z - b.z);
+
+  const tableObjects = new Map(state.table.objects);
+  const newHands = new Map<PlayerId, Surface>();
+  for (const [pid, hand] of state.hands) {
+    newHands.set(pid, { ...hand, objects: new Map(hand.objects) });
+  }
+
+  let z = 1;
+  for (const entry of all) {
+    if (entry.surface === 'table') {
+      const obj = tableObjects.get(entry.id)!;
+      tableObjects.set(entry.id, { ...obj, z });
+    } else {
+      const hand = newHands.get(entry.surface)!;
+      const obj = hand.objects.get(entry.id)!;
+      hand.objects.set(entry.id, { ...obj, z });
+    }
+    z++;
+  }
+
+  return {
+    ...state,
+    table: { ...state.table, objects: tableObjects },
+    hands: newHands,
+    zCounter: z,
+    zBatchCount: 0,
+  };
 }
 
 function getSurface(state: BwcPlayingState, id: SurfaceId): Surface | undefined {
@@ -209,7 +314,6 @@ function checkAllReady(state: BwcWaitingState): BwcWaitingState | BwcPlayingStat
       z: 1,
     };
     table.objects.set(deckId, deck);
-    table.zCounter = 1;
     for (const cid of allCardIds) {
       inPlay.add(cid);
     }
@@ -226,6 +330,8 @@ function checkAllReady(state: BwcWaitingState): BwcWaitingState | BwcPlayingStat
     hands,
     scores,
     nextObjectId: nextObjId,
+    zCounter: 2,
+    zBatchCount: 0,
   };
 }
 
@@ -246,16 +352,17 @@ function reduceSpawnCard(state: BwcPlayingState, playerId: PlayerId, msg: { card
     cardId: msg.cardId,
     pose: msg.pose,
     faceUp: msg.faceUp,
-    z: surface.zCounter + 1,
+    z: 0, // placeholder, allocateZBatch will set it
   };
   const objects = new Map(surface.objects);
   objects.set(objectId, obj);
-  const updatedSurface: Surface = { ...surface, objects, zCounter: surface.zCounter + 1 };
+  const updatedSurface: Surface = { ...surface, objects };
 
   const inPlay = new Set(s1.inPlay);
   inPlay.add(msg.cardId);
 
-  const s2 = setSurface({ ...s1, inPlay }, updatedSurface);
+  let s2 = setSurface({ ...s1, inPlay }, updatedSurface);
+  s2 = allocateZBatch(s2, [objectId]);
   return { state: s2, effects: [{ type: 'broadcast' }] };
 }
 
@@ -276,10 +383,11 @@ function reduceMoveObject(
     (msg.from.kind === 'table' || (msg.from.kind === 'hand' && msg.to.kind === 'hand' && msg.from.ownerId === msg.to.ownerId));
 
   if (sameSurface) {
-    // Same surface — just update pose.
+    // Same surface — update pose and bring to front.
     const objects = new Map(fromSurface.objects);
     objects.set(msg.objectId, { ...obj, pose: msg.pose });
-    const s = setSurface(state, { ...fromSurface, objects });
+    let s = setSurface(state, { ...fromSurface, objects });
+    s = allocateZBatch(s, [msg.objectId]);
     return { state: s, effects: [{ type: 'broadcast' }] };
   }
 
@@ -292,12 +400,11 @@ function reduceMoveObject(
   fromObjects.delete(msg.objectId);
   let s = setSurface(state, { ...fromSurface, objects: fromObjects });
 
-  // Add to destination with new z.
+  // Add to destination.
   const toObjects = new Map(toSurface.objects);
-  const newZ = toSurface.zCounter + 1;
-  toObjects.set(msg.objectId, { ...obj, pose: msg.pose, z: newZ });
-  // Re-fetch toSurface from s since setSurface may have modified it if from===to
-  s = setSurface(s, { ...toSurface, objects: toObjects, zCounter: newZ });
+  toObjects.set(msg.objectId, { ...obj, pose: msg.pose });
+  s = setSurface(s, { ...toSurface, objects: toObjects });
+  s = allocateZBatch(s, [msg.objectId]);
 
   return { state: s, effects: [{ type: 'broadcast' }] };
 }
@@ -313,10 +420,7 @@ function reduceBringToFront(
   const obj = surface.objects.get(msg.objectId);
   if (!obj) return { state, effects: [] };
 
-  const newZ = surface.zCounter + 1;
-  const objects = new Map(surface.objects);
-  objects.set(msg.objectId, { ...obj, z: newZ });
-  const s = setSurface(state, { ...surface, objects, zCounter: newZ });
+  const s = allocateZBatch(state, [msg.objectId]);
   return { state: s, effects: [{ type: 'broadcast' }] };
 }
 
@@ -412,18 +516,18 @@ function reduceFormDeck(
 
   // Create a new deck object.
   const { state: s1, objectId: deckId } = nextObjectId(state);
-  const newZ = surface.zCounter + 1;
   const deck: TableObject = {
     kind: 'deck',
     id: deckId,
     cardIds,
     pose: msg.pose,
     faceUp: false,
-    z: newZ,
+    z: 0,
   };
   objects.set(deckId, deck);
 
-  const s2 = setSurface(s1, { ...surface, objects, zCounter: newZ });
+  let s2 = setSurface(s1, { ...surface, objects });
+  s2 = allocateZBatch(s2, [deckId]);
   return { state: s2, effects: [{ type: 'broadcast' }] };
 }
 
@@ -456,18 +560,18 @@ function reduceDrawFromDeck(
   const { state: s1, objectId: cardObjId } = nextObjectId(s);
   const toSurface = getSurface(s1, msg.to);
   if (!toSurface) return { state, effects: [] };
-  const newZ = toSurface.zCounter + 1;
   const card: TableObject = {
     kind: 'card',
     id: cardObjId,
     cardId: drawnCardId,
     pose: msg.pose,
     faceUp: true,
-    z: newZ,
+    z: 0,
   };
   const toObjects = new Map(toSurface.objects);
   toObjects.set(cardObjId, card);
-  s = setSurface(s1, { ...toSurface, objects: toObjects, zCounter: newZ });
+  s = setSurface(s1, { ...toSurface, objects: toObjects });
+  s = allocateZBatch(s, [cardObjId]);
 
   return { state: s, effects: [{ type: 'broadcast' }] };
 }
@@ -542,10 +646,7 @@ function resetGame(state: BwcState): BwcWaitingState {
 
 // --- Tidy hand ---
 
-const HAND_LOGICAL_W = 800;
-const HAND_LOGICAL_H = 200;
-const TIDY_CARD_W = 100;
-const TIDY_CARD_H = 140;
+import { HAND_LOGICAL_W, HAND_LOGICAL_H, CARD_W as TIDY_CARD_W, CARD_H as TIDY_CARD_H } from './constants.js';
 const TIDY_PADDING = 10;
 
 function reduceTidyHand(state: BwcPlayingState, playerId: PlayerId): ReduceResult {
@@ -561,19 +662,21 @@ function reduceTidyHand(state: BwcPlayingState, playerId: PlayerId): ReduceResul
   const startX = Math.max(TIDY_PADDING, (HAND_LOGICAL_W - totalWidth) / 2);
   const y = (HAND_LOGICAL_H - TIDY_CARD_H) / 2;
 
+  let zCounter = state.zCounter;
   for (let i = 0; i < sorted.length; i++) {
     const obj = sorted[i];
     const tidied = {
       ...obj,
       pose: { x: startX + i * spacing, y, rot: 0 },
-      z: i + 1,
+      z: zCounter++,
       ...(obj.kind === 'card' ? { faceUp: true } : {}),
     };
     objects.set(obj.id, tidied as TableObject);
   }
 
-  const updatedHand: Surface = { ...hand, objects, zCounter: sorted.length + 1 };
-  const s = setSurface(state, updatedHand);
+  const updatedHand: Surface = { ...hand, objects };
+  let s = setSurface(state, updatedHand);
+  s = { ...s, zCounter };
   return { state: s, effects: [{ type: 'broadcast' }] };
 }
 

@@ -70,7 +70,6 @@ type SerializedSurface = {
     faceUp?: boolean;
     z: number;
   }>;
-  zCounter: number;
 };
 
 type SerializedSnapshot = {
@@ -79,6 +78,8 @@ type SerializedSnapshot = {
   scores: Record<string, number>;
   inPlay: string[];
   nextObjectId: number;
+  zCounter: number;
+  zBatchCount: number;
 };
 
 let pendingSnapshot: SerializedSnapshot | null = null;
@@ -110,7 +111,7 @@ function serializeSurface(surface: Surface): SerializedSurface {
       objects.push({ kind: 'deck', id: obj.id, cardIds: obj.cardIds, pose: obj.pose, faceUp: obj.faceUp, z: obj.z });
     }
   }
-  return { objects, zCounter: surface.zCounter };
+  return { objects };
 }
 
 export function markSnapshotDirty(state: BwcPlayingState): void {
@@ -128,6 +129,8 @@ export function markSnapshotDirty(state: BwcPlayingState): void {
     scores,
     inPlay: Array.from(state.inPlay),
     nextObjectId: state.nextObjectId,
+    zCounter: state.zCounter,
+    zBatchCount: state.zBatchCount,
   };
 }
 
@@ -161,7 +164,7 @@ function deserializeSurface(data: SerializedSurface, id: import('./types.js').Su
       });
     }
   }
-  return { id, objects, zCounter: data.zCounter };
+  return { id, objects };
 }
 
 export function loadSnapshot(data: SerializedSnapshot | null): {
@@ -170,6 +173,8 @@ export function loadSnapshot(data: SerializedSnapshot | null): {
   scores: Map<string, number>;
   inPlay: Set<string>;
   nextObjectId: number;
+  zCounter: number;
+  zBatchCount: number;
 } | null {
   if (!data) return null;
   const table = deserializeSurface(data.table, { kind: 'table' });
@@ -179,7 +184,12 @@ export function loadSnapshot(data: SerializedSnapshot | null): {
   }
   const scores = new Map(Object.entries(data.scores));
   const inPlay = new Set(data.inPlay);
-  return { table, hands, scores, inPlay, nextObjectId: data.nextObjectId };
+  return {
+    table, hands, scores, inPlay,
+    nextObjectId: data.nextObjectId,
+    zCounter: data.zCounter ?? 1,
+    zBatchCount: data.zBatchCount ?? 0,
+  };
 }
 
 export function flushSnapshot(): void {
