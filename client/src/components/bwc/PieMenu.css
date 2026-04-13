@@ -20,7 +20,8 @@
   transition: fill 0.1s;
 }
 
-.pie-slice:hover path {
+.pie-slice:hover path,
+.pie-slice-active path {
   fill: rgba(74, 222, 128, 0.9);
 }
 

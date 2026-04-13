@@ -123,7 +123,7 @@ type ObjectViewProps = {
   displayCenter: Point;  // may differ from ro.rectInScreen.center during drag/pending
   onPointerDown: (e: React.PointerEvent, ro: RenderedObject) => void;
   onDoubleClick: (ro: RenderedObject) => void;
-  onContextMenu: (e: React.MouseEvent, ro: RenderedObject) => void;
+  onContextMenu: (e: React.PointerEvent, ro: RenderedObject) => void;
   onPointerEnter: (ro: RenderedObject) => void;
   onPointerLeave: (ro: RenderedObject) => void;
 };
@@ -140,9 +140,13 @@ function ObjectView({ ro, selected, displayCenter, onPointerDown, onDoubleClick,
         ...style,
         zIndex: isDragging ? 50000 : ro.obj.z + (ro.surface.kind === 'hand' ? 20000 : 0),
       }}
-      onPointerDown={e => { e.stopPropagation(); onPointerDown(e, ro); }}
+      onPointerDown={e => {
+        e.stopPropagation();
+        if (e.button === 2) { onContextMenu(e, ro); return; }
+        onPointerDown(e, ro);
+      }}
       onDoubleClick={() => onDoubleClick(ro)}
-      onContextMenu={e => { e.preventDefault(); e.stopPropagation(); onContextMenu(e, ro); }}
+      onContextMenu={e => { e.preventDefault(); e.stopPropagation(); }}
       onPointerEnter={() => onPointerEnter(ro)}
       onPointerLeave={() => onPointerLeave(ro)}
     >
@@ -251,7 +255,9 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
   rendered.sort((a, b) => a.obj.z - b.obj.z);
 
   // --- Pie menu state ---
-  type PieMenuState = { position: Point; items: PieMenuItem[] } | null;
+  // clientCenter is in viewport coords (for gesture hit-testing).
+  // The rendering offset is computed from containerRef at render time.
+  type PieMenuState = { clientCenter: Point; items: PieMenuItem[] } | null;
   const [pieMenu, setPieMenu] = useState<PieMenuState>(null);
 
   // --- Interaction state (pure reducer + React wrapper) ---
@@ -579,14 +585,13 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
     return items;
   }
 
-  const handleContextMenu = useCallback((e: React.MouseEvent, ro: RenderedObject) => {
-    const containerOffset = getContainerOffset();
-    const pos: Point = { x: e.clientX - containerOffset.x, y: e.clientY - containerOffset.y };
+  const handleContextMenu = useCallback((e: React.PointerEvent, ro: RenderedObject) => {
+    const cc: Point = { x: e.clientX, y: e.clientY };
 
     // If there's a selection and we didn't right-click a deck, target the selection.
     if (istate.selection.size > 0 && ro.obj.kind !== 'deck') {
       const selectedRos = rendered.filter(r => istate.selection.has(r.obj.id));
-      setPieMenu({ position: pos, items: buildSelectionPieItems(selectedRos) });
+      setPieMenu({ clientCenter: cc, items: buildSelectionPieItems(selectedRos) });
       return;
     }
 
@@ -622,7 +627,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
       action: () => send({ type: 'bwc-delete-object', surface: ro.surface, objectId: ro.obj.id }),
     });
 
-    setPieMenu({ position: pos, items });
+    setPieMenu({ clientCenter: cc, items });
   }, [send, rotateSingle, istate.selection, rendered]);
 
   function findRendered(objectId: string): RenderedObject | undefined {
@@ -677,10 +682,9 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
       onContextMenu={e => {
         e.preventDefault();
         if (istate.selection.size > 0) {
-          const containerOffset = getContainerOffset();
-          const pos: Point = { x: e.clientX - containerOffset.x, y: e.clientY - containerOffset.y };
+          const cc: Point = { x: e.clientX, y: e.clientY };
           const selectedRos = rendered.filter(r => istate.selection.has(r.obj.id));
-          setPieMenu({ position: pos, items: buildSelectionPieItems(selectedRos) });
+          setPieMenu({ clientCenter: cc, items: buildSelectionPieItems(selectedRos) });
         }
       }}
     >
@@ -730,13 +734,18 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
       })()}
 
       {/* Pie menu */}
-      {pieMenu && (
-        <PieMenu
-          position={pieMenu.position}
-          items={pieMenu.items}
-          onClose={() => setPieMenu(null)}
-        />
-      )}
+      {pieMenu && (() => {
+        const off = getContainerOffset();
+        return (
+          <PieMenu
+            position={{ x: pieMenu.clientCenter.x - off.x, y: pieMenu.clientCenter.y - off.y }}
+            clientCenter={pieMenu.clientCenter}
+            items={pieMenu.items}
+            onClose={() => setPieMenu(null)}
+            gesture={true}
+          />
+        );
+      })()}
     </div>
   );
 }

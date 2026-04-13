@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { BwcClientState, BwcClientPlayingState, ClientMessage, CardId, DrawOp, Side } from '../../types';
 import { WaitingRoom } from '../WaitingRoom';
+import { Modal } from '../Modal';
 import { CardEditor } from './CardEditor';
 import { CardLibraryPanel } from './CardLibraryPanel';
 import { BwcPlayArea } from './BwcPlayArea';
@@ -56,6 +57,13 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
           <button onClick={() => send({ type: 'reset' })}>
             Reset
           </button>
+          {showLibrary && (
+            <CardLibraryPanel cards={state.library} canSpawn mySide={mySide} send={send} onEdit={handleEdit} />
+          )}
+        </div>
+      </div>
+      {editor.mode !== 'closed' && (
+        <Modal onClose={() => setEditor({ mode: 'closed' })}>
           {editor.mode === 'create' && (
             <CardEditor
               key="create"
@@ -75,11 +83,8 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
               initialText={editor.text}
             />
           )}
-          {showLibrary && (
-            <CardLibraryPanel cards={state.library} canSpawn mySide={mySide} send={send} onEdit={handleEdit} />
-          )}
-        </div>
-      </div>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -104,29 +109,31 @@ export function BwcGame({ state, playerId, send }: Props) {
             addWordResult={null}
             clearAddWordResult={() => {}}
           />
-          {editor.mode === 'closed' && (
-            <button className="btn-primary" onClick={() => setEditor({ mode: 'create' })}>
-              New Card
-            </button>
-          )}
-          {editor.mode === 'create' && (
-            <CardEditor
-              key="create"
-              send={send}
-              onDone={() => setEditor({ mode: 'closed' })}
-            />
-          )}
-          {editor.mode === 'edit' && (
-            <CardEditor
-              key={`edit-${editor.cardId}`}
-              send={send}
-              onDone={() => setEditor({ mode: 'closed' })}
-              editingCardId={editor.cardId}
-              initialOps={editor.ops}
-              initialText={editor.text}
-            />
-          )}
+          <button className="btn-primary" onClick={() => setEditor({ mode: 'create' })}>
+            New Card
+          </button>
           <CardLibraryPanel cards={state.library} onEdit={handleEdit} />
+          {editor.mode !== 'closed' && (
+            <Modal onClose={() => setEditor({ mode: 'closed' })}>
+              {editor.mode === 'create' && (
+                <CardEditor
+                  key="create"
+                  send={send}
+                  onDone={() => setEditor({ mode: 'closed' })}
+                />
+              )}
+              {editor.mode === 'edit' && (
+                <CardEditor
+                  key={`edit-${editor.cardId}`}
+                  send={send}
+                  onDone={() => setEditor({ mode: 'closed' })}
+                  editingCardId={editor.cardId}
+                  initialOps={editor.ops}
+                  initialText={editor.text}
+                />
+              )}
+            </Modal>
+          )}
         </div>
       );
     case 'bwc-playing':

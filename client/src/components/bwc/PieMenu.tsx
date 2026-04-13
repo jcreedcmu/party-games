@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Point } from '../../../../util/types';
 import './PieMenu.css';
 
@@ -8,13 +8,15 @@ export type PieMenuItem = {
 };
 
 type Props = {
-  position: Point;
+  position: Point;       // container-relative, for CSS positioning
+  clientCenter: Point;   // viewport coords, for gesture hit-testing
   items: PieMenuItem[];
   onClose: () => void;
+  gesture: boolean;      // true = opened via right-button-down, track drag to select
 };
 
-const INNER_R = 25;
-const OUTER_R = 75;
+export const INNER_R = 25;
+export const OUTER_R = 75;
 const GAP = 3; // pixels — constant-width gap between slices
 
 function slicePath(centerAngle: number, halfStep: number): string {
@@ -52,10 +54,24 @@ function slicePath(centerAngle: number, halfStep: number): string {
   ].join(' ');
 }
 
-export function PieMenu({ position, items, onClose }: Props) {
-  const menuRef = useRef<HTMLDivElement>(null);
+// Given a point relative to the pie center, return the index of the slice it falls in,
+// or null if inside the inner dead zone.
+function hitTest(dx: number, dy: number, n: number, baseAngle: number, step: number): number | null {
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist < INNER_R) return null;
+  const angle = Math.atan2(dy, dx);
+  // Normalize angle relative to baseAngle into [0, 2π).
+  const rel = ((angle - baseAngle) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+  return Math.floor(rel / step);
+}
 
+export function PieMenu({ position, clientCenter, items, onClose, gesture }: Props) {
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [gestureIndex, setGestureIndex] = useState<number | null>(null);
+
+  // Close on outside pointerdown (click mode).
   useEffect(() => {
+    if (gesture) return;
     function handlePointerDown(e: PointerEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         onClose();
@@ -63,14 +79,47 @@ export function PieMenu({ position, items, onClose }: Props) {
     }
     window.addEventListener('pointerdown', handlePointerDown, true);
     return () => window.removeEventListener('pointerdown', handlePointerDown, true);
-  }, [onClose]);
+  }, [onClose, gesture]);
 
   const n = items.length;
   const step = (2 * Math.PI) / n;
-  // Start from the top (-PI/2), centering the first slice on top.
   const baseAngle = -Math.PI / 2 - step / 2;
 
-  const SVG_SIZE = (OUTER_R + 4) * 2; // a little padding for hover scale
+  // Gesture mode: track mouse movement and select on right-button release.
+  useEffect(() => {
+    if (!gesture) return;
+    function handleMouseMove(e: MouseEvent) {
+      const dx = e.clientX - clientCenter.x;
+      const dy = e.clientY - clientCenter.y;
+      setGestureIndex(hitTest(dx, dy, n, baseAngle, step));
+    }
+    function handleMouseUp(e: MouseEvent) {
+      if (e.button !== 2) return;
+      const dx = e.clientX - clientCenter.x;
+      const dy = e.clientY - clientCenter.y;
+      const idx = hitTest(dx, dy, n, baseAngle, step);
+      if (idx != null) {
+        items[idx].action();
+      }
+      onClose();
+    }
+    function handleContextMenu(e: Event) {
+      e.preventDefault();
+    }
+    window.addEventListener('mousemove', handleMouseMove, true);
+    window.addEventListener('mouseup', handleMouseUp, true);
+    window.addEventListener('contextmenu', handleContextMenu, true);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove, true);
+      window.removeEventListener('mouseup', handleMouseUp, true);
+      window.removeEventListener('contextmenu', handleContextMenu, true);
+    };
+  }, [gesture, clientCenter, items, onClose, n, baseAngle, step]);
+
+  // position is in client coords for gesture mode, container-relative otherwise.
+  // The SVG is positioned relative to the pie-menu div, which is absolutely positioned.
+
+  const SVG_SIZE = (OUTER_R + 4) * 2;
   const half = SVG_SIZE / 2;
 
   return (
@@ -89,15 +138,16 @@ export function PieMenu({ position, items, onClose }: Props) {
           const centerAngle = baseAngle + (i + 0.5) * step;
           const d = slicePath(centerAngle, step / 2);
 
-          // Label position: midpoint angle, midpoint radius.
           const midR = (INNER_R + OUTER_R) / 2;
           const lx = Math.cos(centerAngle) * midR;
           const ly = Math.sin(centerAngle) * midR;
 
+          const active = gesture && gestureIndex === i;
+
           return (
             <g
               key={item.label}
-              className="pie-slice"
+              className={`pie-slice${active ? ' pie-slice-active' : ''}`}
               onPointerDown={e => e.stopPropagation()}
               onClick={() => { item.action(); onClose(); }}
             >
