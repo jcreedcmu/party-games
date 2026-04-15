@@ -42,6 +42,7 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
             mySide={mySide}
             playerId={playerId}
             send={send}
+            onEdit={handleEdit}
           />
         </div>
         <div className="bwc-sidebar">

@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import type {
   BwcVisibleObject, BwcVisibleSurface, BwcClientSeat,
-  ClientMessage, Pose, Side, SurfaceId,
+  ClientMessage, Pose, Side, SurfaceId, CardId, DrawOp,
 } from '../../types';
 import { CardView, CardBack } from './CardView';
 import { PieMenu, type PieMenuItem } from './PieMenu';
@@ -205,9 +205,10 @@ type Props = {
   mySide: Side;
   playerId: string;
   send: (msg: ClientMessage) => void;
+  onEdit: (cardId: CardId, ops: DrawOp[], name: string, cardType: string, text: string) => void;
 };
 
-export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Props) {
+export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEdit }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(TABLE_LOGICAL);
 
@@ -614,6 +615,14 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
       });
     }
 
+    if (ro.obj.kind === 'card' && ro.obj.faceUp && ro.obj.card) {
+      const card = ro.obj.card;
+      items.push({
+        label: 'Edit',
+        action: () => onEdit(card.id, card.ops, card.name, card.cardType, card.text),
+      });
+    }
+
     items.push({
       label: 'Flip',
       action: () => send({ type: 'bwc-flip-object', surface: ro.surface, objectId: ro.obj.id }),
@@ -628,7 +637,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send }: Pr
     });
 
     setPieMenu({ clientCenter: cc, items });
-  }, [send, rotateSingle, istate.selection, rendered]);
+  }, [send, rotateSingle, onEdit, istate.selection, rendered]);
 
   function findRendered(objectId: string): RenderedObject | undefined {
     return rendered.find(ro => ro.obj.id === objectId);
