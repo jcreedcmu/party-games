@@ -785,8 +785,8 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
             center: { x: containerWidth / 2, y: (tableScreenH + HAND_LOGICAL_H * scale) / 2 },
             halfSize: { x: CARD_W / 2, y: CARD_H / 2 },
             scale: Math.min(
-              (tableScreenH + HAND_LOGICAL_H * scale) * 0.8 / CARD_H,
-              containerWidth * 0.8 / CARD_W,
+              (tableScreenH + HAND_LOGICAL_H * scale) * 0.7 / CARD_H,
+              containerWidth * 0.7 / CARD_W,
             ),
             rotDeg: 0,
           })}>

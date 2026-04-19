@@ -1,6 +1,11 @@
 1kbwc
 -----
 
+draw off deck should affect selection?
+deck card count should be bigger, and maybe a circle background
+basic operations like move shouldn't necessarily affect the selection
+should be able to form deck from collection involving decks
+face-up decks work very weird
 multicard rotation is weird?
 quick affordance for drawing off of deck
 score doesn't work
@@ -16,7 +21,9 @@ unit test for east-west card spawning?
 account for all key shortcuts; there shouldn't be any that magically move cards between hand and table
 account for all uses of card centers geometrically
 player scores off to the side
-players all oriented the same way?
+try players all oriented the same way?
+players draw their own avatars? store in localstorage?
+move attribution text down a little bit?
 
 pictionary
 ----------
