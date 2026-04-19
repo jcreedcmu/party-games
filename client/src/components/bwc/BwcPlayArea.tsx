@@ -642,13 +642,10 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
     function handleKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
-      if (e.key === 'Escape') {
+      if (viewingCard) {
         setViewingCard(null);
         return;
       }
-
-      // Don't process shortcuts while viewing a card.
-      if (viewingCard) return;
 
       // Selection if non-empty, else the single hovered object.
       function getTargets(): RenderedObject[] {
@@ -748,7 +745,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
           onDoubleClick={handleDoubleClick}
           onContextMenu={handleContextMenu}
           onPointerEnter={ro => { hoveredRef.current = ro.obj.id; }}
-          onPointerLeave={ro => { if (hoveredRef.current === ro.obj.id) hoveredRef.current = null; }}
+          onPointerLeave={ro => { if (hoveredRef.current === ro.obj.id && !viewingCard) hoveredRef.current = null; }}
         />
       ))}
 
@@ -783,7 +780,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
 
       {/* Card zoom overlay */}
       {viewingCard && (
-        <div className="bwc-card-zoom-overlay" onClick={() => setViewingCard(null)}>
+        <div className="bwc-card-zoom-overlay" onPointerDown={e => { e.stopPropagation(); setViewingCard(null); }}>
           <div className="bwc-card-zoom-card" style={orientedRectToStyle({
             center: { x: containerWidth / 2, y: (tableScreenH + HAND_LOGICAL_H * scale) / 2 },
             halfSize: { x: CARD_W / 2, y: CARD_H / 2 },
