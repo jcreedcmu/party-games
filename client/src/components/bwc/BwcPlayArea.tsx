@@ -771,6 +771,12 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
         return [];
       }
 
+      if (e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        send({ type: 'bwc-tidy-hand' });
+        return;
+      }
+
       const targets = getTargets();
       if (targets.length === 0) return;
 
@@ -805,12 +811,6 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
           e.preventDefault();
           doCollect(targets);
         }
-        return;
-      }
-
-      if (e.key === 't' || e.key === 'T') {
-        e.preventDefault();
-        send({ type: 'bwc-tidy-hand' });
         return;
       }
 
