@@ -538,7 +538,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
     if (ros.length === 1 && ros[0].obj.kind === 'deck') {
       const ro = ros[0];
       items.push({
-        label: 'Draw',
+        label: 'Draw (D)',
         action: () => send({
           type: 'bwc-draw-from-deck',
           surface: ro.surface,
@@ -548,7 +548,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
         }),
       });
       items.push({
-        label: 'Shuffle',
+        label: 'Shuffle (S)',
         action: () => send({ type: 'bwc-shuffle-deck', surface: ro.surface, deckId: ro.obj.id }),
       });
     }
@@ -557,7 +557,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
     if (ros.length === 1 && ros[0].obj.kind === 'card' && ros[0].obj.faceUp && ros[0].obj.card) {
       const card = ros[0].obj.card;
       items.push({
-        label: 'View',
+        label: 'View (V)',
         action: () => setViewingCard(card),
       });
       items.push({
@@ -567,7 +567,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
     }
 
     items.push({
-      label: 'Rotate',
+      label: 'Rotate (R)',
       action: () => rotateGroup(ids),
     });
 
@@ -601,7 +601,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
     }
 
     items.push({
-      label: 'Flip',
+      label: 'Flip (F)',
       action: () => {
         for (const ro of ros) {
           send({ type: 'bwc-flip-object', surface: ro.surface, objectId: ro.obj.id });
@@ -650,41 +650,53 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
       // Don't process shortcuts while viewing a card.
       if (viewingCard) return;
 
+      // Selection if non-empty, else the single hovered object.
+      function getTargets(): RenderedObject[] {
+        if (istate.selection.size > 0) {
+          return rendered.filter(r => istate.selection.has(r.obj.id));
+        }
+        if (hoveredRef.current) {
+          const ro = findRendered(hoveredRef.current);
+          if (ro) return [ro];
+        }
+        return [];
+      }
+
+      const targets = getTargets();
+      if (targets.length === 0) return;
+
       if (e.key === 'r' || e.key === 'R') {
         e.preventDefault();
-        if (istate.selection.size > 0) {
-          // Selection takes priority: rotate the group.
-          rotateGroup(istate.selection);
-        } else if (hoveredRef.current) {
-          // No selection: rotate the hovered card.
-          rotateSingle(hoveredRef.current);
+        rotateGroup(new Set(targets.map(t => t.obj.id)));
+        return;
+      }
+
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        for (const ro of targets) {
+          send({ type: 'bwc-flip-object', surface: ro.surface, objectId: ro.obj.id });
         }
         return;
       }
 
       if (e.key === 'v' || e.key === 'V') {
-        const targetId = hoveredRef.current;
-        if (!targetId) return;
-        const ro = findRendered(targetId);
-        if (ro && ro.obj.kind === 'card' && ro.obj.faceUp && ro.obj.card) {
-          e.preventDefault();
-          setViewingCard(ro.obj.card);
+        if (targets.length === 1) {
+          const ro = targets[0];
+          if (ro.obj.kind === 'card' && ro.obj.faceUp && ro.obj.card) {
+            e.preventDefault();
+            setViewingCard(ro.obj.card);
+          }
         }
         return;
       }
 
-      // D and S target hovered object only.
-      const targetId = hoveredRef.current;
-      if (!targetId) return;
-      if (e.key === 'd' || e.key === 'D') {
-        const ro = findRendered(targetId);
-        if (ro && ro.obj.kind === 'deck') {
+      // D and S only apply to a single hovered deck.
+      if (targets.length === 1 && targets[0].obj.kind === 'deck') {
+        const ro = targets[0];
+        if (e.key === 'd' || e.key === 'D') {
           e.preventDefault();
           handleDeckAction('draw', ro);
-        }
-      } else if (e.key === 's' || e.key === 'S') {
-        const ro = findRendered(targetId);
-        if (ro && ro.obj.kind === 'deck') {
+        } else if (e.key === 's' || e.key === 'S') {
           e.preventDefault();
           handleDeckAction('shuffle', ro);
         }
