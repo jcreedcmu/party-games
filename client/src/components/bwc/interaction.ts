@@ -16,6 +16,9 @@ export type Interaction =
       startClient: Point;
       dx: number;
       dy: number;
+      // If set, pointer-up with no significant movement should select this object.
+      // Null when the dragged object was already selected (so selection is unchanged).
+      selectOnClick: string | null;
     }
   | { kind: 'marquee';
       startClient: Point;
@@ -139,14 +142,18 @@ export function reduceInteraction(
       // Determine which objects to drag.
       let dragIds: string[];
       let newSelection: Set<string>;
+      let selectOnClick: string | null;
       if (state.selection.has(event.objectId)) {
         // Clicked on a selected card: drag the entire selection.
         dragIds = Array.from(state.selection);
         newSelection = state.selection;
+        selectOnClick = null;
       } else {
-        // Clicked on an unselected card: select just this card, drag it.
+        // Clicked on an unselected card: clear selection, drag it,
+        // and defer selecting it to pointer-up (only on click, not drag).
         dragIds = [event.objectId];
-        newSelection = new Set([event.objectId]);
+        newSelection = new Set();
+        selectOnClick = event.objectId;
       }
 
       const origins = new Map<string, Point>();
@@ -170,6 +177,7 @@ export function reduceInteraction(
           startClient: { x: event.clientX, y: event.clientY },
           dx: 0,
           dy: 0,
+          selectOnClick,
         },
       };
     }
@@ -224,7 +232,12 @@ export function reduceInteraction(
 
     case 'pointer-up': {
       if (state.interaction.kind === 'drag') {
-        return { ...state, interaction: { kind: 'idle' } };
+        const { dx, dy, selectOnClick } = state.interaction;
+        const wasDragged = dx * dx + dy * dy > 4;  // > 2px movement threshold
+        const newSelection = (!wasDragged && selectOnClick !== null)
+          ? new Set([selectOnClick])
+          : state.selection;
+        return { ...state, selection: newSelection, interaction: { kind: 'idle' } };
       }
       if (state.interaction.kind === 'marquee') {
         // Final selection from the marquee.

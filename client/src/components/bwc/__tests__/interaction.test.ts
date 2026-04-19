@@ -58,10 +58,13 @@ describe('selection', () => {
   const cardB = makeRo('b', { x: 300, y: 100 });
   const c = ctx(cardA, cardB);
 
-  test('clicking an unselected card selects just that card', () => {
+  test('clicking an unselected card selects it on pointer-up', () => {
     const s0 = initialInteractionState();
     const s1 = reduceInteraction(s0, pointerDown('a', 100, 100), c);
-    expect(s1.selection).toEqual(new Set(['a']));
+    // Selection is deferred — not yet selected on pointer-down.
+    expect(s1.selection.size).toBe(0);
+    const s2 = reduceInteraction(s1, pointerUp(100, 100), c);
+    expect(s2.selection).toEqual(new Set(['a']));
   });
 
   test('clicking an unselected card clears previous selection', () => {
@@ -70,8 +73,31 @@ describe('selection', () => {
       selection: new Set(['b']),
     };
     const s1 = reduceInteraction(s0, pointerDown('a', 100, 100), c);
-    expect(s1.selection).toEqual(new Set(['a']));
-    expect(s1.selection.has('b')).toBe(false);
+    // Previous selection cleared immediately on pointer-down.
+    expect(s1.selection.size).toBe(0);
+    const s2 = reduceInteraction(s1, pointerUp(100, 100), c);
+    expect(s2.selection).toEqual(new Set(['a']));
+    expect(s2.selection.has('b')).toBe(false);
+  });
+
+  test('dragging an unselected card clears previous selection', () => {
+    const s0: InteractionState = {
+      ...initialInteractionState(),
+      selection: new Set(['b']),
+    };
+    const s1 = reduceInteraction(s0, pointerDown('a', 100, 100), c);
+    expect(s1.selection.size).toBe(0);
+    const s2 = reduceInteraction(s1, pointerMove(150, 150), c);
+    const s3 = reduceInteraction(s2, pointerUp(150, 150), c);
+    expect(s3.selection.size).toBe(0);
+  });
+
+  test('dragging an unselected card does not select it', () => {
+    const s0 = initialInteractionState();
+    const s1 = reduceInteraction(s0, pointerDown('a', 100, 100), c);
+    const s2 = reduceInteraction(s1, pointerMove(150, 150), c);
+    const s3 = reduceInteraction(s2, pointerUp(150, 150), c);
+    expect(s3.selection.size).toBe(0);
   });
 
   test('clicking a selected card keeps the full selection', () => {
@@ -207,14 +233,14 @@ describe('getDisplayCenter', () => {
   });
 
   test('select then drag: card moves on second interaction', () => {
-    // Step 1: click to select (also starts a drag with dx=0,dy=0)
+    // Step 1: click to select (pointer-down starts drag, pointer-up selects)
     let s = initialInteractionState();
     s = reduceInteraction(s, pointerDown('a', 50, 50), ctx(cardA));
-    expect(s.selection).toEqual(new Set(['a']));
     expect(s.interaction.kind).toBe('drag');
 
-    // Step 2: pointer up (zero-distance drag)
+    // Step 2: pointer up (zero-distance drag → selects the card)
     s = reduceInteraction(s, pointerUp(50, 50), ctx(cardA));
+    expect(s.selection).toEqual(new Set(['a']));
     expect(s.interaction.kind).toBe('idle');
 
     // Step 3: click again on the (now selected) card to drag it

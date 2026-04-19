@@ -341,7 +341,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
             containerRef.current?.setPointerCapture(pdd.pointerId);
             setIstate(s => ({
               ...s,
-              selection: new Set([id]),
+              selection: new Set(),
               interaction: {
                 kind: 'drag',
                 objectIds: [id],
@@ -350,6 +350,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
                 startClient: pdd.startClient,
                 dx: 0,
                 dy: 0,
+                selectOnClick: id,
               },
             }));
           }
