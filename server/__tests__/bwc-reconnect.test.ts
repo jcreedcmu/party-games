@@ -264,7 +264,11 @@ describe('bwc playing phase', () => {
       }
     }
 
-    // Draw the card from the deck.
+    // The initial deck is face-down. Flip it face-up before drawing.
+    c1.send({ type: 'bwc-flip-object', surface: { kind: 'table' }, objectId: 'obj-1' });
+    await c1.next(); await c2.next();
+
+    // Draw the card from the (now face-up) deck.
     c1.send({
       type: 'bwc-draw-from-deck',
       surface: { kind: 'table' },
@@ -333,6 +337,96 @@ describe('bwc playing phase', () => {
         expect(table.objects.length).toBe(0);
       }
       expect(afterDelete.state.library.length).toBe(1);
+    }
+  });
+
+  it('drawing from a face-down deck produces a face-down card', async () => {
+    const { client: c1 } = await joinBwc('Alice', 'cid-A');
+    const { client: c2 } = await joinBwc('Bob', 'cid-B');
+    await c1.next(); // state from Bob joining
+
+    // Create a card.
+    c1.send({
+      type: 'bwc-create-card',
+      name: 'Secret', cardType: '',
+      ops: [{ type: 'draw-start', color: '#000', size: 5, x: 10, y: 10 }, { type: 'draw-end' }],
+      text: 'Hidden card',
+    });
+    await c1.next(); await c2.next();
+
+    // Ready up to start playing.
+    c1.send({ type: 'ready' });
+    await c1.next(); await c2.next();
+    c2.send({ type: 'ready' });
+    await c1.next(); await c2.next();
+
+    // The initial deck is face-down. Draw without flipping.
+    c1.send({
+      type: 'bwc-draw-from-deck',
+      surface: { kind: 'table' },
+      deckId: 'obj-1',
+      to: { kind: 'table' },
+      pose: { x: 100, y: 200, rot: 0 },
+    });
+    const afterDraw = await c1.next();
+    await c2.next();
+    if (afterDraw.type === 'state' && afterDraw.state.phase === 'bwc-playing') {
+      const table = afterDraw.state.table;
+      if (table.visibility === 'full') {
+        expect(table.objects.length).toBe(1);
+        const obj = table.objects[0];
+        expect(obj.kind).toBe('card');
+        if (obj.kind === 'card') {
+          expect(obj.faceUp).toBe(false);
+          // Face-down card should not expose its content.
+          expect(obj.card).toBeUndefined();
+        }
+      }
+    }
+  });
+
+  it('drawing from a face-up deck produces a face-up card', async () => {
+    const { client: c1 } = await joinBwc('Alice', 'cid-A');
+    const { client: c2 } = await joinBwc('Bob', 'cid-B');
+    await c1.next();
+
+    c1.send({
+      type: 'bwc-create-card',
+      name: 'Visible', cardType: '',
+      ops: [{ type: 'draw-start', color: '#000', size: 5, x: 10, y: 10 }, { type: 'draw-end' }],
+      text: 'Shown card',
+    });
+    await c1.next(); await c2.next();
+
+    c1.send({ type: 'ready' });
+    await c1.next(); await c2.next();
+    c2.send({ type: 'ready' });
+    await c1.next(); await c2.next();
+
+    // Flip the deck face-up, then draw.
+    c1.send({ type: 'bwc-flip-object', surface: { kind: 'table' }, objectId: 'obj-1' });
+    await c1.next(); await c2.next();
+
+    c1.send({
+      type: 'bwc-draw-from-deck',
+      surface: { kind: 'table' },
+      deckId: 'obj-1',
+      to: { kind: 'table' },
+      pose: { x: 100, y: 200, rot: 0 },
+    });
+    const afterDraw = await c1.next();
+    await c2.next();
+    if (afterDraw.type === 'state' && afterDraw.state.phase === 'bwc-playing') {
+      const table = afterDraw.state.table;
+      if (table.visibility === 'full') {
+        expect(table.objects.length).toBe(1);
+        const obj = table.objects[0];
+        expect(obj.kind).toBe('card');
+        if (obj.kind === 'card') {
+          expect(obj.faceUp).toBe(true);
+          expect(obj.card?.text).toBe('Shown card');
+        }
+      }
     }
   });
 });

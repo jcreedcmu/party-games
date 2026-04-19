@@ -4,22 +4,18 @@
 draw off deck should affect selection?
 deck card count should be bigger, and maybe a circle background
 basic operations like move shouldn't necessarily affect the selection
+multi-flip should seem more atomic
 should be able to form deck from collection involving decks
 face-up decks work very weird
 animations?
 score doesn't work
-view 80%
-
-
 ugh, card layout defined by percentages?
-
 only allow editing your own cards
-organize tests better
 applyOp/replayOp doesn't seem totally coherent, can you undo a clear?
 unit test for east-west card spawning?
 account for all key shortcuts; there shouldn't be any that magically move cards between hand and table
-account for all uses of card centers geometrically
-player scores off to the side
+
+move player scores off to the side
 try players all oriented the same way?
 players draw their own avatars? store in localstorage?
 move attribution text down a little bit?
