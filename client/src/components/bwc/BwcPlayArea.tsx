@@ -681,7 +681,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
     );
     if (allCards && sameSurface && ros.length >= 2) {
       items.push({
-        label: 'Form Deck',
+        label: 'Collect as Deck (C)',
         action: () => {
           let cx = 0, cy = 0;
           for (const ro of ros) {
@@ -795,15 +795,48 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
         return;
       }
 
+      if (e.key === 'c' || e.key === 'C') {
+        if (targets.length >= 2 && targets.every(r => r.obj.kind === 'card')) {
+          const surface = targets[0].surface;
+          const sameSurface = targets.every(r =>
+            r.surface.kind === surface.kind &&
+            (r.surface.kind === 'table' || (r.surface.kind === 'hand' && surface.kind === 'hand' && r.surface.ownerId === surface.ownerId))
+          );
+          if (sameSurface) {
+            e.preventDefault();
+            let cx = 0, cy = 0;
+            for (const ro of targets) {
+              cx += ro.obj.pose.x + CARD_W / 2;
+              cy += ro.obj.pose.y + CARD_H / 2;
+            }
+            cx /= targets.length;
+            cy /= targets.length;
+            send({
+              type: 'bwc-form-deck',
+              surface,
+              objectIds: targets.map(r => r.obj.id),
+              pose: { x: cx - CARD_W / 2, y: cy - CARD_H / 2, rot: 0 },
+            });
+            setIstate(s => ({ ...s, selection: new Set() }));
+          }
+        }
+        return;
+      }
+
+      if (e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        send({ type: 'bwc-tidy-hand' });
+        return;
+      }
+
       // D and S only apply to a single hovered deck.
       if (targets.length === 1 && targets[0].obj.kind === 'deck') {
-        const ro = targets[0];
         if (e.key === 'd' || e.key === 'D') {
           e.preventDefault();
-          handleDeckAction('draw', ro);
+          handleDeckAction('draw', targets[0]);
         } else if (e.key === 's' || e.key === 'S') {
           e.preventDefault();
-          handleDeckAction('shuffle', ro);
+          handleDeckAction('shuffle', targets[0]);
         }
       }
     }

@@ -53,7 +53,7 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
             {showLibrary ? 'Hide Library' : `Library (${state.library.length})`}
           </button>
           <button onClick={() => send({ type: 'bwc-tidy-hand' })}>
-            Tidy Hand
+            Tidy Hand (T)
           </button>
           <button onClick={() => send({ type: 'reset' })}>
             Reset
