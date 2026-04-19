@@ -508,8 +508,8 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
       const centerY = ro.obj.pose.y + CARD_H / 2;
       const dx = centerX - cx;
       const dy = centerY - cy;
-      const newCenterX = cx + dy;
-      const newCenterY = cy - dx;
+      const newCenterX = cx - dy;
+      const newCenterY = cy + dx;
       const newRot = (ro.obj.pose.rot + 90) % 360;
 
       // Clamp to keep card in bounds.
