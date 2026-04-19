@@ -1375,6 +1375,7 @@ button:disabled {
   height: 40%;
   transform: translate(-50%, -50%);
   cursor: grab;
+  pointer-events: auto;
   z-index: 1;
 }
 

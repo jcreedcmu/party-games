@@ -78,36 +78,48 @@ export type RenderedObject = {
   rectInScreen: OrientedRect;
 };
 
+// Fixed gap between adjacent cards in a deck stack (in card-local units).
+const DECK_CARD_GAP = 6;
+
+// Compute the total stack offset for a deck of the given size.
+// Cards fan out up and to the right with a fixed per-card gap.
+// Returns { dx, dy } where the top card is shifted by (dx, -dy) from the bottom card.
+export function deckStackOffset(count: number): { dx: number; dy: number } {
+  const visibleCards = Math.min(count, 4);
+  const offset = DECK_CARD_GAP * (visibleCards - 1);
+  return { dx: offset, dy: offset };
+}
+
 function CardContent({ obj }: { obj: BwcVisibleObject }) {
   if (obj.kind === 'card') {
     return obj.faceUp && obj.card ? <CardView card={obj.card} /> : <CardBack />;
   }
   const count = obj.count;
-  const PX_PER_CARD = 2;
-  const MIN_OFFSET = 6;
-  const MAX_OFFSET = 24;
-  const stackOffset = Math.min(MIN_OFFSET + (count - 1) * PX_PER_CARD, MAX_OFFSET);
-  const numLayers = Math.min(count - 1, 3);
+  const visibleCards = Math.min(count, 4);
+  const numBacks = visibleCards - 1;
   const topCard = obj.faceUp && obj.topCard
     ? <CardView card={obj.topCard} />
     : <CardBack />;
   return (
     <div className="bwc-deck-view">
-      {Array.from({ length: numLayers }, (_, i) => {
-        const frac = 1 - (i + 1) / (numLayers + 1);
-        return (
-          <div key={i} className="bwc-deck-layer" style={{
-            position: 'absolute',
-            bottom: stackOffset * frac,
-            left: -stackOffset * frac,
-            width: '100%',
-            height: '100%',
-          }}>
-            <CardBack />
-          </div>
-        );
-      })}
-      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      {Array.from({ length: numBacks }, (_, i) => (
+        <div key={i} className="bwc-deck-layer" style={{
+          position: 'absolute',
+          bottom: DECK_CARD_GAP * i,
+          left: DECK_CARD_GAP * i,
+          width: '100%',
+          height: '100%',
+        }}>
+          <CardBack />
+        </div>
+      ))}
+      <div style={{
+        position: 'absolute',
+        bottom: DECK_CARD_GAP * numBacks,
+        left: DECK_CARD_GAP * numBacks,
+        width: '100%',
+        height: '100%',
+      }}>
         {topCard}
       </div>
       <div className="bwc-deck-count">{count}</div>
@@ -117,13 +129,17 @@ function CardContent({ obj }: { obj: BwcVisibleObject }) {
 
 // --- Draw handle for decks ---
 
-function DrawHandle({ onPointerDown }: { onPointerDown: (e: React.PointerEvent) => void }) {
+function DrawHandle({ offset, onPointerDown }: { offset: { dx: number; dy: number }; onPointerDown: (e: React.PointerEvent) => void }) {
+  // Position a full-card-sized anchor at the top card's offset,
+  // then center the handle within it.
   return (
-    <div className="bwc-draw-handle" onPointerDown={e => { e.stopPropagation(); onPointerDown(e); }}>
-      <svg viewBox="0 0 40 40" className="bwc-draw-handle-svg">
-        <circle cx="20" cy="20" r="18" />
-        <path d="M 12 20 L 26 20 M 21 13 L 28 20 L 21 27" />
-      </svg>
+    <div style={{ position: 'absolute', left: offset.dx, bottom: offset.dy, width: '100%', height: '100%', pointerEvents: 'none' }}>
+      <div className="bwc-draw-handle" onPointerDown={e => { e.stopPropagation(); onPointerDown(e); }}>
+        <svg viewBox="0 0 40 40" className="bwc-draw-handle-svg">
+          <circle cx="20" cy="20" r="18" />
+          <path d="M 12 20 L 26 20 M 21 13 L 28 20 L 21 27" />
+        </svg>
+      </div>
     </div>
   );
 }
@@ -166,7 +182,7 @@ function ObjectView({ ro, selected, displayCenter, onPointerDown, onDrawHandlePo
     >
       <CardContent obj={ro.obj} />
       {ro.obj.kind === 'deck' && (
-        <DrawHandle onPointerDown={e => onDrawHandlePointerDown(e, ro)} />
+        <DrawHandle offset={deckStackOffset(ro.obj.count)} onPointerDown={e => onDrawHandlePointerDown(e, ro)} />
       )}
     </div>
   );
@@ -459,13 +475,14 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
 
   const handleDrawHandlePointerDown = useCallback((e: React.PointerEvent, ro: RenderedObject) => {
     if (ro.obj.kind !== 'deck') return;
-    // Draw the top card to the deck's position so it appears in place.
+    // Draw the top card, positioned where it visually appears (deck pose + stack offset).
+    const { dx, dy } = deckStackOffset(ro.obj.count);
     send({
       type: 'bwc-draw-from-deck',
       surface: ro.surface,
       deckId: ro.obj.id,
       to: ro.surface,
-      pose: ro.obj.pose,
+      pose: { x: ro.obj.pose.x + dx, y: ro.obj.pose.y - dy, rot: ro.obj.pose.rot },
     });
     // Remember that we want to auto-drag the newly drawn card.
     pendingDrawDragRef.current = {

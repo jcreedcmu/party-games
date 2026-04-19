@@ -7,7 +7,7 @@ import {
   type InteractionState,
   type InteractionContext,
 } from '../interaction';
-import type { RenderedObject } from '../BwcPlayArea';
+import { type RenderedObject, deckStackOffset } from '../BwcPlayArea';
 import type { Point } from '../../../../../util/types';
 
 // --- Helpers ---
@@ -333,5 +333,56 @@ describe('marquee selection', () => {
 
   test('getMarqueeRect returns null when idle', () => {
     expect(getMarqueeRect(initialInteractionState(), { x: 0, y: 0 })).toBeNull();
+  });
+});
+
+describe('deckStackOffset', () => {
+  test('single card has zero offset', () => {
+    const { dx, dy } = deckStackOffset(1);
+    expect(dx).toBe(0);
+    expect(dy).toBe(0);
+  });
+
+  test('offset grows with count up to 4 visible cards', () => {
+    const o1 = deckStackOffset(1);
+    const o2 = deckStackOffset(2);
+    const o3 = deckStackOffset(3);
+    const o4 = deckStackOffset(4);
+    expect(o2.dx).toBeGreaterThan(o1.dx);
+    expect(o3.dx).toBeGreaterThan(o2.dx);
+    expect(o4.dx).toBeGreaterThan(o3.dx);
+    // Gap between adjacent sizes is constant.
+    expect(o3.dx - o2.dx).toBe(o2.dx - o1.dx);
+    expect(o4.dx - o3.dx).toBe(o3.dx - o2.dx);
+  });
+
+  test('offset is capped at 4 visible cards', () => {
+    const o4 = deckStackOffset(4);
+    const o5 = deckStackOffset(5);
+    const o100 = deckStackOffset(100);
+    expect(o5.dx).toBe(o4.dx);
+    expect(o100.dx).toBe(o4.dx);
+  });
+
+  test('drawn card position: deck bottom card stays put after draw', () => {
+    // The deck pose anchors the bottom card. After drawing, the deck
+    // (now count-1) still has the same pose, so the bottom card doesn't move.
+    // The drawn card should appear at pose + offset(count), i.e. where
+    // the top card of the original deck was.
+    const deckPose = { x: 100, y: 200 };
+    const count = 5;
+    const { dx, dy } = deckStackOffset(count);
+
+    // Drawn card placed at top card position of original deck.
+    const drawnCardPose = { x: deckPose.x + dx, y: deckPose.y - dy };
+
+    // After draw, the new deck has count-1 cards. Its top card is at:
+    const { dx: dx2, dy: dy2 } = deckStackOffset(count - 1);
+    const newTopCardPos = { x: deckPose.x + dx2, y: deckPose.y - dy2 };
+
+    // The drawn card should be above/right of the new top card
+    // (it was the old top card, which was further offset).
+    expect(drawnCardPose.x).toBeGreaterThanOrEqual(newTopCardPos.x);
+    expect(drawnCardPose.y).toBeLessThanOrEqual(newTopCardPos.y);
   });
 });
