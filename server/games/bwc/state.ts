@@ -661,8 +661,12 @@ function reduceTidyHand(state: BwcPlayingState, playerId: PlayerId): ReduceResul
   const sorted = Array.from(objects.values()).sort((a, b) => a.pose.x - b.pose.x);
 
   // Lay out in a row preserving relative x-order, centered vertically.
-  const spacing = TIDY_CARD_W + TIDY_PADDING;
-  const totalWidth = sorted.length * TIDY_CARD_W + (sorted.length - 1) * TIDY_PADDING;
+  // If cards don't fit at full spacing, overlap them to fit within the hand.
+  const idealSpacing = TIDY_CARD_W + TIDY_PADDING;
+  const availableWidth = HAND_LOGICAL_W - 2 * TIDY_PADDING;
+  const maxSpacing = sorted.length <= 1 ? idealSpacing : (availableWidth - TIDY_CARD_W) / (sorted.length - 1);
+  const spacing = Math.min(idealSpacing, maxSpacing);
+  const totalWidth = sorted.length <= 1 ? TIDY_CARD_W : TIDY_CARD_W + (sorted.length - 1) * spacing;
   const startX = Math.max(TIDY_PADDING, (HAND_LOGICAL_W - totalWidth) / 2);
   const y = (HAND_LOGICAL_H - TIDY_CARD_H) / 2;
 
