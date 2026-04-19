@@ -1366,3 +1366,18 @@ button:disabled {
   border-radius: 1px;
   pointer-events: none;
 }
+
+/* Card zoom overlay */
+.bwc-card-zoom-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+  cursor: pointer;
+}
+
+.bwc-card-zoom-card {
+  pointer-events: none;
+}

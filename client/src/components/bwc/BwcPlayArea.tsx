@@ -1,6 +1,6 @@
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import type {
-  BwcVisibleObject, BwcVisibleSurface, BwcClientSeat,
+  BwcVisibleObject, BwcVisibleSurface, BwcClientSeat, BwcClientCardFull,
   ClientMessage, Pose, Side, SurfaceId, CardId, DrawOp,
 } from '../../types';
 import { CardView, CardBack } from './CardView';
@@ -260,6 +260,9 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
   // The rendering offset is computed from containerRef at render time.
   type PieMenuState = { clientCenter: Point; items: PieMenuItem[] } | null;
   const [pieMenu, setPieMenu] = useState<PieMenuState>(null);
+
+  // --- Card zoom/view state ---
+  const [viewingCard, setViewingCard] = useState<BwcClientCardFull | null>(null);
 
   // --- Interaction state (pure reducer + React wrapper) ---
   const [istate, setIstate] = useState<InteractionState>(initialInteractionState);
@@ -527,78 +530,13 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
     }
   }, [send, rendered, rotateSingle]);
 
-  function buildSelectionPieItems(selectedRos: RenderedObject[]): PieMenuItem[] {
+  function buildPieItems(ros: RenderedObject[]): PieMenuItem[] {
     const items: PieMenuItem[] = [];
-    const ids = new Set(selectedRos.map(r => r.obj.id));
+    const ids = new Set(ros.map(r => r.obj.id));
 
-    items.push({
-      label: 'Rotate',
-      action: () => rotateGroup(ids),
-    });
-
-    // Form Deck: only if all selected are cards on the same surface.
-    const allCards = selectedRos.every(r => r.obj.kind === 'card');
-    const surface = selectedRos[0]?.surface;
-    const sameSurface = surface && selectedRos.every(r =>
-      r.surface.kind === surface.kind &&
-      (r.surface.kind === 'table' || (r.surface.kind === 'hand' && surface.kind === 'hand' && r.surface.ownerId === surface.ownerId))
-    );
-    if (allCards && sameSurface && selectedRos.length >= 2) {
-      items.push({
-        label: 'Form Deck',
-        action: () => {
-          let cx = 0, cy = 0;
-          for (const ro of selectedRos) {
-            cx += ro.obj.pose.x + CARD_W / 2;
-            cy += ro.obj.pose.y + CARD_H / 2;
-          }
-          cx /= selectedRos.length;
-          cy /= selectedRos.length;
-          send({
-            type: 'bwc-form-deck',
-            surface,
-            objectIds: selectedRos.map(r => r.obj.id),
-            pose: { x: cx - CARD_W / 2, y: cy - CARD_H / 2, rot: 0 },
-          });
-          setIstate(s => ({ ...s, selection: new Set() }));
-        },
-      });
-    }
-
-    items.push({
-      label: 'Flip',
-      action: () => {
-        for (const ro of selectedRos) {
-          send({ type: 'bwc-flip-object', surface: ro.surface, objectId: ro.obj.id });
-        }
-      },
-    });
-    items.push({
-      label: 'Delete',
-      action: () => {
-        for (const ro of selectedRos) {
-          send({ type: 'bwc-delete-object', surface: ro.surface, objectId: ro.obj.id });
-        }
-        setIstate(s => ({ ...s, selection: new Set() }));
-      },
-    });
-
-    return items;
-  }
-
-  const handleContextMenu = useCallback((e: React.PointerEvent, ro: RenderedObject) => {
-    const cc: Point = { x: e.clientX, y: e.clientY };
-
-    // If there's a selection and we didn't right-click a deck, target the selection.
-    if (istate.selection.size > 0 && ro.obj.kind !== 'deck') {
-      const selectedRos = rendered.filter(r => istate.selection.has(r.obj.id));
-      setPieMenu({ clientCenter: cc, items: buildSelectionPieItems(selectedRos) });
-      return;
-    }
-
-    const items: PieMenuItem[] = [];
-
-    if (ro.obj.kind === 'deck') {
+    // Single-deck actions.
+    if (ros.length === 1 && ros[0].obj.kind === 'deck') {
+      const ro = ros[0];
       items.push({
         label: 'Draw',
         action: () => send({
@@ -615,8 +553,13 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
       });
     }
 
-    if (ro.obj.kind === 'card' && ro.obj.faceUp && ro.obj.card) {
-      const card = ro.obj.card;
+    // Single face-up card actions.
+    if (ros.length === 1 && ros[0].obj.kind === 'card' && ros[0].obj.faceUp && ros[0].obj.card) {
+      const card = ros[0].obj.card;
+      items.push({
+        label: 'View',
+        action: () => setViewingCard(card),
+      });
       items.push({
         label: 'Edit',
         action: () => onEdit(card.id, card.ops, card.name, card.cardType, card.text),
@@ -624,19 +567,70 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
     }
 
     items.push({
-      label: 'Flip',
-      action: () => send({ type: 'bwc-flip-object', surface: ro.surface, objectId: ro.obj.id }),
-    });
-    items.push({
       label: 'Rotate',
-      action: () => rotateSingle(ro.obj.id),
+      action: () => rotateGroup(ids),
+    });
+
+    // Form Deck: only if all selected are cards on the same surface.
+    const allCards = ros.every(r => r.obj.kind === 'card');
+    const surface = ros[0]?.surface;
+    const sameSurface = surface && ros.every(r =>
+      r.surface.kind === surface.kind &&
+      (r.surface.kind === 'table' || (r.surface.kind === 'hand' && surface.kind === 'hand' && r.surface.ownerId === surface.ownerId))
+    );
+    if (allCards && sameSurface && ros.length >= 2) {
+      items.push({
+        label: 'Form Deck',
+        action: () => {
+          let cx = 0, cy = 0;
+          for (const ro of ros) {
+            cx += ro.obj.pose.x + CARD_W / 2;
+            cy += ro.obj.pose.y + CARD_H / 2;
+          }
+          cx /= ros.length;
+          cy /= ros.length;
+          send({
+            type: 'bwc-form-deck',
+            surface,
+            objectIds: ros.map(r => r.obj.id),
+            pose: { x: cx - CARD_W / 2, y: cy - CARD_H / 2, rot: 0 },
+          });
+          setIstate(s => ({ ...s, selection: new Set() }));
+        },
+      });
+    }
+
+    items.push({
+      label: 'Flip',
+      action: () => {
+        for (const ro of ros) {
+          send({ type: 'bwc-flip-object', surface: ro.surface, objectId: ro.obj.id });
+        }
+      },
     });
     items.push({
       label: 'Delete',
-      action: () => send({ type: 'bwc-delete-object', surface: ro.surface, objectId: ro.obj.id }),
+      action: () => {
+        for (const ro of ros) {
+          send({ type: 'bwc-delete-object', surface: ro.surface, objectId: ro.obj.id });
+        }
+        setIstate(s => ({ ...s, selection: new Set() }));
+      },
     });
 
-    setPieMenu({ clientCenter: cc, items });
+    return items;
+  }
+
+  const handleContextMenu = useCallback((e: React.PointerEvent, ro: RenderedObject) => {
+    const cc: Point = { x: e.clientX, y: e.clientY };
+
+    // If there's a selection and we didn't right-click a deck, target the selection.
+    if (istate.selection.size > 0 && ro.obj.kind !== 'deck') {
+      const selectedRos = rendered.filter(r => istate.selection.has(r.obj.id));
+      setPieMenu({ clientCenter: cc, items: buildPieItems(selectedRos) });
+    } else {
+      setPieMenu({ clientCenter: cc, items: buildPieItems([ro]) });
+    }
   }, [send, rotateSingle, onEdit, istate.selection, rendered]);
 
   function findRendered(objectId: string): RenderedObject | undefined {
@@ -648,6 +642,14 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
     function handleKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
+      if (e.key === 'Escape') {
+        setViewingCard(null);
+        return;
+      }
+
+      // Don't process shortcuts while viewing a card.
+      if (viewingCard) return;
+
       if (e.key === 'r' || e.key === 'R') {
         e.preventDefault();
         if (istate.selection.size > 0) {
@@ -656,6 +658,17 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
         } else if (hoveredRef.current) {
           // No selection: rotate the hovered card.
           rotateSingle(hoveredRef.current);
+        }
+        return;
+      }
+
+      if (e.key === 'v' || e.key === 'V') {
+        const targetId = hoveredRef.current;
+        if (!targetId) return;
+        const ro = findRendered(targetId);
+        if (ro && ro.obj.kind === 'card' && ro.obj.faceUp && ro.obj.card) {
+          e.preventDefault();
+          setViewingCard(ro.obj.card);
         }
         return;
       }
@@ -679,7 +692,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [rotateSingle, rotateGroup, handleDeckAction, rendered, istate.selection]);
+  }, [rotateSingle, rotateGroup, handleDeckAction, rendered, istate.selection, viewingCard]);
 
   return (
     <div
@@ -693,7 +706,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
         if (istate.selection.size > 0) {
           const cc: Point = { x: e.clientX, y: e.clientY };
           const selectedRos = rendered.filter(r => istate.selection.has(r.obj.id));
-          setPieMenu({ clientCenter: cc, items: buildSelectionPieItems(selectedRos) });
+          setPieMenu({ clientCenter: cc, items: buildPieItems(selectedRos) });
         }
       }}
     >
@@ -755,6 +768,23 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
           />
         );
       })()}
+
+      {/* Card zoom overlay */}
+      {viewingCard && (
+        <div className="bwc-card-zoom-overlay" onClick={() => setViewingCard(null)}>
+          <div className="bwc-card-zoom-card" style={orientedRectToStyle({
+            center: { x: containerWidth / 2, y: (tableScreenH + HAND_LOGICAL_H * scale) / 2 },
+            halfSize: { x: CARD_W / 2, y: CARD_H / 2 },
+            scale: Math.min(
+              (tableScreenH + HAND_LOGICAL_H * scale) * 0.8 / CARD_H,
+              containerWidth * 0.8 / CARD_W,
+            ),
+            rotDeg: 0,
+          })}>
+            <CardView card={viewingCard} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
