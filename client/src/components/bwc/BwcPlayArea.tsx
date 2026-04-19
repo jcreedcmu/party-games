@@ -451,6 +451,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
     // Only fires if the click was directly on the container (empty space),
     // not on a card (which calls stopPropagation).
     setPieMenu(null);
+    if (e.button === 2) return; // Right-click handled by onContextMenu.
     containerRef.current?.setPointerCapture(e.pointerId);
     dispatch({
       kind: 'space-pointer-down',
