@@ -115,6 +115,19 @@ function CardContent({ obj }: { obj: BwcVisibleObject }) {
   );
 }
 
+// --- Draw handle for decks ---
+
+function DrawHandle({ onPointerDown }: { onPointerDown: (e: React.PointerEvent) => void }) {
+  return (
+    <div className="bwc-draw-handle" onPointerDown={e => { e.stopPropagation(); onPointerDown(e); }}>
+      <svg viewBox="0 0 40 40" className="bwc-draw-handle-svg">
+        <circle cx="20" cy="20" r="18" />
+        <path d="M 12 20 L 26 20 M 21 13 L 28 20 L 21 27" />
+      </svg>
+    </div>
+  );
+}
+
 // --- ObjectView: purely presentational ---
 
 type ObjectViewProps = {
@@ -122,13 +135,14 @@ type ObjectViewProps = {
   selected: boolean;
   displayCenter: Point;  // may differ from ro.rectInScreen.center during drag/pending
   onPointerDown: (e: React.PointerEvent, ro: RenderedObject) => void;
+  onDrawHandlePointerDown: (e: React.PointerEvent, ro: RenderedObject) => void;
   onDoubleClick: (ro: RenderedObject) => void;
   onContextMenu: (e: React.PointerEvent, ro: RenderedObject) => void;
   onPointerEnter: (ro: RenderedObject) => void;
   onPointerLeave: (ro: RenderedObject) => void;
 };
 
-function ObjectView({ ro, selected, displayCenter, onPointerDown, onDoubleClick, onContextMenu, onPointerEnter, onPointerLeave }: ObjectViewProps) {
+function ObjectView({ ro, selected, displayCenter, onPointerDown, onDrawHandlePointerDown, onDoubleClick, onContextMenu, onPointerEnter, onPointerLeave }: ObjectViewProps) {
   const rect: OrientedRect = { ...ro.rectInScreen, center: displayCenter };
   const style = orientedRectToStyle(rect);
   const isDragging = displayCenter !== ro.rectInScreen.center;
@@ -151,6 +165,9 @@ function ObjectView({ ro, selected, displayCenter, onPointerDown, onDoubleClick,
       onPointerLeave={() => onPointerLeave(ro)}
     >
       <CardContent obj={ro.obj} />
+      {ro.obj.kind === 'deck' && (
+        <DrawHandle onPointerDown={e => onDrawHandlePointerDown(e, ro)} />
+      )}
     </div>
   );
 }
@@ -264,6 +281,15 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
   // --- Card zoom/view state ---
   const [viewingCard, setViewingCard] = useState<BwcClientCardFull | null>(null);
 
+  // --- Draw-drag state: when dragging from a deck's draw handle ---
+  // We send bwc-draw-from-deck and wait for the new card to appear.
+  type PendingDrawDrag = {
+    startClient: Point;
+    pointerId: number;
+    prevObjectIds: Set<string>;
+  };
+  const pendingDrawDragRef = useRef<PendingDrawDrag | null>(null);
+
   // --- Interaction state (pure reducer + React wrapper) ---
   const [istate, setIstate] = useState<InteractionState>(initialInteractionState);
   const hoveredRef = useRef<string | null>(null);
@@ -301,6 +327,36 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
       }
     }
     prevCentersRef.current = next;
+
+    // Detect newly drawn card and auto-start drag.
+    const pdd = pendingDrawDragRef.current;
+    if (pdd) {
+      const currentIds = new Set(rendered.map(r => r.obj.id));
+      for (const id of currentIds) {
+        if (!pdd.prevObjectIds.has(id)) {
+          // Found the new card — start dragging it.
+          const ro = rendered.find(r => r.obj.id === id);
+          if (ro) {
+            pendingDrawDragRef.current = null;
+            containerRef.current?.setPointerCapture(pdd.pointerId);
+            setIstate(s => ({
+              ...s,
+              selection: new Set([id]),
+              interaction: {
+                kind: 'drag',
+                objectIds: [id],
+                origins: new Map([[id, ro.rectInScreen.center]]),
+                fromSurfaces: new Map([[id, ro.surface]]),
+                startClient: pdd.startClient,
+                dx: 0,
+                dy: 0,
+              },
+            }));
+          }
+          break;
+        }
+      }
+    }
   });
 
   // --- Surface helpers ---
@@ -399,6 +455,24 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
       clientY: e.clientY,
     });
   }, [rendered]);
+
+  const handleDrawHandlePointerDown = useCallback((e: React.PointerEvent, ro: RenderedObject) => {
+    if (ro.obj.kind !== 'deck') return;
+    // Draw the top card to the deck's position so it appears in place.
+    send({
+      type: 'bwc-draw-from-deck',
+      surface: ro.surface,
+      deckId: ro.obj.id,
+      to: ro.surface,
+      pose: ro.obj.pose,
+    });
+    // Remember that we want to auto-drag the newly drawn card.
+    pendingDrawDragRef.current = {
+      startClient: { x: e.clientX, y: e.clientY },
+      pointerId: e.pointerId,
+      prevObjectIds: new Set(rendered.map(r => r.obj.id)),
+    };
+  }, [send, rendered]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     dispatch({ kind: 'pointer-move', clientX: e.clientX, clientY: e.clientY });
@@ -742,6 +816,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
           selected={selection.has(ro.obj.id)}
           displayCenter={getDisplayCenter(ro, istate)}
           onPointerDown={handleObjectPointerDown}
+          onDrawHandlePointerDown={handleDrawHandlePointerDown}
           onDoubleClick={handleDoubleClick}
           onContextMenu={handleContextMenu}
           onPointerEnter={ro => { hoveredRef.current = ro.obj.id; }}

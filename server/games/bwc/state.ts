@@ -565,7 +565,7 @@ function reduceDrawFromDeck(
     id: cardObjId,
     cardId: drawnCardId,
     pose: msg.pose,
-    faceUp: true,
+    faceUp: obj.faceUp,
     z: 0,
   };
   const toObjects = new Map(toSurface.objects);
