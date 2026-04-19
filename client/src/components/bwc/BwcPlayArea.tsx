@@ -577,31 +577,33 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
     cx /= ros.length;
     cy /= ros.length;
 
-    for (const ro of ros) {
-      const centerX = ro.obj.pose.x + CARD_W / 2;
-      const centerY = ro.obj.pose.y + CARD_H / 2;
-      const dx = centerX - cx;
-      const dy = centerY - cy;
-      const newCenterX = cx - dy;
-      const newCenterY = cy + dx;
-      const newRot = (ro.obj.pose.rot + 90) % 360;
+    send({
+      type: 'bwc-batch',
+      messages: ros.map(ro => {
+        const centerX = ro.obj.pose.x + CARD_W / 2;
+        const centerY = ro.obj.pose.y + CARD_H / 2;
+        const dx = centerX - cx;
+        const dy = centerY - cy;
+        const newCenterX = cx - dy;
+        const newCenterY = cy + dx;
+        const newRot = (ro.obj.pose.rot + 90) % 360;
 
-      // Clamp to keep card in bounds.
-      const fit = fitCardInBounds({ x: newCenterX, y: newCenterY }, newRot, boundsW, boundsH);
-      const finalCenter = fit ? fit.center : { x: newCenterX, y: newCenterY };
+        const fit = fitCardInBounds({ x: newCenterX, y: newCenterY }, newRot, boundsW, boundsH);
+        const finalCenter = fit ? fit.center : { x: newCenterX, y: newCenterY };
 
-      send({
-        type: 'bwc-move-object',
-        from: surface,
-        objectId: ro.obj.id,
-        to: surface,
-        pose: {
-          x: finalCenter.x - CARD_W / 2,
-          y: finalCenter.y - CARD_H / 2,
-          rot: newRot,
-        },
-      });
-    }
+        return {
+          type: 'bwc-move-object' as const,
+          from: surface,
+          objectId: ro.obj.id,
+          to: surface,
+          pose: {
+            x: finalCenter.x - CARD_W / 2,
+            y: finalCenter.y - CARD_H / 2,
+            rot: newRot,
+          },
+        };
+      }),
+    });
   }, [send, rendered, rotateSingle]);
 
   function buildPieItems(ros: RenderedObject[]): PieMenuItem[] {
@@ -677,17 +679,19 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
     items.push({
       label: 'Flip (F)',
       action: () => {
-        for (const ro of ros) {
-          send({ type: 'bwc-flip-object', surface: ro.surface, objectId: ro.obj.id });
-        }
+        send({
+          type: 'bwc-batch',
+          messages: ros.map(ro => ({ type: 'bwc-flip-object', surface: ro.surface, objectId: ro.obj.id })),
+        });
       },
     });
     items.push({
       label: 'Delete',
       action: () => {
-        for (const ro of ros) {
-          send({ type: 'bwc-delete-object', surface: ro.surface, objectId: ro.obj.id });
-        }
+        send({
+          type: 'bwc-batch',
+          messages: ros.map(ro => ({ type: 'bwc-delete-object', surface: ro.surface, objectId: ro.obj.id })),
+        });
         setIstate(s => ({ ...s, selection: new Set() }));
       },
     });
@@ -744,9 +748,10 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
 
       if (e.key === 'f' || e.key === 'F') {
         e.preventDefault();
-        for (const ro of targets) {
-          send({ type: 'bwc-flip-object', surface: ro.surface, objectId: ro.obj.id });
-        }
+        send({
+          type: 'bwc-batch',
+          messages: targets.map(ro => ({ type: 'bwc-flip-object', surface: ro.surface, objectId: ro.obj.id })),
+        });
         return;
       }
 

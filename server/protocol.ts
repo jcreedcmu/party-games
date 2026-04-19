@@ -146,7 +146,7 @@ export type BwcTidyHandMessage = {
   type: 'bwc-tidy-hand';
 };
 
-export type BwcClientMessage =
+export type BwcSingleMessage =
   | BwcCreateCardMessage
   | BwcEditCardMessage
   | BwcSpawnCardMessage
@@ -161,6 +161,15 @@ export type BwcClientMessage =
   | BwcSetScoreMessage
   | BwcAdjustScoreMessage
   | BwcTidyHandMessage;
+
+export type BwcBatchMessage = {
+  type: 'bwc-batch';
+  messages: BwcSingleMessage[];
+};
+
+export type BwcClientMessage =
+  | BwcSingleMessage
+  | BwcBatchMessage;
 
 export type ClientMessage =
   | CommonClientMessage

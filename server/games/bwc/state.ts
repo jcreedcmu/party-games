@@ -691,7 +691,7 @@ function withSnapshotDirty(result: ReduceResult): ReduceResult {
 
 // --- Main reduce ---
 
-export function bwcReduce(state: ServerState, playerId: PlayerId, msg: ClientMessage): ReduceResult {
+function bwcReduceSingle(state: ServerState, playerId: PlayerId, msg: ClientMessage): ReduceResult {
   if (state.phase !== 'bwc-waiting' && state.phase !== 'bwc-playing') {
     return { state, effects: [] };
   }
@@ -793,6 +793,31 @@ export function bwcReduce(state: ServerState, playerId: PlayerId, msg: ClientMes
     default:
       return { state, effects: [] };
   }
+}
+
+export function bwcReduce(state: ServerState, playerId: PlayerId, msg: ClientMessage): ReduceResult {
+  if (msg.type !== 'bwc-batch') {
+    return bwcReduceSingle(state, playerId, msg);
+  }
+  // Process each sub-message, accumulating state and non-broadcast effects.
+  let current = state;
+  const effects: Effect[] = [];
+  let needsBroadcast = false;
+  for (const sub of msg.messages) {
+    const result = bwcReduceSingle(current, playerId, sub);
+    current = result.state;
+    for (const e of result.effects) {
+      if (e.type === 'broadcast') {
+        needsBroadcast = true;
+      } else {
+        effects.push(e);
+      }
+    }
+  }
+  if (needsBroadcast) {
+    effects.push({ type: 'broadcast' });
+  }
+  return { state: current, effects };
 }
 
 export function bwcReduceDisconnect(state: ServerState, playerId: PlayerId): ReduceResult {
