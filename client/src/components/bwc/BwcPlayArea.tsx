@@ -743,10 +743,14 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
         return;
       }
 
-      // Selection if non-empty, else the single hovered object.
+      // Selection if non-empty, else currently dragged objects, else hovered.
       function getTargets(): RenderedObject[] {
         if (istate.selection.size > 0) {
           return rendered.filter(r => istate.selection.has(r.obj.id));
+        }
+        const inter = istate.interaction;
+        if (inter.kind === 'drag') {
+          return rendered.filter(r => inter.objectIds.includes(r.obj.id));
         }
         if (hoveredRef.current) {
           const ro = findRendered(hoveredRef.current);
@@ -798,7 +802,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [rotateSingle, rotateGroup, handleDeckAction, rendered, istate.selection, viewingCard]);
+  }, [rotateSingle, rotateGroup, handleDeckAction, rendered, istate.selection, istate.interaction, viewingCard]);
 
   return (
     <div
