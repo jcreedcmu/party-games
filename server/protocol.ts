@@ -146,6 +146,11 @@ export type BwcTidyHandMessage = {
   type: 'bwc-tidy-hand';
 };
 
+export type BwcCreateBlankDeckMessage = {
+  type: 'bwc-create-blank-deck';
+  count: number;
+};
+
 export type BwcSingleMessage =
   | BwcCreateCardMessage
   | BwcEditCardMessage
@@ -160,7 +165,8 @@ export type BwcSingleMessage =
   | BwcFormDeckMessage
   | BwcSetScoreMessage
   | BwcAdjustScoreMessage
-  | BwcTidyHandMessage;
+  | BwcTidyHandMessage
+  | BwcCreateBlankDeckMessage;
 
 export type BwcBatchMessage = {
   type: 'bwc-batch';

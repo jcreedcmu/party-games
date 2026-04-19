@@ -52,6 +52,9 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
           <button onClick={() => setShowLibrary(l => !l)}>
             {showLibrary ? 'Hide Library' : `Library (${state.library.length})`}
           </button>
+          <button onClick={() => send({ type: 'bwc-create-blank-deck', count: 10 })}>
+            New Blank Cards
+          </button>
           <button onClick={() => send({ type: 'bwc-tidy-hand' })}>
             Tidy Hand (T)
           </button>

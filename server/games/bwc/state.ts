@@ -684,6 +684,46 @@ function reduceTidyHand(state: BwcPlayingState, playerId: PlayerId): ReduceResul
   return { state: s, effects: [{ type: 'broadcast' }] };
 }
 
+// --- Create blank deck ---
+
+import { TABLE_LOGICAL } from './constants.js';
+
+function reduceCreateBlankDeck(
+  state: BwcPlayingState,
+  playerId: PlayerId,
+  msg: { count: number },
+): ReduceResult {
+  const handle = state.players.get(playerId)?.handle ?? 'unknown';
+  let library = state.library;
+  const cardIds: CardId[] = [];
+  for (let i = 0; i < msg.count; i++) {
+    const result = createCard(library, [], '', '', '', '');
+    library = result.library;
+    cardIds.push(result.cardId);
+  }
+  persistLibrary(library);
+
+  // Place the deck at a random position on the table.
+  const margin = 100;
+  const x = margin + Math.random() * (TABLE_LOGICAL - 2 * margin);
+  const y = margin + Math.random() * (TABLE_LOGICAL - 2 * margin);
+
+  const { state: s1, objectId: deckId } = nextObjectId({ ...state, library, inPlay: new Set([...state.inPlay, ...cardIds]) });
+  const deck: TableObject = {
+    kind: 'deck',
+    id: deckId,
+    cardIds,
+    pose: { x, y, rot: 0 },
+    faceUp: false,
+    z: 0,
+  };
+  const objects = new Map(s1.table.objects);
+  objects.set(deckId, deck);
+  let s2 = { ...s1, table: { ...s1.table, objects } };
+  s2 = allocateZBatch(s2, [deckId]);
+  return { state: s2, effects: [{ type: 'broadcast' }] };
+}
+
 // --- Persistence hooks ---
 
 function withSnapshotDirty(result: ReduceResult): ReduceResult {
@@ -793,6 +833,10 @@ function bwcReduceSingle(state: ServerState, playerId: PlayerId, msg: ClientMess
     case 'bwc-tidy-hand': {
       if (state.phase !== 'bwc-playing') return { state, effects: [] };
       return withSnapshotDirty(reduceTidyHand(state, playerId));
+    }
+    case 'bwc-create-blank-deck': {
+      if (state.phase !== 'bwc-playing') return { state, effects: [] };
+      return withSnapshotDirty(reduceCreateBlankDeck(state, playerId, msg));
     }
     default:
       return { state, effects: [] };
