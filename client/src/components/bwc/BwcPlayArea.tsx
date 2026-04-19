@@ -475,14 +475,21 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
 
   const handleDrawHandlePointerDown = useCallback((e: React.PointerEvent, ro: RenderedObject) => {
     if (ro.obj.kind !== 'deck') return;
-    // Draw the top card, positioned where it visually appears (deck pose + stack offset).
+    // Draw the top card, positioned where it visually appears.
+    // The stack offset (dx, -dy) is in card-local space; rotate it
+    // by the deck's rotation to get the offset in logical space.
     const { dx, dy } = deckStackOffset(ro.obj.count);
+    const rad = ro.obj.pose.rot * Math.PI / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const rx = dx * cos + dy * sin;
+    const ry = dx * sin - dy * cos;
     send({
       type: 'bwc-draw-from-deck',
       surface: ro.surface,
       deckId: ro.obj.id,
       to: ro.surface,
-      pose: { x: ro.obj.pose.x + dx, y: ro.obj.pose.y - dy, rot: ro.obj.pose.rot },
+      pose: { x: ro.obj.pose.x + rx, y: ro.obj.pose.y + ry, rot: ro.obj.pose.rot },
     });
     // Remember that we want to auto-drag the newly drawn card.
     pendingDrawDragRef.current = {
