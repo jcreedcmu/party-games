@@ -499,12 +499,16 @@ function reduceFormDeck(
   const surface = getSurface(state, msg.surface);
   if (!surface) return { state, effects: [] };
 
-  // Collect card IDs from the selected objects (must all be cards on this surface).
+  // Collect card IDs from the selected objects (cards and decks on this surface).
   const cardIds: CardId[] = [];
   for (const oid of msg.objectIds) {
     const obj = surface.objects.get(oid);
-    if (!obj || obj.kind !== 'card') return { state, effects: [] };
-    cardIds.push(obj.cardId);
+    if (!obj) return { state, effects: [] };
+    if (obj.kind === 'card') {
+      cardIds.push(obj.cardId);
+    } else {
+      cardIds.push(...obj.cardIds);
+    }
   }
   if (cardIds.length < 2) return { state, effects: [] };
 

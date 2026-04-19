@@ -631,6 +631,33 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
     });
   }, [send, rendered, rotateSingle]);
 
+  function isCollectable(ros: RenderedObject[]): boolean {
+    if (ros.length < 2) return false;
+    const surface = ros[0].surface;
+    return ros.every(r =>
+      r.surface.kind === surface.kind &&
+      (r.surface.kind === 'table' || (r.surface.kind === 'hand' && surface.kind === 'hand' && r.surface.ownerId === surface.ownerId))
+    );
+  }
+
+  function doCollect(ros: RenderedObject[]) {
+    const surface = ros[0].surface;
+    let cx = 0, cy = 0;
+    for (const ro of ros) {
+      cx += ro.obj.pose.x + CARD_W / 2;
+      cy += ro.obj.pose.y + CARD_H / 2;
+    }
+    cx /= ros.length;
+    cy /= ros.length;
+    send({
+      type: 'bwc-form-deck',
+      surface,
+      objectIds: ros.map(r => r.obj.id),
+      pose: { x: cx - CARD_W / 2, y: cy - CARD_H / 2, rot: 0 },
+    });
+    setIstate(s => ({ ...s, selection: new Set() }));
+  }
+
   function buildPieItems(ros: RenderedObject[]): PieMenuItem[] {
     const items: PieMenuItem[] = [];
     const ids = new Set(ros.map(r => r.obj.id));
@@ -672,32 +699,10 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
       action: () => rotateGroup(ids),
     });
 
-    // Form Deck: only if all selected are cards on the same surface.
-    const allCards = ros.every(r => r.obj.kind === 'card');
-    const surface = ros[0]?.surface;
-    const sameSurface = surface && ros.every(r =>
-      r.surface.kind === surface.kind &&
-      (r.surface.kind === 'table' || (r.surface.kind === 'hand' && surface.kind === 'hand' && r.surface.ownerId === surface.ownerId))
-    );
-    if (allCards && sameSurface && ros.length >= 2) {
+    if (isCollectable(ros)) {
       items.push({
         label: 'Collect as Deck (C)',
-        action: () => {
-          let cx = 0, cy = 0;
-          for (const ro of ros) {
-            cx += ro.obj.pose.x + CARD_W / 2;
-            cy += ro.obj.pose.y + CARD_H / 2;
-          }
-          cx /= ros.length;
-          cy /= ros.length;
-          send({
-            type: 'bwc-form-deck',
-            surface,
-            objectIds: ros.map(r => r.obj.id),
-            pose: { x: cx - CARD_W / 2, y: cy - CARD_H / 2, rot: 0 },
-          });
-          setIstate(s => ({ ...s, selection: new Set() }));
-        },
+        action: () => doCollect(ros),
       });
     }
 
@@ -796,29 +801,9 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
       }
 
       if (e.key === 'c' || e.key === 'C') {
-        if (targets.length >= 2 && targets.every(r => r.obj.kind === 'card')) {
-          const surface = targets[0].surface;
-          const sameSurface = targets.every(r =>
-            r.surface.kind === surface.kind &&
-            (r.surface.kind === 'table' || (r.surface.kind === 'hand' && surface.kind === 'hand' && r.surface.ownerId === surface.ownerId))
-          );
-          if (sameSurface) {
-            e.preventDefault();
-            let cx = 0, cy = 0;
-            for (const ro of targets) {
-              cx += ro.obj.pose.x + CARD_W / 2;
-              cy += ro.obj.pose.y + CARD_H / 2;
-            }
-            cx /= targets.length;
-            cy /= targets.length;
-            send({
-              type: 'bwc-form-deck',
-              surface,
-              objectIds: targets.map(r => r.obj.id),
-              pose: { x: cx - CARD_W / 2, y: cy - CARD_H / 2, rot: 0 },
-            });
-            setIstate(s => ({ ...s, selection: new Set() }));
-          }
+        if (isCollectable(targets)) {
+          e.preventDefault();
+          doCollect(targets);
         }
         return;
       }
