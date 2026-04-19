@@ -3,7 +3,7 @@ import type {
   BwcVisibleObject, BwcVisibleSurface, BwcClientSeat, BwcClientCardFull,
   ClientMessage, Pose, Side, SurfaceId, CardId, DrawOp,
 } from '../../types';
-import { CardView, CardBack } from './CardView';
+import { CardView, CardBack, CardFaceBlank } from './CardView';
 import { PieMenu, type PieMenuItem } from './PieMenu';
 import { SE2, apply, composen, inverse, mkTranslate, mkScale, mkRotate, type Rot } from '../../../../util/se2';
 import type { Point } from '../../../../util/types';
@@ -110,7 +110,7 @@ function CardContent({ obj }: { obj: BwcVisibleObject }) {
           width: '100%',
           height: '100%',
         }}>
-          <CardBack />
+          {obj.faceUp ? <CardFaceBlank /> : <CardBack />}
         </div>
       ))}
       <div style={{

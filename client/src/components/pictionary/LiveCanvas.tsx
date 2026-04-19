@@ -97,19 +97,14 @@ export function LiveCanvas({ ops, animated = false, playing = false, canvasWidth
     scheduleNext();
   }
 
-  // Initial render: show final state
+  // Render final state whenever the ops array identity changes (different card).
   useEffect(() => {
-    saveSnapshot();
-    for (const op of ops) {
-      applyOp(op);
-    }
-    appliedRef.current = ops.length;
-    putImage();
+    applyAllOps();
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, []);
+  }, [ops]);
 
   // React to playing prop changes
   useEffect(() => {

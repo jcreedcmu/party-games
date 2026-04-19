@@ -26,3 +26,7 @@ export function CardBack() {
     </div>
   );
 }
+
+export function CardFaceBlank() {
+  return <div className="bwc-card-face" />;
+}
