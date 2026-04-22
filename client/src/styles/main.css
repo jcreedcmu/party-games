@@ -1272,9 +1272,8 @@ button:disabled {
 .bwc-card-author {
   height: 8.93%;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  padding-bottom: 2%;
   font-size: 10px;
   color: #444;
 }
@@ -1346,6 +1345,46 @@ button:disabled {
 .bwc-score-value {
   min-width: 1.2rem;
   text-align: center;
+}
+
+.bwc-scoreboard {
+  margin-top: 0.5rem;
+  padding: 0.25rem 0;
+  border-top: 1px solid #bbb;
+}
+
+.bwc-scoreboard-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.8rem;
+}
+
+.bwc-scoreboard-row.disconnected {
+  opacity: 0.4;
+}
+
+.bwc-scoreboard-handle {
+  font-weight: bold;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  margin-right: 0.25rem;
+}
+
+.bwc-scoreboard .bwc-score-btn {
+  background: rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.bwc-scoreboard .bwc-score-btn:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.bwc-scoreboard .bwc-score-value {
+  color: #333;
 }
 
 .bwc-deck-view {

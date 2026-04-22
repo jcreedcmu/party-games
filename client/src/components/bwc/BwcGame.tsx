@@ -1,10 +1,33 @@
 import { useState } from 'react';
-import type { BwcClientState, BwcClientPlayingState, ClientMessage, CardId, DrawOp, Side } from '../../types';
+import type { BwcClientState, BwcClientPlayingState, BwcClientSeat, ClientMessage, CardId, DrawOp, Side } from '../../types';
 import { WaitingRoom } from '../WaitingRoom';
 import { Modal } from '../Modal';
 import { CardEditor } from './CardEditor';
 import { CardLibraryPanel } from './CardLibraryPanel';
 import { BwcPlayArea } from './BwcPlayArea';
+
+function Scoreboard({ seats, send }: { seats: BwcClientSeat[]; send: (msg: ClientMessage) => void }) {
+  return (
+    <div className="bwc-scoreboard">
+      {seats.map(seat => (
+        <div key={seat.playerId} className={`bwc-scoreboard-row ${seat.connected ? '' : 'disconnected'}`}>
+          <span className="bwc-scoreboard-handle">{seat.handle}</span>
+          <span className="bwc-seat-score">
+            <button
+              className="bwc-score-btn"
+              onClick={() => send({ type: 'bwc-adjust-score', playerId: seat.playerId, delta: -1 })}
+            >-</button>
+            <span className="bwc-score-value">{seat.score}</span>
+            <button
+              className="bwc-score-btn"
+              onClick={() => send({ type: 'bwc-adjust-score', playerId: seat.playerId, delta: 1 })}
+            >+</button>
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 type EditorState =
   | { mode: 'closed' }
@@ -61,6 +84,7 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
           <button onClick={() => send({ type: 'reset' })}>
             Reset
           </button>
+          <Scoreboard seats={state.seats} send={send} />
           {showLibrary && (
             <CardLibraryPanel cards={state.library} canSpawn mySide={mySide} send={send} onEdit={handleEdit} />
           )}
