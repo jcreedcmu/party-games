@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { BwcClientState, BwcClientPlayingState, BwcClientSeat, ClientMessage, CardId, DrawOp, Side } from '../../types';
 import { WaitingRoom } from '../WaitingRoom';
 import { Modal } from '../Modal';
@@ -10,7 +10,11 @@ function Scoreboard({ seats, send }: { seats: BwcClientSeat[]; send: (msg: Clien
   return (
     <div className="bwc-scoreboard">
       {seats.map(seat => (
-        <div key={seat.playerId} className={`bwc-scoreboard-row ${seat.connected ? '' : 'disconnected'}`}>
+        <div
+          key={seat.playerId}
+          className={`bwc-scoreboard-row ${seat.connected ? '' : 'disconnected'}`}
+          data-bwc-score-target={seat.playerId}
+        >
           <span className="bwc-scoreboard-handle">{seat.handle}</span>
           <span className="bwc-seat-score">
             <button
@@ -44,6 +48,16 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
   const [editor, setEditor] = useState<EditorState>({ mode: 'closed' });
   const [showLibrary, setShowLibrary] = useState(false);
   const mySide: Side = state.seats.find(s => s.seat === state.mySeat)?.side ?? 'S';
+
+  // Listen for score chip drops (CustomEvent from ScoreChip component).
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { playerId, delta } = (e as CustomEvent).detail;
+      send({ type: 'bwc-adjust-score', playerId, delta });
+    };
+    document.addEventListener('bwc-score-drop', handler);
+    return () => document.removeEventListener('bwc-score-drop', handler);
+  }, [send]);
 
   function handleEdit(cardId: CardId, ops: DrawOp[], name: string, cardType: string, text: string) {
     setEditor({ mode: 'edit', cardId, ops, name, cardType, text });

@@ -206,6 +206,7 @@ function SeatLabel({ seat, screenOfTable }: {
   return (
     <div
       className={`bwc-seat-label ${seat.connected ? '' : 'disconnected'}`}
+      data-bwc-score-target={seat.playerId}
       style={{
         left: posInScreen.x,
         top: posInScreen.y,
