@@ -1,5 +1,7 @@
+import { useRef, useState, useLayoutEffect } from 'react';
 import type { BwcClientCardSummary, ClientMessage, CardId, DrawOp, Side } from '../../types';
-import { getImageUrl } from '../../image-cache';
+import { CardView } from './CardView';
+import { CARD_W, CARD_H } from '../../../../server/games/bwc/constants';
 
 // Card rotation in table-logical space so the card appears upright
 // from the spawning player's perspective. This is the inverse of the
@@ -13,6 +15,55 @@ type Props = {
   send?: (msg: ClientMessage) => void;
   onEdit?: (cardId: CardId, ops: DrawOp[], name: string, cardType: string, text: string) => void;
 };
+
+function LibraryCard({ card, canSpawn, send, onEdit, mySide, onSpawn }: {
+  card: BwcClientCardSummary;
+  canSpawn?: boolean;
+  send?: (msg: ClientMessage) => void;
+  onEdit?: (cardId: CardId, ops: DrawOp[], name: string, cardType: string, text: string) => void;
+  mySide?: Side;
+  onSpawn: (cardId: string) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setScale(entry.contentRect.width / CARD_W);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div className="bwc-library-card" ref={containerRef}>
+      <div style={{ height: CARD_H * scale }}>
+        <div style={{
+          width: CARD_W,
+          height: CARD_H,
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+        }}>
+          <CardView card={card} />
+        </div>
+      </div>
+      <div className="bwc-library-card-actions">
+        {canSpawn && send && (
+          <button className="bwc-spawn-btn" onClick={() => onSpawn(card.id)}>
+            Spawn
+          </button>
+        )}
+        {onEdit && (
+          <button className="bwc-edit-btn" onClick={() => onEdit(card.id, card.ops, card.name, card.cardType, card.text)}>
+            Edit
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function CardLibraryPanel({ cards, canSpawn, mySide, send, onEdit }: Props) {
   function handleSpawn(cardId: string) {
@@ -41,28 +92,7 @@ export function CardLibraryPanel({ cards, canSpawn, mySide, send, onEdit }: Prop
       <h3>Card Library ({cards.length})</h3>
       <div className="bwc-library-grid">
         {cards.map(card => (
-          <div key={card.id} className="bwc-library-card">
-            <div className="bwc-library-card-preview">
-              <img src={getImageUrl(card.opsHash, card.ops, 800, 600)} draggable={false} />
-            </div>
-            <div className="bwc-library-card-info">
-              <div className="bwc-library-card-name">{card.name || '(unnamed)'}</div>
-              <div className="bwc-library-card-text">{card.text || '(no text)'}</div>
-              <div className="bwc-library-card-creator">by {card.creatorHandle}</div>
-              <div className="bwc-library-card-actions">
-                {canSpawn && send && (
-                  <button className="bwc-spawn-btn" onClick={() => handleSpawn(card.id)}>
-                    Spawn
-                  </button>
-                )}
-                {onEdit && (
-                  <button className="bwc-edit-btn" onClick={() => onEdit(card.id, card.ops, card.name, card.cardType, card.text)}>
-                    Edit
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+          <LibraryCard key={card.id} card={card} canSpawn={canSpawn} send={send} onEdit={onEdit} mySide={mySide} onSpawn={handleSpawn} />
         ))}
       </div>
     </div>

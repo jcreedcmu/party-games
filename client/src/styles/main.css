@@ -1084,37 +1084,11 @@ button:disabled {
 }
 
 .bwc-library-card {
-  background: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  overflow: hidden;
+  position: relative;
 }
 
-.bwc-library-card-preview canvas {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-.bwc-library-card-info {
-  padding: 0.5rem;
-}
-
-.bwc-library-card-name {
-  font-weight: bold;
-  font-size: 0.9rem;
-}
-
-.bwc-library-card-text {
-  font-size: 0.9rem;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.bwc-library-card-creator {
-  font-size: 0.75rem;
-  color: #888;
-  margin-top: 0.25rem;
+.bwc-library-card-inner {
+  /* Height is set dynamically via scale; reserve the scaled space in flow */
 }
 
 .bwc-library-card-actions {
