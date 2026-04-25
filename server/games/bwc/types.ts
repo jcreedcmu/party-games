@@ -32,6 +32,7 @@ export type SeatAssignment = {
 export type Card = {
   id: CardId;
   ops: DrawOp[];           // front art
+  opsHash: string;         // djb2 hash of JSON.stringify(ops), for client-side cache keying
   name: string;            // card name (top of card)
   cardType: string;        // card type (between art and rules)
   text: string;            // rules text (main text box)

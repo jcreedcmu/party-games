@@ -1,4 +1,5 @@
 import type { Card, CardId, CardLibrary } from './types.js';
+import { hashOps } from '../../draw-ops.js';
 
 // --- Card library persistence ---
 
@@ -23,9 +24,11 @@ export function configureLibrary(
   if (!initial || !initial.cards) return new Map();
   const library: CardLibrary = new Map();
   for (const [id, entry] of Object.entries(initial.cards)) {
+    const ops = entry.ops as Card['ops'];
     library.set(id, {
       id,
-      ops: entry.ops as Card['ops'],
+      ops,
+      opsHash: hashOps(ops),
       name: entry.name ?? '',
       cardType: entry.cardType ?? '',
       text: entry.text,

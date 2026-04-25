@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback } from 'react';
 import type { DrawOp, ClientMessage, CardId } from '../../types';
 import { DrawingCanvas } from '../DrawingCanvas';
+import { putOps } from '../../image-cache';
 
 type Props = {
   send: (msg: ClientMessage) => void;
@@ -24,6 +25,13 @@ export function CardEditor({ send, onDone, editingCardId, initialOps, initialNam
   }, []);
 
   function handleSubmit() {
+    // Cache the current canvas image so we don't need to replay ops
+    const ctx = canvasRef.current?.getContext('2d');
+    if (ctx) {
+      const imageData = ctx.getImageData(0, 0, canvasRef.current!.width, canvasRef.current!.height);
+      putOps(opsRef.current, imageData);
+    }
+
     if (editingCardId) {
       send({
         type: 'bwc-edit-card',

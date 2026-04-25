@@ -43,7 +43,7 @@ export function CardLibraryPanel({ cards, canSpawn, mySide, send, onEdit }: Prop
         {cards.map(card => (
           <div key={card.id} className="bwc-library-card">
             <div className="bwc-library-card-preview">
-              <LiveCanvas ops={card.ops} canvasWidth={800} canvasHeight={600} />
+              <LiveCanvas ops={card.ops} opsHash={card.opsHash} canvasWidth={800} canvasHeight={600} />
             </div>
             <div className="bwc-library-card-info">
               <div className="bwc-library-card-name">{card.name || '(unnamed)'}</div>

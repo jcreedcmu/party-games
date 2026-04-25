@@ -26,6 +26,7 @@ export type BwcClientWaitingState = {
 export type BwcClientCardSummary = {
   id: CardId;
   ops: DrawOp[];
+  opsHash: string;
   name: string;
   cardType: string;
   text: string;
@@ -36,6 +37,7 @@ export type BwcClientCardSummary = {
 export type BwcClientCardFull = {
   id: CardId;
   ops: DrawOp[];
+  opsHash: string;
   name: string;
   cardType: string;
   text: string;
@@ -102,6 +104,7 @@ function summarizeLibrary(state: BwcWaitingState | BwcPlayingState): BwcClientCa
     out.push({
       id: card.id,
       ops: card.ops,
+      opsHash: card.opsHash,
       name: card.name,
       cardType: card.cardType,
       text: card.text,
@@ -142,6 +145,7 @@ function projectObject(
         card: {
           id: card.id,
           ops: card.ops,
+          opsHash: card.opsHash,
           name: card.name,
           cardType: card.cardType,
           text: card.text,
@@ -164,6 +168,7 @@ function projectObject(
       topCard: {
         id: topCardDef.id,
         ops: topCardDef.ops,
+        opsHash: topCardDef.opsHash,
         name: topCardDef.name,
         cardType: topCardDef.cardType,
         text: topCardDef.text,

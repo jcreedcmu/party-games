@@ -1,16 +1,18 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import type { DrawOp } from '../../types';
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT,
   createBlankImageData, cloneImageData,
 } from '../../draw-util';
 import { applyOp as applyOpShared, createDrawState, type DrawState } from '../../apply-ops';
+import { getOrReplay, has as cacheHas } from '../../image-cache';
 
 const PLAYBACK_DURATION_MS = 5000;
 const HOLD_DURATION_MS = 3000;
 
 type LiveCanvasProps = {
   ops: DrawOp[];
+  opsHash?: string;
   animated?: boolean;
   playing?: boolean;
   canvasWidth?: number;
@@ -18,13 +20,14 @@ type LiveCanvasProps = {
   canvasClassName?: string;
 };
 
-export function LiveCanvas({ ops, animated = false, playing = false, canvasWidth = CANVAS_WIDTH, canvasHeight = CANVAS_HEIGHT, canvasClassName }: LiveCanvasProps) {
+export function LiveCanvas({ ops, opsHash, animated = false, playing = false, canvasWidth = CANVAS_WIDTH, canvasHeight = CANVAS_HEIGHT, canvasClassName }: LiveCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const appliedRef = useRef(0);
   const snapshotsRef = useRef<ImageData[]>([]);
   const imageDataRef = useRef<ImageData>(createBlankImageData(canvasWidth, canvasHeight));
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const drawStateRef = useRef<DrawState>(createDrawState());
+  const lastHashRef = useRef<string>('');
 
   const hasTimestamps = animated && ops.length > 0 && ops[0].t != null;
 
@@ -50,13 +53,9 @@ export function LiveCanvas({ ops, animated = false, playing = false, canvasWidth
   }
 
   function applyAllOps() {
-    imageDataRef.current = createBlankImageData(canvasWidth, canvasHeight);
+    imageDataRef.current = getOrReplay(opsHash ?? '', ops, canvasWidth, canvasHeight);
     snapshotsRef.current = [];
-    saveSnapshot();
     drawStateRef.current = createDrawState();
-    for (const op of ops) {
-      applyOp(op);
-    }
     appliedRef.current = ops.length;
     putImage();
   }
@@ -97,9 +96,17 @@ export function LiveCanvas({ ops, animated = false, playing = false, canvasWidth
     scheduleNext();
   }
 
-  // Render final state whenever the ops array identity changes (different card).
-  useEffect(() => {
-    applyAllOps();
+  // Render final state whenever the ops content changes.
+  // useLayoutEffect so the canvas is painted before the browser shows the frame.
+  useLayoutEffect(() => {
+    const hash = opsHash ?? '';
+    if (hash && hash === lastHashRef.current && cacheHas(hash)) {
+      // Ops unchanged — just repaint from the existing imageDataRef (already correct).
+      putImage();
+    } else {
+      lastHashRef.current = hash;
+      applyAllOps();
+    }
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);

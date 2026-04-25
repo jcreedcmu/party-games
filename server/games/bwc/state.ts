@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import type { PlayerId, PlayerInfo, ServerState, ReduceResult, Effect } from '../../types.js';
 import type { ClientMessage } from '../../protocol.js';
-import type { DrawOp } from '../../draw-ops.js';
+import { hashOps, type DrawOp } from '../../draw-ops.js';
 import { persistLibrary, markSnapshotDirty, clearSnapshot } from './storage.js';
 import type {
   BwcState,
@@ -96,6 +96,7 @@ function createCard(
   const card: Card = {
     id: cardId,
     ops,
+    opsHash: hashOps(ops),
     name,
     cardType,
     text,
@@ -778,7 +779,7 @@ function bwcReduceSingle(state: ServerState, playerId: PlayerId, msg: ClientMess
       const existing = state.library.get(msg.cardId);
       if (!existing) return { state, effects: [] };
       const library = new Map(state.library);
-      library.set(msg.cardId, { ...existing, ops: msg.ops, name: msg.name, cardType: msg.cardType, text: msg.text });
+      library.set(msg.cardId, { ...existing, ops: msg.ops, opsHash: hashOps(msg.ops), name: msg.name, cardType: msg.cardType, text: msg.text });
       persistLibrary(library);
       return { state: { ...state, library }, effects: [{ type: 'broadcast' }] };
     }

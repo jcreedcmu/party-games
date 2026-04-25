@@ -10,6 +10,7 @@ function makeCard(id: string, text = ''): Card {
   return {
     id,
     ops: [],
+    opsHash: '',
     name: `Card ${id}`,
     cardType: '',
     text,
