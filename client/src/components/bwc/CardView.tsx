@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import type { BwcClientCardFull } from '../../types';
-import { LiveCanvas } from '../pictionary/LiveCanvas';
+import { getImageUrl } from '../../image-cache';
 
 function ScoreChip({ value }: { value: string }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -88,11 +88,12 @@ type Props = {
 };
 
 export function CardView({ card }: Props) {
+  const src = getImageUrl(card.opsHash, card.ops, 800, 600);
   return (
     <div className="bwc-card-face">
       <div className="bwc-card-name">{card.name}</div>
       <div className="bwc-card-art">
-        <LiveCanvas ops={card.ops} opsHash={card.opsHash} canvasWidth={800} canvasHeight={600} canvasClassName="bwc-card-canvas" />
+        <img src={src} className="bwc-card-canvas" draggable={false} />
       </div>
       <div className="bwc-card-type">{card.cardType}</div>
       <div className="bwc-card-rules"><RulesText text={card.text} /></div>

@@ -1,5 +1,5 @@
 import type { BwcClientCardSummary, ClientMessage, CardId, DrawOp, Side } from '../../types';
-import { LiveCanvas } from '../pictionary/LiveCanvas';
+import { getImageUrl } from '../../image-cache';
 
 // Card rotation in table-logical space so the card appears upright
 // from the spawning player's perspective. This is the inverse of the
@@ -43,7 +43,7 @@ export function CardLibraryPanel({ cards, canSpawn, mySide, send, onEdit }: Prop
         {cards.map(card => (
           <div key={card.id} className="bwc-library-card">
             <div className="bwc-library-card-preview">
-              <LiveCanvas ops={card.ops} opsHash={card.opsHash} canvasWidth={800} canvasHeight={600} />
+              <img src={getImageUrl(card.opsHash, card.ops, 800, 600)} draggable={false} />
             </div>
             <div className="bwc-library-card-info">
               <div className="bwc-library-card-name">{card.name || '(unnamed)'}</div>
