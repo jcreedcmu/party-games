@@ -85,6 +85,66 @@ function RulesText({ text, interactive }: { text: string; interactive: boolean }
   );
 }
 
+// The rules box at native card size (100×140) is ~80px wide and ~48px tall.
+// Base font is 20px with line-height 1.3 (26px per line).
+const RULES_BOX_W = 80;
+const RULES_BOX_H = 48;
+const BASE_FONT_SIZE = 20;
+const LINE_HEIGHT = 1.3;
+
+let _measureCtx: CanvasRenderingContext2D | null = null;
+function getMeasureCtx(): CanvasRenderingContext2D {
+  if (!_measureCtx) {
+    const c = document.createElement('canvas');
+    _measureCtx = c.getContext('2d')!;
+  }
+  return _measureCtx;
+}
+
+function computeRulesFontSize(text: string): number {
+  if (text.length === 0) return BASE_FONT_SIZE;
+  const ctx = getMeasureCtx();
+  // Binary search for largest font size that fits
+  let lo = 4, hi = BASE_FONT_SIZE;
+  while (hi - lo > 0.5) {
+    const mid = (lo + hi) / 2;
+    if (textFits(ctx, text, mid)) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+  return Math.floor(lo);
+}
+
+function textFits(ctx: CanvasRenderingContext2D, text: string, fontSize: number): boolean {
+  ctx.font = `${fontSize}px sans-serif`;
+  const lineH = fontSize * LINE_HEIGHT;
+  const maxLines = Math.floor(RULES_BOX_H / lineH);
+  if (maxLines < 1) return false;
+
+  // Word-wrap and count lines
+  const words = text.split(/\s+/);
+  let lines = 1;
+  let lineW = 0;
+  for (const word of words) {
+    const ww = ctx.measureText(word).width;
+    if (lineW === 0) {
+      lineW = ww;
+    } else {
+      const spaceW = ctx.measureText(' ').width;
+      if (lineW + spaceW + ww > RULES_BOX_W) {
+        lines++;
+        if (lines > maxLines) return false;
+        lineW = ww;
+      } else {
+        lineW += spaceW + ww;
+      }
+    }
+  }
+  return true;
+}
+
 type Props = {
   card: BwcClientCardFull;
   isInteractive?: boolean;
@@ -99,7 +159,7 @@ export function CardView({ card, isInteractive = true }: Props) {
         <img src={src} className="bwc-card-canvas" draggable={false} />
       </div>
       <div className="bwc-card-type">{card.cardType}</div>
-      <div className="bwc-card-rules"><RulesText text={card.text} interactive={isInteractive} /></div>
+      <div className="bwc-card-rules" style={{ fontSize: computeRulesFontSize(card.text) }}><RulesText text={card.text} interactive={isInteractive} /></div>
       <div className="bwc-card-author">{card.creatorHandle}</div>
     </div>
   );
