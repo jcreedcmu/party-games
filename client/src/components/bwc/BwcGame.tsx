@@ -171,6 +171,8 @@ export function BwcGame({ state, playerId, send }: Props) {
                   onDone={() => setEditor({ mode: 'closed' })}
                   editingCardId={editor.cardId}
                   initialOps={editor.ops}
+                  initialName={editor.name}
+                  initialCardType={editor.cardType}
                   initialText={editor.text}
                 />
               )}
