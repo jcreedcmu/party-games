@@ -46,7 +46,7 @@ function LibraryCard({ card, canSpawn, send, onEdit, mySide, onSpawn }: {
           transform: `scale(${scale})`,
           transformOrigin: 'top left',
         }}>
-          <CardView card={card} />
+          <CardView card={card} isInteractive={false} />
         </div>
       </div>
       <div className="bwc-library-card-actions">

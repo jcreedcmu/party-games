@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import type { BwcClientCardFull } from '../../types';
 import { getImageUrl } from '../../image-cache';
 
-function ScoreChip({ value }: { value: string }) {
+function ScoreChip({ value, interactive }: { value: string; interactive: boolean }) {
   const ref = useRef<HTMLSpanElement>(null);
   const floatingRef = useRef<HTMLDivElement | null>(null);
 
@@ -59,10 +59,12 @@ function ScoreChip({ value }: { value: string }) {
   return (
     <span
       ref={ref}
-      className="bwc-score-chip"
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
+      className={`bwc-score-chip${interactive ? ' bwc-score-chip-dynamic' : ''}`}
+      {...(interactive ? {
+        onPointerDown: handlePointerDown,
+        onPointerMove: handlePointerMove,
+        onPointerUp: handlePointerUp,
+      } : {})}
     >
       {value}
     </span>
@@ -70,13 +72,13 @@ function ScoreChip({ value }: { value: string }) {
 }
 
 // Parse rules text, turning "+N" / "-N" tokens into draggable score chips.
-function RulesText({ text }: { text: string }) {
+function RulesText({ text, interactive }: { text: string; interactive: boolean }) {
   const parts = text.split(/([+-]\d+)/g);
   return (
     <>
       {parts.map((part, i) =>
         /^[+-]\d+$/.test(part)
-          ? <ScoreChip key={i} value={part} />
+          ? <ScoreChip key={i} value={part} interactive={interactive} />
           : <span key={i}>{part}</span>
       )}
     </>
@@ -85,9 +87,10 @@ function RulesText({ text }: { text: string }) {
 
 type Props = {
   card: BwcClientCardFull;
+  isInteractive?: boolean;
 };
 
-export function CardView({ card }: Props) {
+export function CardView({ card, isInteractive = true }: Props) {
   const src = getImageUrl(card.opsHash, card.ops, 800, 600);
   return (
     <div className="bwc-card-face">
@@ -96,7 +99,7 @@ export function CardView({ card }: Props) {
         <img src={src} className="bwc-card-canvas" draggable={false} />
       </div>
       <div className="bwc-card-type">{card.cardType}</div>
-      <div className="bwc-card-rules"><RulesText text={card.text} /></div>
+      <div className="bwc-card-rules"><RulesText text={card.text} interactive={isInteractive} /></div>
       <div className="bwc-card-author">{card.creatorHandle}</div>
     </div>
   );
