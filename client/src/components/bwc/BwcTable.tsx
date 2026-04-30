@@ -17,14 +17,13 @@ type TableObjectProps = {
   obj: BwcVisibleObject;
   onDragEnd: (objectId: string, pose: Pose) => void;
   onFlip: (objectId: string) => void;
-  onDelete: (objectId: string) => void;
   onBringToFront: (objectId: string) => void;
   onRotate: (objectId: string) => void;
   hoveredRef: React.MutableRefObject<string | null>;
   draggingRef: React.MutableRefObject<string | null>;
 };
 
-function TableObjectView({ obj, onDragEnd, onFlip, onDelete, onBringToFront, onRotate, hoveredRef, draggingRef }: TableObjectProps) {
+function TableObjectView({ obj, onDragEnd, onFlip, onBringToFront, onRotate, hoveredRef, draggingRef }: TableObjectProps) {
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
   const elRef = useRef<HTMLDivElement>(null);
 
@@ -94,7 +93,6 @@ function TableObjectView({ obj, onDragEnd, onFlip, onDelete, onBringToFront, onR
   function handleContextMenu(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    onDelete(obj.id);
   }
 
   const content = obj.kind === 'card'
@@ -206,10 +204,6 @@ export function BwcTable({ table, library, seats, mySide, send }: Props) {
     send({ type: 'bwc-flip-object', surface: surfaceId, objectId });
   }, [send]);
 
-  const handleDelete = useCallback((objectId: string) => {
-    send({ type: 'bwc-delete-object', surface: surfaceId, objectId });
-  }, [send]);
-
   const handleBringToFront = useCallback((objectId: string) => {
     send({ type: 'bwc-bring-to-front', surface: surfaceId, objectId });
   }, [send]);
@@ -235,7 +229,6 @@ export function BwcTable({ table, library, seats, mySide, send }: Props) {
             obj={obj}
             onDragEnd={handleDragEnd}
             onFlip={handleFlip}
-            onDelete={handleDelete}
             onBringToFront={handleBringToFront}
             onRotate={handleRotate}
             hoveredRef={hoveredRef}

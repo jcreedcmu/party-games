@@ -705,17 +705,6 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
         });
       },
     });
-    items.push({
-      label: 'Delete',
-      action: () => {
-        send({
-          type: 'bwc-batch',
-          messages: ros.map(ro => ({ type: 'bwc-delete-object', surface: ro.surface, objectId: ro.obj.id })),
-        });
-        setIstate(s => ({ ...s, selection: new Set() }));
-      },
-    });
-
     return items;
   }
 

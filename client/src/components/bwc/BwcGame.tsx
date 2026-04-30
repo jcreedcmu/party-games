@@ -46,7 +46,6 @@ type Props = {
 
 function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; playerId: string; send: (msg: ClientMessage) => void }) {
   const [editor, setEditor] = useState<EditorState>({ mode: 'closed' });
-  const [showLibrary, setShowLibrary] = useState(false);
   const mySide: Side = state.seats.find(s => s.seat === state.mySeat)?.side ?? 'S';
 
   // Listen for score chip drops (CustomEvent from ScoreChip component).
@@ -86,9 +85,6 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
           <button onClick={() => setEditor(e => e.mode === 'create' ? { mode: 'closed' } : { mode: 'create' })}>
             {editor.mode === 'create' ? 'Close Editor' : 'New Card'}
           </button>
-          <button onClick={() => setShowLibrary(l => !l)}>
-            {showLibrary ? 'Hide Library' : `Library (${state.library.length})`}
-          </button>
           <button onClick={() => send({ type: 'bwc-create-blank-deck', count: 10 })}>
             New Blank Cards
           </button>
@@ -99,9 +95,6 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
             Reset
           </button>
           <Scoreboard seats={state.seats} send={send} />
-          {showLibrary && (
-            <CardLibraryPanel cards={state.library} canSpawn mySide={mySide} send={send} onEdit={handleEdit} />
-          )}
         </div>
       </div>
       {editor.mode !== 'closed' && (
