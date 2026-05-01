@@ -778,8 +778,10 @@ function bwcReduceSingle(state: ServerState, playerId: PlayerId, msg: ClientMess
     case 'bwc-edit-card': {
       const existing = state.library.get(msg.cardId);
       if (!existing) return { state, effects: [] };
+      const handle = state.players.get(playerId)?.handle ?? 'unknown';
+      const creator = existing.creator || handle;
       const library = new Map(state.library);
-      library.set(msg.cardId, { ...existing, ops: msg.ops, opsHash: hashOps(msg.ops), name: msg.name, cardType: msg.cardType, text: msg.text });
+      library.set(msg.cardId, { ...existing, ops: msg.ops, opsHash: hashOps(msg.ops), name: msg.name, cardType: msg.cardType, text: msg.text, creator });
       persistLibrary(library);
       return { state: { ...state, library }, effects: [{ type: 'broadcast' }] };
     }

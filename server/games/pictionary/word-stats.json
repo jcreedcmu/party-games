@@ -84,7 +84,7 @@
     "guessFailures": 0
   },
   "moonshine": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -273,7 +273,7 @@
     "guessFailures": 0
   },
   "lounge chair": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -854,11 +854,11 @@
     "guessFailures": 1
   },
   "umbrella": {
-    "presented": 2,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
-    "guessFailures": 0
+    "presented": 3,
+    "chosen": 1,
+    "guessExposures": 18,
+    "guessSuccesses": 2,
+    "guessFailures": 16
   },
   "barn": {
     "presented": 1,
@@ -999,5 +999,47 @@
     "guessExposures": 10,
     "guessSuccesses": 3,
     "guessFailures": 7
+  },
+  "george washington": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "schoolbus": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "piccolo": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 1,
+    "guessFailures": 5
+  },
+  "worm": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "great wall of china": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "shoe": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
   }
 }
