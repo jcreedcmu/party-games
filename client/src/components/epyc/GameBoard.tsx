@@ -73,7 +73,7 @@ export function GameBoard({ state, playerId, onSend }: GameBoardProps) {
           {state.expectedMoveType === 'text' ? (
             <TextInput value={text} onChange={setText} onSubmit={() => submit()} />
           ) : (
-            <DrawingCanvas canvasRef={canvasRef} onSubmit={() => submit()} />
+            <DrawingCanvas canvasRef={canvasRef} showSubmitButton onSubmit={() => submit()} />
           )}
         </div>
       )}

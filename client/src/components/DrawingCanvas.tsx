@@ -17,7 +17,7 @@ const BATCH_INTERVAL_MS = 50;
 
 type DrawingCanvasProps = {
   canvasRef: RefObject<HTMLCanvasElement | null>;
-  mode?: 'submit' | 'stream';
+  showSubmitButton?: boolean;
   onSubmit?: (dataUrl: string) => void;
   onStreamOp?: (op: DrawOp) => void;
   initialOps?: DrawOp[];
@@ -27,7 +27,7 @@ type DrawingCanvasProps = {
 
 type Tool = 'pen' | 'fill' | 'eyedropper';
 
-export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp, initialOps, canvasWidth = CANVAS_WIDTH, canvasHeight = CANVAS_HEIGHT }: DrawingCanvasProps) {
+export function DrawingCanvas({ canvasRef, showSubmitButton = false, onSubmit, onStreamOp, initialOps, canvasWidth = CANVAS_WIDTH, canvasHeight = CANVAS_HEIGHT }: DrawingCanvasProps) {
   const [color, setColor] = useState(COLORS[0]);
   const [customColor, setCustomColor] = useState<string | null>(null);
   const [size, setSize] = useState(SIZES[1]);
@@ -40,7 +40,7 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
   const imageDataRef = useRef<ImageData>(createBlankImageData(canvasWidth, canvasHeight));
   const lastPosRef = useRef<{ x: number; y: number } | null>(null);
 
-  const isStream = mode === 'stream';
+  const isStream = !!onStreamOp;
 
   const getCtx = useCallback(() => {
     return canvasRef.current?.getContext('2d') ?? null;
@@ -300,7 +300,7 @@ export function DrawingCanvas({ canvasRef, mode = 'submit', onSubmit, onStreamOp
         <div className="drawing-actions">
           <button onClick={handleUndo}>Undo</button>
           <button onClick={handleClear}>Clear</button>
-          {!isStream && <button onClick={handleSubmit} className="submit-btn">Submit</button>}
+          {showSubmitButton && <button onClick={handleSubmit} className="submit-btn">Submit</button>}
         </div>
       </div>
     </div>

@@ -917,7 +917,7 @@
     "guessFailures": 5
   },
   "windmill": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -1036,6 +1036,20 @@
     "guessFailures": 0
   },
   "shoe": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "vampire": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "socket": {
     "presented": 1,
     "chosen": 0,
     "guessExposures": 0,

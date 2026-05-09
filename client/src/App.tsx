@@ -13,7 +13,7 @@ function DebugDraw() {
     <div className="app">
       <h1>Drawing Canvas Debug</h1>
       <div className="sheet-card" style={{ maxWidth: 480 }}>
-        <DrawingCanvas canvasRef={canvasRef} onSubmit={() => {
+        <DrawingCanvas canvasRef={canvasRef} showSubmitButton onSubmit={() => {
           const dataUrl = canvasRef.current?.toDataURL('image/png');
           console.log('Submitted drawing, data URL length:', dataUrl?.length);
         }} />
@@ -28,7 +28,7 @@ function DebugStream() {
     <div className="app">
       <h1>Stream Mode Debug</h1>
       <div className="sheet-card" style={{ maxWidth: 480 }}>
-        <DrawingCanvas canvasRef={canvasRef} mode="stream" onStreamOp={(op) => {
+        <DrawingCanvas canvasRef={canvasRef} onStreamOp={(op) => {
           console.log('stream op:', op.type, op);
         }} />
       </div>

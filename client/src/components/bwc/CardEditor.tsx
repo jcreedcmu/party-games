@@ -66,7 +66,6 @@ export function CardEditor({ send, onDone, editingCardId, initialOps, initialNam
       </div>
       <DrawingCanvas
         canvasRef={canvasRef}
-        mode="stream"
         onStreamOp={handleStreamOp}
         initialOps={initialOps}
         canvasWidth={800}

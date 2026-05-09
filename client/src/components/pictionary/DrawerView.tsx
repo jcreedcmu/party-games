@@ -69,7 +69,6 @@ export function DrawerView({ state, send, onRelay, initialGuesses = [] }: Drawer
           </div>
           <DrawingCanvas
             canvasRef={canvasRef}
-            mode="stream"
             onStreamOp={(op: DrawOp) => send(op)}
           />
 
