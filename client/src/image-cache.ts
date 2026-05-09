@@ -40,12 +40,14 @@ function hashOps(ops: DrawOp[]): string {
 
 // Look up by pre-computed hash. Returns cached ImageData or replays and caches.
 export function getOrReplay(opsHash: string, ops: DrawOp[], w: number, h: number): ImageData {
-  const cached = cache.get(opsHash);
-  if (cached && cached.width === w && cached.height === h) {
-    return cached;
+  if (opsHash) {
+    const cached = cache.get(opsHash);
+    if (cached && cached.width === w && cached.height === h) {
+      return cached;
+    }
   }
   const { imageData } = replayOps(ops, w, h);
-  put(opsHash, imageData);
+  if (opsHash) put(opsHash, imageData);
   return imageData;
 }
 

@@ -1,4 +1,18 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+// parseColor uses a canvas context that jsdom doesn't support — mock it
+// with a simple hex parser.
+vi.mock('../draw-util', async (importOriginal) => {
+  const orig = await importOriginal<typeof import('../draw-util')>();
+  return {
+    ...orig,
+    parseColor: (color: string): [number, number, number] => {
+      const m = color.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+      if (!m) return [0, 0, 0];
+      return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)];
+    },
+  };
+});
 
 // jsdom doesn't provide ImageData — polyfill before importing modules that use it.
 if (typeof globalThis.ImageData === 'undefined') {
@@ -57,7 +71,7 @@ describe('getOrReplay with empty-string key (pictionary relay bug)', () => {
     expect(isBlank(result1)).toBe(false);
 
     // Drawer moves — relay delivers draw-move, ops list grows.
-    const ops2: DrawOp[] = [...ops1, { type: 'draw-move', x: 5, y: 5 }];
+    const ops2: DrawOp[] = [...ops1, { type: 'draw-move', points: [{ x: 5, y: 5 }] }];
     const result2 = getOrReplay('', ops2, W, H);
     expect(isBlank(result2)).toBe(false);
 
