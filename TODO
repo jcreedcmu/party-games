@@ -1,61 +1,65 @@
-1kbwc
------
+@ 1kbwc
+@default parent:^
 
-long text scales to fit container
-rotated deck card draw looks inconsistent
-animations?
-score doesn't work
-ugh, card layout defined by percentages?
-only allow editing your own cards
-applyOp/replayOp doesn't seem totally coherent, can you undo a clear?
-unit test for east-west card spawning?
-account for all key shortcuts; there shouldn't be any that magically move cards between hand and table
+@ long text scales to fit container
+@ rotated deck card draw looks inconsistent
+@ animations?
+@ score doesn't work
+@ ugh, card layout defined by percentages?
+@ only allow editing your own cards
+@ applyOp/replayOp doesn't seem totally coherent, can you undo a clear?
+@ unit test for east-west card spawning?
+@ account for all key shortcuts; there shouldn't be any that magically move cards between hand and table
 
-move player scores off to the side
-try players all oriented the same way?
-players draw their own avatars? store in localstorage?
-move attribution text down a little bit?
+@ move player scores off to the side
+@ try players all oriented the same way?
+@ players draw their own avatars? store in localstorage?
+@ move attribution text down a little bit?
+@default
 
+@ pictionary
+@default parent:^
 
 pictionary
 ----------
 
-color picker dismiss
-off-by-one
-show right answer when people don't get it
+@ color picker dismiss
+@ off-by-one
+@ show right answer when people don't get it
 
-make sure guess state is handled like ordinary state, and this propagates to gen-preview
+@ make sure guess state is handled like ordinary state, and this propagates to gen-preview
 
-undo for word add
+@ undo for word add
 
-alternates
-reveal part of speech
+@ alternates
+@ reveal part of speech
 
-video of the whole thing
+@ video of the whole thing
 
-better custom color picker
-
-
-replay guesses
+@ better custom color picker
 
 
-eraser
-bigger square
-stats not working
-earcon for game start
+@ replay guesses
 
-I'm feeling lucky button
 
-re login with same identity should work
+@ eraser
+@ bigger square
+@ stats not working
+@ earcon for game start
 
-show who added the word on the resolution page
-reload causes unkickable players?
+@ I'm feeling lucky button
 
-no persist fill
+@ re login with same identity should work
 
-focus should persist on add word
+@ show who added the word on the resolution page
+@ reload causes unkickable players?
 
-don't display the current drawer as the guessers
-when everyone has guessed correctly show the full word
+@ no persist fill
 
-ordering of comments inconsistent
+@ focus should persist on add word
+
+@ don't display the current drawer as the guessers
+@ when everyone has guessed correctly show the full word
+
+@ ordering of comments inconsistent
+@default
