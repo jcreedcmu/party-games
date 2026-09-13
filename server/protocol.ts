@@ -160,9 +160,11 @@ export type BwcTidyHandMessage = {
   type: 'bwc-tidy-hand';
 };
 
+// Puts every blank not already on the table out as one deck, refilling the
+// stock to MAX_BLANK_CARDS first. How many that is follows from the stock,
+// so the sender does not choose a count.
 export type BwcCreateBlankDeckMessage = {
   type: 'bwc-create-blank-deck';
-  count: number;
 };
 
 export type BwcSingleMessage =

@@ -736,22 +736,40 @@ function reduceTidyHand(state: BwcPlayingState, playerId: PlayerId): ReduceResul
 
 // --- Create blank deck ---
 
-import { TABLE_LOGICAL } from './constants.js';
+import { TABLE_LOGICAL, MAX_BLANK_CARDS } from './constants.js';
 
-function reduceCreateBlankDeck(
-  state: BwcPlayingState,
-  playerId: PlayerId,
-  msg: { count: number },
-): ReduceResult {
-  const handle = state.players.get(playerId)?.handle ?? 'unknown';
+// Blanks that exist but are not on the table or in a hand: the stock still
+// in the box.
+function spareBlanks(state: BwcPlayingState): CardId[] {
+  return Array.from(state.library.values())
+    .filter(card => isBlankCard(card) && !state.inPlay.has(card.id))
+    .map(card => card.id);
+}
+
+function countBlanks(library: CardLibrary): number {
+  return Array.from(library.values()).filter(isBlankCard).length;
+}
+
+// How many blanks the next press of the blank-deck button would put on the
+// table: the stock still in the box, plus however many refilling it mints.
+export function blanksAvailable(state: BwcPlayingState): number {
+  return spareBlanks(state).length + Math.max(0, MAX_BLANK_CARDS - countBlanks(state.library));
+}
+
+function reduceCreateBlankDeck(state: BwcPlayingState): ReduceResult {
+  // Top the stock back up to the cap, then put the whole of it on the table.
+  // Blanks already out stay where they are and do not count against what
+  // this press produces; a blank someone has since filled in stops being a
+  // blank and frees its slot.
   let library = state.library;
-  const cardIds: CardId[] = [];
-  for (let i = 0; i < msg.count; i++) {
+  const cardIds: CardId[] = spareBlanks(state);
+  for (let held = countBlanks(library); held < MAX_BLANK_CARDS; held++) {
     const result = createCard(library, [], '', '', '', '');
     library = result.library;
     cardIds.push(result.cardId);
   }
-  persistLibrary(library);
+  if (cardIds.length === 0) return { state, effects: [] };
+  if (library !== state.library) persistLibrary(library);
 
   // Place the deck at a random position on the table.
   const margin = 100;
@@ -931,7 +949,7 @@ function bwcReduceSingle(state: ServerState, playerId: PlayerId, msg: ClientMess
     }
     case 'bwc-create-blank-deck': {
       if (state.phase !== 'bwc-playing') return { state, effects: [] };
-      return withSnapshotDirty(reduceCreateBlankDeck(state, playerId, msg));
+      return withSnapshotDirty(reduceCreateBlankDeck(state));
     }
     default:
       return { state, effects: [] };

@@ -86,8 +86,12 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
           <button onClick={() => setEditor(e => e.mode === 'create' ? { mode: 'closed' } : { mode: 'create' })}>
             {editor.mode === 'create' ? 'Close Editor' : 'New Card'}
           </button>
-          <button onClick={() => send({ type: 'bwc-create-blank-deck', count: 10 })}>
-            New Blank Cards
+          <button
+            onClick={() => send({ type: 'bwc-create-blank-deck' })}
+            disabled={state.blanksAvailable === 0}
+            title="Puts the box of blank cards out as a deck, refilling it first"
+          >
+            Blank Cards ({state.blanksAvailable})
           </button>
           <button onClick={() => send({ type: 'bwc-tidy-hand' })}>
             Tidy Hand (T)

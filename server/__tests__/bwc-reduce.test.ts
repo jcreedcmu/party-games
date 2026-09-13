@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { bwcReduce } from '../games/bwc/state.js';
+import { bwcReduce, isBlankCard, blanksAvailable } from '../games/bwc/state.js';
+import { MAX_BLANK_CARDS } from '../games/bwc/constants.js';
 import type { BwcPlayingState, BwcWaitingState, Card, Surface, TableObject } from '../games/bwc/types.js';
 import type { PlayerInfo } from '../types.js';
 
@@ -502,5 +503,75 @@ describe('deck curation', () => {
     const back = bwcReduce(playing, 'p1', { type: 'reset' }).state as BwcWaitingState;
     expect(back.phase).toBe('bwc-waiting');
     expect([...back.excluded]).toEqual([]);
+  });
+});
+
+describe('blank card stock', () => {
+  function blank(id: string): Card {
+    return { id, ops: [], opsHash: '', name: '', cardType: '', text: '', creator: '', createdAt: '2024-01-01' };
+  }
+
+  function press(state: BwcPlayingState) {
+    const r = bwcReduce(state, 'p1', { type: 'bwc-create-blank-deck' });
+    return { state: r.state as BwcPlayingState, effects: r.effects };
+  }
+
+  function decks(state: BwcPlayingState) {
+    return Array.from(state.table.objects.values()).flatMap(o => (o.kind === 'deck' ? [o] : []));
+  }
+
+  function blanksInLibrary(state: BwcPlayingState): number {
+    return Array.from(state.library.values()).filter(c => isBlankCard(c)).length;
+  }
+
+  it('fills an empty stock up to the cap and puts it out as one deck', () => {
+    const { state } = press(makePlayingState());
+    expect(blanksInLibrary(state)).toBe(MAX_BLANK_CARDS);
+    expect(decks(state).length).toBe(1);
+    expect(decks(state)[0].cardIds.length).toBe(MAX_BLANK_CARDS);
+  });
+
+  it('reuses blanks left over rather than minting more', () => {
+    // Five blanks already in the library, none of them on the table.
+    const spares = ['b1', 'b2', 'b3', 'b4', 'b5'].map(blank);
+    const state = makePlayingState({ library: new Map(spares.map(c => [c.id, c])) });
+    const after = press(state).state;
+    expect(blanksInLibrary(after)).toBe(MAX_BLANK_CARDS);
+    expect(decks(after)[0].cardIds.length).toBe(MAX_BLANK_CARDS);
+    for (const spare of spares) expect(decks(after)[0].cardIds).toContain(spare.id);
+  });
+
+  it('never exceeds the cap however many times it is pressed', () => {
+    let state = makePlayingState();
+    for (let i = 0; i < 5; i++) state = press(state).state;
+    expect(blanksInLibrary(state)).toBe(MAX_BLANK_CARDS);
+  });
+
+  it('does nothing once every blank is already out', () => {
+    const first = press(makePlayingState()).state;
+    const again = press(first);
+    expect(again.effects).toEqual([]);
+    expect(decks(again.state).length).toBe(1);
+  });
+
+  it('frees a slot when a blank is filled in', () => {
+    const state = press(makePlayingState()).state;
+    expect(blanksAvailable(state)).toBe(0);
+
+    // Somebody fills one of the blanks in. It stops being stock.
+    const filled = decks(state)[0].cardIds[0];
+    const edited = bwcReduce(state, 'p1', {
+      type: 'bwc-edit-card', cardId: filled,
+      ops: [{ type: 'draw-start', color: '#000000', size: 5, x: 1, y: 1 }, { type: 'draw-end' }],
+      name: 'Filled', cardType: '', text: 'now a real card',
+    }).state as BwcPlayingState;
+    expect(blanksInLibrary(edited)).toBe(MAX_BLANK_CARDS - 1);
+    expect(blanksAvailable(edited)).toBe(1);
+
+    // Pressing again mints exactly the one that was freed.
+    const topped = press(edited).state;
+    expect(blanksInLibrary(topped)).toBe(MAX_BLANK_CARDS);
+    expect(decks(topped).length).toBe(2);
+    expect(decks(topped)[1].cardIds.length).toBe(1);
   });
 });

@@ -1,5 +1,5 @@
 import type { PlayerId } from '../../types.js';
-import { canEditCard, isBlankCard } from './state.js';
+import { canEditCard, isBlankCard, blanksAvailable } from './state.js';
 import type {
   BwcState,
   BwcWaitingState,
@@ -102,6 +102,9 @@ export type BwcClientPlayingState = {
   myHand: BwcVisibleSurface;      // always 'full'
   otherHands: BwcVisibleSurface[]; // always 'opaque'
   cards: BwcClientCards;
+  // How many blank cards the next press of the blank-deck button would put
+  // on the table: the stock cap less the blanks already out.
+  blanksAvailable: number;
 };
 
 export type BwcClientState = BwcClientWaitingState | BwcClientPlayingState;
@@ -240,6 +243,7 @@ function getPlayingClientState(
       : { id: { kind: 'hand', ownerId: playerId }, visibility: 'full', objects: [] },
     otherHands,
     cards,
+    blanksAvailable: blanksAvailable(state),
   };
 }
 
