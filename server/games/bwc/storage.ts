@@ -10,6 +10,7 @@ export type SerializedLibrary = {
     cardType: string;
     text: string;
     creator: string;
+    creatorClientId?: string;
     createdAt: string;
   }>;
 };
@@ -39,6 +40,7 @@ export function configureLibrary(
       cardType: entry.cardType ?? '',
       text: entry.text,
       creator: entry.creator,
+      creatorClientId: entry.creatorClientId,
       createdAt: entry.createdAt,
     });
   }
@@ -54,6 +56,9 @@ function serializeLibrary(library: CardLibrary): SerializedLibrary {
       cardType: card.cardType,
       text: card.text,
       creator: card.creator,
+      // Left out entirely for cards that have no author yet, so the stored
+      // line stays as short as it was.
+      ...(card.creatorClientId ? { creatorClientId: card.creatorClientId } : {}),
       createdAt: card.createdAt,
     };
   }

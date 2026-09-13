@@ -1,4 +1,5 @@
 import type { PlayerId } from '../../types.js';
+import { canEditCard } from './state.js';
 import type {
   BwcState,
   BwcWaitingState,
@@ -23,6 +24,9 @@ export type BwcClientCardMeta = {
   cardType: string;
   text: string;
   creatorHandle: string;
+  // Whether *this* viewer may edit the card. Computed per player so the
+  // client never has to be told other players' client ids.
+  editable: boolean;
 };
 
 // The cards a viewer can currently see, by id. A card is in exactly one
@@ -98,7 +102,10 @@ export type BwcClientState = BwcClientWaitingState | BwcClientPlayingState;
 
 // --- Projection ---
 
-function cardMeta(card: import('./types.js').Card): BwcClientCardMeta {
+function cardMeta(
+  card: import('./types.js').Card,
+  viewer: import('../../types.js').PlayerInfo | undefined,
+): BwcClientCardMeta {
   return {
     id: card.id,
     opsHash: card.opsHash,
@@ -106,12 +113,14 @@ function cardMeta(card: import('./types.js').Card): BwcClientCardMeta {
     cardType: card.cardType,
     text: card.text,
     creatorHandle: card.creator,
+    editable: canEditCard(card, viewer),
   };
 }
 
-function getWaitingClientState(state: BwcWaitingState): BwcClientWaitingState {
+function getWaitingClientState(state: BwcWaitingState, playerId: PlayerId): BwcClientWaitingState {
+  const viewer = state.players.get(playerId);
   const cards: BwcClientCards = {};
-  for (const card of state.library.values()) cards[card.id] = cardMeta(card);
+  for (const card of state.library.values()) cards[card.id] = cardMeta(card, viewer);
   return {
     phase: 'bwc-waiting',
     players: Array.from(state.players.values()).map(p => ({
@@ -130,12 +139,13 @@ function getWaitingClientState(state: BwcWaitingState): BwcClientWaitingState {
 function projectObject(
   obj: import('./types.js').TableObject,
   library: import('./types.js').CardLibrary,
+  viewer: import('../../types.js').PlayerInfo | undefined,
   seen: BwcClientCards,
 ): BwcVisibleObject {
   function reveal(cardId: CardId | undefined): CardId | undefined {
     const card = cardId ? library.get(cardId) : undefined;
     if (!card) return undefined;
-    seen[card.id] = cardMeta(card);
+    seen[card.id] = cardMeta(card, viewer);
     return card.id;
   }
 
@@ -167,10 +177,11 @@ function projectObject(
 function projectSurfaceFull(
   surface: import('./types.js').Surface,
   library: import('./types.js').CardLibrary,
+  viewer: import('../../types.js').PlayerInfo | undefined,
   seen: BwcClientCards,
 ): BwcVisibleSurface {
   const objects = Array.from(surface.objects.values()).map(obj =>
-    projectObject(obj, library, seen)
+    projectObject(obj, library, viewer, seen)
   );
   return { id: surface.id, visibility: 'full', objects };
 }
@@ -206,13 +217,14 @@ function getPlayingClientState(
   }
 
   const cards: BwcClientCards = {};
+  const viewer = state.players.get(playerId);
   return {
     phase: 'bwc-playing',
     mySeat: state.seats.get(playerId)?.seatIndex ?? 0,
     seats,
-    table: projectSurfaceFull(state.table, state.library, cards),
+    table: projectSurfaceFull(state.table, state.library, viewer, cards),
     myHand: myHand
-      ? projectSurfaceFull(myHand, state.library, cards)
+      ? projectSurfaceFull(myHand, state.library, viewer, cards)
       : { id: { kind: 'hand', ownerId: playerId }, visibility: 'full', objects: [] },
     otherHands,
     cards,
@@ -222,7 +234,7 @@ function getPlayingClientState(
 export function getClientState(state: BwcState, playerId: PlayerId): BwcClientState {
   switch (state.phase) {
     case 'bwc-waiting':
-      return getWaitingClientState(state);
+      return getWaitingClientState(state, playerId);
     case 'bwc-playing':
       return getPlayingClientState(state, playerId);
   }

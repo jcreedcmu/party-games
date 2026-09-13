@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { configureLibrary, formatLibrary, type SerializedLibrary } from '../games/bwc/storage.js';
+import { configureLibrary, formatLibrary, persistLibrary, flushLibrary, type SerializedLibrary } from '../games/bwc/storage.js';
 
 function serialized(cards: SerializedLibrary['cards']): SerializedLibrary {
   return { cards };
@@ -84,5 +84,36 @@ describe('configureLibrary', () => {
 
   it('returns an empty library when there is no file', () => {
     expect(configureLibrary(null, () => {}).size).toBe(0);
+  });
+});
+
+describe('creatorClientId', () => {
+  it('survives a load', () => {
+    const library = configureLibrary(
+      serialized({
+        owned: { ...CARD, creator: 'Alice', creatorClientId: 'cid-A' },
+        unowned: { ...CARD, creator: '' },
+      }),
+      () => {},
+    );
+    expect(library.get('owned')!.creatorClientId).toBe('cid-A');
+    expect(library.get('unowned')!.creatorClientId).toBeUndefined();
+  });
+
+  it('is written back, and left out for cards that have no author', () => {
+    let written: SerializedLibrary | null = null;
+    const library = configureLibrary(
+      serialized({
+        owned: { ...CARD, creator: 'Alice', creatorClientId: 'cid-A' },
+        unowned: { ...CARD, creator: '' },
+      }),
+      data => { written = data; },
+    );
+    persistLibrary(library);
+    flushLibrary();
+
+    const text = formatLibrary(written!);
+    expect(text).toContain('"creatorClientId":"cid-A"');
+    expect(text.split('\n').find(l => l.includes('"unowned"'))).not.toContain('creatorClientId');
   });
 });

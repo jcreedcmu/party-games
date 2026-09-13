@@ -691,3 +691,41 @@ describe('bwc projection carries no ops', () => {
     expect(bobsView.state.cards).toEqual({});
   });
 });
+
+describe('bwc editable projection', () => {
+  beforeEach(async () => { await startServer(); });
+  afterEach(async () => { await stopServer(); });
+
+  it('marks a card editable for its author and not for anyone else', async () => {
+    const { client: c1 } = await joinBwc('Alice', 'cid-A');
+    const { client: c2 } = await joinBwc('Bob', 'cid-B');
+    await c1.next();
+
+    c1.send({
+      type: 'bwc-create-card',
+      name: 'Alice card', cardType: '', text: 'hers',
+      ops: [{ type: 'draw-start', color: '#000000', size: 5, x: 1, y: 1 }, { type: 'draw-end' }],
+    });
+    const forAlice = await c1.next();
+    const forBob = await c2.next();
+    if (forAlice.type !== 'state' || forAlice.state.phase !== 'bwc-waiting') throw new Error('expected waiting');
+    if (forBob.type !== 'state' || forBob.state.phase !== 'bwc-waiting') throw new Error('expected waiting');
+
+    const cardId = forAlice.state.library[0];
+    expect(forAlice.state.cards[cardId].editable).toBe(true);
+    expect(forBob.state.cards[cardId].editable).toBe(false);
+
+    // Bob's rejected edit changes nothing and produces no broadcast, so the
+    // next thing Alice hears is a later, unrelated state.
+    c2.send({
+      type: 'bwc-edit-card', cardId,
+      name: 'Bob card', cardType: '', text: 'his',
+      ops: [{ type: 'draw-start', color: '#ff0000', size: 5, x: 2, y: 2 }, { type: 'draw-end' }],
+    });
+    c1.send({ type: 'ready' });
+    const next = await c1.next();
+    if (next.type !== 'state' || next.state.phase !== 'bwc-waiting') throw new Error('expected waiting');
+    expect(next.state.cards[cardId].text).toBe('hers');
+    expect(next.state.players.find(p => p.handle === 'Alice')?.ready).toBe(true);
+  });
+});

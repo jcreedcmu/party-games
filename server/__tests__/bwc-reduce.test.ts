@@ -294,3 +294,111 @@ describe('bwc-delete-object', () => {
     expect(s.inPlay.has('c1')).toBe(false);
   });
 });
+
+describe('bwc-edit-card permissions', () => {
+  const ART = [
+    { type: 'draw-start', color: '#000000', size: 5, x: 1, y: 1 },
+    { type: 'draw-end' },
+  ] as Card['ops'];
+
+  function edit(state: BwcPlayingState, playerId: string, cardId: string, text: string) {
+    const result = bwcReduce(state, playerId, {
+      type: 'bwc-edit-card', cardId, ops: ART, name: 'N', cardType: 'T', text,
+    });
+    return { state: result.state as BwcPlayingState, effects: result.effects };
+  }
+
+  function twoPlayers() {
+    return new Map<string, PlayerInfo>([
+      ['p1', { id: 'p1', handle: 'Alice', ready: false, connected: true, clientId: 'c1' }],
+      ['p2', { id: 'p2', handle: 'Bob', ready: false, connected: true, clientId: 'c2' }],
+    ]);
+  }
+
+  function withCard(card: Card): BwcPlayingState {
+    return makePlayingState({ players: twoPlayers(), library: new Map([[card.id, card]]) });
+  }
+
+  it('lets the creator edit their own card', () => {
+    const card: Card = { ...makeCard('c1'), creator: 'Alice', creatorClientId: 'c1' };
+    const { state, effects } = edit(withCard(card), 'p1', 'c1', 'mine, revised');
+    expect(state.library.get('c1')!.text).toBe('mine, revised');
+    expect(effects).toEqual([{ type: 'broadcast' }]);
+  });
+
+  it('rejects an edit from anyone else', () => {
+    const card: Card = { ...makeCard('c1', 'untouched'), creator: 'Alice', creatorClientId: 'c1' };
+    const { state, effects } = edit(withCard(card), 'p2', 'c1', 'hijacked');
+    expect(state.library.get('c1')!.text).toBe('untouched');
+    expect(effects).toEqual([]);
+  });
+
+  it('keeps edit rights when the creator changes handle', () => {
+    const card: Card = { ...makeCard('c1'), creator: 'Alice', creatorClientId: 'c1' };
+    const players = twoPlayers();
+    // Alice reattaches under a new handle; her clientId is what persists.
+    players.set('p1', { id: 'p1', handle: 'Alicia', ready: false, connected: true, clientId: 'c1' });
+    const state = makePlayingState({ players, library: new Map([[card.id, card]]) });
+    expect(edit(state, 'p1', 'c1', 'still mine').state.library.get('c1')!.text).toBe('still mine');
+  });
+
+  it('lets the first editor claim an unfilled blank, then locks it to them', () => {
+    const blank: Card = { ...makeCard('c1'), name: '', creator: '', ops: [], text: '' };
+    const claimed = edit(withCard(blank), 'p2', 'c1', "Bob's card").state;
+    expect(claimed.library.get('c1')!.creator).toBe('Bob');
+    expect(claimed.library.get('c1')!.creatorClientId).toBe('c2');
+
+    const { state, effects } = edit(claimed, 'p1', 'c1', 'Alice muscling in');
+    expect(state.library.get('c1')!.text).toBe("Bob's card");
+    expect(effects).toEqual([]);
+  });
+
+  it('falls back to the handle for a card stored before client ids, and upgrades it', () => {
+    const legacy: Card = { ...makeCard('c1'), creator: 'Alice' };
+    expect(legacy.creatorClientId).toBeUndefined();
+
+    expect(edit(withCard(legacy), 'p2', 'c1', 'not Bob\'s').effects).toEqual([]);
+
+    const after = edit(withCard(legacy), 'p1', 'c1', 'Alice edits').state;
+    expect(after.library.get('c1')!.text).toBe('Alice edits');
+    expect(after.library.get('c1')!.creatorClientId).toBe('c1');
+  });
+});
+
+describe('cards authored before ownership was recorded', () => {
+  const ART = [
+    { type: 'draw-start', color: '#000000', size: 5, x: 1, y: 1 },
+    { type: 'draw-end' },
+  ] as Card['ops'];
+
+  // Most of the stored library is like this: real art and words, no creator.
+  const LEGACY: Card = {
+    id: 'c1', ops: ART, opsHash: 'h', name: 'Architect', cardType: '',
+    text: '+20 for each building in play', creator: '', createdAt: '2024-01-01',
+  };
+
+  function players() {
+    return new Map<string, PlayerInfo>([
+      ['p1', { id: 'p1', handle: 'Alice', ready: false, connected: true, clientId: 'c1' }],
+      ['p2', { id: 'p2', handle: 'Bob', ready: false, connected: true, clientId: 'c2' }],
+    ]);
+  }
+
+  function editBy(playerId: string, card: Card, text: string) {
+    const state = makePlayingState({ players: players(), library: new Map([[card.id, card]]) });
+    const result = bwcReduce(state, playerId, {
+      type: 'bwc-edit-card', cardId: card.id, ops: ART, name: card.name, cardType: '', text,
+    });
+    return (result.state as BwcPlayingState).library.get(card.id)!;
+  }
+
+  it('stays editable by anyone and is never claimed', () => {
+    const afterAlice = editBy('p1', LEGACY, 'Alice fixes a typo');
+    expect(afterAlice.text).toBe('Alice fixes a typo');
+    // Fixing someone else's typo must not put your name on their card.
+    expect(afterAlice.creator).toBe('');
+    expect(afterAlice.creatorClientId).toBeUndefined();
+
+    expect(editBy('p2', afterAlice, 'Bob fixes another').text).toBe('Bob fixes another');
+  });
+});

@@ -688,10 +688,12 @@ export function BwcPlayArea({ table, myHand, cards, seats, mySide, playerId, sen
         label: 'View (V)',
         action: () => setViewingCardId(card.id),
       });
-      items.push({
-        label: 'Edit',
-        action: () => onEdit(card.id, card.opsHash, card.name, card.cardType, card.text),
-      });
+      if (card.editable) {
+        items.push({
+          label: 'Edit',
+          action: () => onEdit(card.id, card.opsHash, card.name, card.cardType, card.text),
+        });
+      }
     }
 
     items.push({

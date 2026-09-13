@@ -86,6 +86,34 @@ function setReady(state: BwcWaitingState, playerId: PlayerId, ready: boolean): B
 
 // --- Library ---
 
+// Nobody is recorded as this card's author, so there is nobody to check an
+// edit against and anyone may make one. Two different situations produce it:
+// a blank nobody has filled in yet, and a card authored before authorship
+// was recorded.
+export function isUnowned(card: Card): boolean {
+  return !card.creator && !card.creatorClientId;
+}
+
+// An unfilled blank has nothing on it at all. Only these are claimed by
+// their first editor. A card that already carries art and words was written
+// by somebody, and stamping the next person to fix a typo as its creator
+// would put the wrong name on the card face.
+export function isBlankCard(card: Card): boolean {
+  return isUnowned(card)
+    && card.ops.length === 0
+    && !card.name && !card.cardType && !card.text;
+}
+
+// Edit rights follow the durable client id. Cards authored before that was
+// recorded can only offer the display handle, which is the weaker check they
+// were created under; the first edit by a matching handle upgrades them.
+export function canEditCard(card: Card, player: PlayerInfo | undefined): boolean {
+  if (isUnowned(card)) return true;
+  if (!player) return false;
+  if (card.creatorClientId) return card.creatorClientId === player.clientId;
+  return card.creator === player.handle;
+}
+
 function createCard(
   library: CardLibrary,
   ops: DrawOp[],
@@ -93,6 +121,7 @@ function createCard(
   cardType: string,
   text: string,
   creator: string,
+  creatorClientId?: string,
 ): { library: CardLibrary; cardId: string } {
   const cardId = crypto.randomUUID();
   const normalized = normalizeOps(ops);
@@ -104,6 +133,7 @@ function createCard(
     cardType,
     text,
     creator,
+    ...(creatorClientId ? { creatorClientId } : {}),
     createdAt: new Date().toISOString(),
   };
   registerCardOps(card);
@@ -774,19 +804,35 @@ function bwcReduceSingle(state: ServerState, playerId: PlayerId, msg: ClientMess
       return { state: next, effects: [{ type: 'broadcast' }] };
     }
     case 'bwc-create-card': {
-      const handle = state.players.get(playerId)?.handle ?? 'unknown';
-      const { library } = createCard(state.library, msg.ops, msg.name, msg.cardType, msg.text, handle);
+      const author = state.players.get(playerId);
+      const handle = author?.handle ?? 'unknown';
+      const { library } = createCard(state.library, msg.ops, msg.name, msg.cardType, msg.text, handle, author?.clientId);
       persistLibrary(library);
       return { state: { ...state, library }, effects: [{ type: 'broadcast' }] };
     }
     case 'bwc-edit-card': {
       const existing = state.library.get(msg.cardId);
       if (!existing) return { state, effects: [] };
-      const handle = state.players.get(playerId)?.handle ?? 'unknown';
-      const creator = existing.creator || handle;
+      const editor = state.players.get(playerId);
+      if (!canEditCard(existing, editor)) return { state, effects: [] };
       const library = new Map(state.library);
       const ops = normalizeOps(msg.ops);
-      const edited: Card = { ...existing, ops, opsHash: hashOps(ops), name: msg.name, cardType: msg.cardType, text: msg.text, creator };
+      // Filling in a blank claims it, and a handle-only card gains the
+      // durable id of the author who just proved they are them. An
+      // authored-but-unowned card stays unowned: nobody knows who wrote it,
+      // and guessing would be worse than leaving it blank.
+      const claims = isBlankCard(existing) || (existing.creator !== '' && !existing.creatorClientId);
+      const creatorClientId = existing.creatorClientId ?? (claims ? editor?.clientId : undefined);
+      const edited: Card = {
+        ...existing,
+        ops,
+        opsHash: hashOps(ops),
+        name: msg.name,
+        cardType: msg.cardType,
+        text: msg.text,
+        creator: existing.creator || (isBlankCard(existing) ? editor?.handle ?? '' : ''),
+        ...(creatorClientId ? { creatorClientId } : {}),
+      };
       registerCardOps(edited);
       library.set(msg.cardId, edited);
       persistLibrary(library);

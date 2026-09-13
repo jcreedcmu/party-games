@@ -36,7 +36,12 @@ export type Card = {
   name: string;            // card name (top of card)
   cardType: string;        // card type (between art and rules)
   text: string;            // rules text (main text box)
-  creator: string;          // handle of original author
+  creator: string;          // handle of original author, for display
+  // Durable identity of the author, and what edit permission is checked
+  // against: handles change when a player reattaches, client ids do not.
+  // Absent on cards authored before permissions existed and on unfilled
+  // blanks, which have no author yet.
+  creatorClientId?: string;
   createdAt: string;       // stringified Date
 };
 

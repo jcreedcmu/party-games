@@ -54,7 +54,7 @@ function LibraryCard({ card, onEdit }: {
         </div>
       </div>
       <div className="bwc-library-card-actions">
-        {onEdit && (
+        {onEdit && card.editable && (
           <button className="bwc-edit-btn" onClick={() => onEdit(card.id, card.opsHash, card.name, card.cardType, card.text)}>
             Edit
           </button>
