@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import type {
   BwcVisibleObject, BwcVisibleSurface, BwcClientSeat, BwcClientCardFull,
-  ClientMessage, Pose, Side, SurfaceId, CardId, DrawOp,
+  ClientMessage, Pose, Side, SurfaceId, CardId,
 } from '../../types';
 import { CardView, CardBack, CardFaceBlank } from './CardView';
 import { PieMenu, type PieMenuItem } from './PieMenu';
@@ -227,7 +227,7 @@ type Props = {
   mySide: Side;
   playerId: string;
   send: (msg: ClientMessage) => void;
-  onEdit: (cardId: CardId, ops: DrawOp[], name: string, cardType: string, text: string) => void;
+  onEdit: (cardId: CardId, opsHash: string, name: string, cardType: string, text: string) => void;
 };
 
 export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEdit }: Props) {
@@ -680,7 +680,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
       });
       items.push({
         label: 'Edit',
-        action: () => onEdit(card.id, card.ops, card.name, card.cardType, card.text),
+        action: () => onEdit(card.id, card.opsHash, card.name, card.cardType, card.text),
       });
     }
 

@@ -4,6 +4,7 @@ import { createServer } from '../server.js';
 import WebSocket from 'ws';
 import type { Server } from 'node:http';
 import type { ServerMessage, ClientMessage } from '../protocol.js';
+import type { DrawOp } from '../draw-ops.js';
 
 let server: Server;
 let port: number;
@@ -511,5 +512,71 @@ describe('bwc reconnect', () => {
       const renamed = stateForBob.state.players.find(p => p.id === '1');
       expect(renamed?.handle).toBe('Alicia');
     }
+  });
+});
+
+describe('bwc card art route', () => {
+  beforeEach(async () => { await startServer(); });
+  afterEach(async () => { await stopServer(); });
+
+  const OPS: DrawOp[] = [
+    { type: 'draw-start', color: '#000000', size: 5, x: 10, y: 10 },
+    { type: 'draw-move', points: [{ x: 20, y: 30 }] },
+    { type: 'draw-end' },
+  ];
+
+  // Creates one card and returns the library entry the server broadcast back.
+  async function createCard(client: Client, text: string, ops = OPS) {
+    client.send({ type: 'bwc-create-card', name: '', cardType: '', ops, text });
+    const msg = await client.next();
+    if (msg.type !== 'state' || msg.state.phase !== 'bwc-waiting') {
+      throw new Error('Expected a waiting-phase state broadcast');
+    }
+    return msg.state.library[msg.state.library.length - 1];
+  }
+
+  function artUrl(cardId: string, opsHash: string): string {
+    return `http://localhost:${port}/api/bwc/card/${cardId}/${opsHash}`;
+  }
+
+  it('serves a card\'s ops by hash, marked immutable', async () => {
+    const { client } = await joinBwc('Alice', 'cid-A');
+    const card = await createCard(client, 'Test card');
+
+    const res = await fetch(artUrl(card.id, card.opsHash));
+    expect(res.status).toBe(200);
+    expect(res.headers.get('cache-control')).toContain('immutable');
+    expect(await res.json()).toEqual({ ops: card.ops });
+  });
+
+  it('keeps a superseded hash resolvable after an edit', async () => {
+    const { client } = await joinBwc('Alice', 'cid-A');
+    const before = await createCard(client, 'Original');
+
+    client.send({
+      type: 'bwc-edit-card',
+      cardId: before.id,
+      name: '', cardType: '', text: 'Revised',
+      ops: [...OPS, { type: 'draw-fill', x: 1, y: 1, color: '#ff0000' }],
+    });
+    const msg = await client.next();
+    if (msg.type !== 'state' || msg.state.phase !== 'bwc-waiting') throw new Error('expected state');
+    const after = msg.state.library[0];
+    expect(after.opsHash).not.toBe(before.opsHash);
+
+    // A client still holding the pre-edit state must not get a 404.
+    const stale = await fetch(artUrl(before.id, before.opsHash));
+    expect(stale.status).toBe(200);
+    expect(await stale.json()).toEqual({ ops: before.ops });
+
+    const fresh = await fetch(artUrl(after.id, after.opsHash));
+    expect(fresh.status).toBe(200);
+    expect(await fresh.json()).toEqual({ ops: after.ops });
+  });
+
+  it('404s an unknown hash without caching the miss', async () => {
+    const res = await fetch(artUrl('no-such-card', 'nosuchhash'));
+    expect(res.status).toBe(404);
+    expect(res.headers.get('cache-control')).toBeNull();
   });
 });

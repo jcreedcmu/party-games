@@ -3,6 +3,7 @@ import type { PlayerId, PlayerInfo, ServerState, ReduceResult, Effect } from '..
 import type { ClientMessage } from '../../protocol.js';
 import { hashOps, normalizeOps, type DrawOp } from '../../draw-ops.js';
 import { persistLibrary, markSnapshotDirty, clearSnapshot } from './storage.js';
+import { registerCardOps, registerLibraryOps } from './ops-store.js';
 import type {
   BwcState,
   BwcWaitingState,
@@ -25,6 +26,7 @@ let preloadedLibrary: CardLibrary = new Map();
 
 export function setPreloadedLibrary(library: CardLibrary): void {
   preloadedLibrary = library;
+  registerLibraryOps(library);
 }
 
 export function createInitialState(): BwcWaitingState {
@@ -104,6 +106,7 @@ function createCard(
     creator,
     createdAt: new Date().toISOString(),
   };
+  registerCardOps(card);
   const next = new Map(library);
   next.set(cardId, card);
   return { library: next, cardId };
@@ -783,7 +786,9 @@ function bwcReduceSingle(state: ServerState, playerId: PlayerId, msg: ClientMess
       const creator = existing.creator || handle;
       const library = new Map(state.library);
       const ops = normalizeOps(msg.ops);
-      library.set(msg.cardId, { ...existing, ops, opsHash: hashOps(ops), name: msg.name, cardType: msg.cardType, text: msg.text, creator });
+      const edited: Card = { ...existing, ops, opsHash: hashOps(ops), name: msg.name, cardType: msg.cardType, text: msg.text, creator };
+      registerCardOps(edited);
+      library.set(msg.cardId, edited);
       persistLibrary(library);
       return { state: { ...state, library }, effects: [{ type: 'broadcast' }] };
     }

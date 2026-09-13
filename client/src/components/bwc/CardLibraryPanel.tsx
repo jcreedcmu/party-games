@@ -1,16 +1,16 @@
 import { useRef, useState, useLayoutEffect } from 'react';
-import type { BwcClientCardSummary, CardId, DrawOp } from '../../types';
+import type { BwcClientCardSummary, CardId } from '../../types';
 import { CardView } from './CardView';
 import { CARD_W, CARD_H } from '../../../../server/games/bwc/constants';
 
 type Props = {
   cards: BwcClientCardSummary[];
-  onEdit?: (cardId: CardId, ops: DrawOp[], name: string, cardType: string, text: string) => void;
+  onEdit?: (cardId: CardId, opsHash: string, name: string, cardType: string, text: string) => void;
 };
 
 function LibraryCard({ card, onEdit }: {
   card: BwcClientCardSummary;
-  onEdit?: (cardId: CardId, ops: DrawOp[], name: string, cardType: string, text: string) => void;
+  onEdit?: (cardId: CardId, opsHash: string, name: string, cardType: string, text: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -39,7 +39,7 @@ function LibraryCard({ card, onEdit }: {
       </div>
       <div className="bwc-library-card-actions">
         {onEdit && (
-          <button className="bwc-edit-btn" onClick={() => onEdit(card.id, card.ops, card.name, card.cardType, card.text)}>
+          <button className="bwc-edit-btn" onClick={() => onEdit(card.id, card.opsHash, card.name, card.cardType, card.text)}>
             Edit
           </button>
         )}

@@ -4,6 +4,7 @@ import express from 'express';
 import type { GameType } from './types.js';
 import { getGameModule } from './game-module.js';
 import { attachWebSocketTransport } from './transports/websocket.js';
+import { registerBwcRoutes } from './games/bwc/routes.js';
 import { createOrchestrator } from './orchestrator.js';
 
 export function createServer(password: string, gameType: GameType = 'epyc') {
@@ -21,6 +22,8 @@ export function createServer(password: string, gameType: GameType = 'epyc') {
   app.get('/api/game-type', (_req, res) => {
     res.json({ gameType });
   });
+
+  if (gameType === 'bwc') registerBwcRoutes(app);
 
   // Serve built client files
   const clientDir = path.resolve(import.meta.dirname, '..', 'dist', 'client');

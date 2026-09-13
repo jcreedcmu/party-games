@@ -1,21 +1,58 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import type { DrawOp, ClientMessage, CardId } from '../../types';
 import { DrawingCanvas } from '../DrawingCanvas';
 import { putOps } from '../../image-cache';
+import { fetchCardOps, getCachedOps } from '../../card-ops';
 
 type Props = {
   send: (msg: ClientMessage) => void;
   onDone: () => void;
   editingCardId?: CardId;
-  initialOps?: DrawOp[];
+  editingOpsHash?: string;
   initialName?: string;
   initialCardType?: string;
   initialText?: string;
 };
 
-export function CardEditor({ send, onDone, editingCardId, initialOps, initialName, initialCardType, initialText }: Props) {
+// The art of the card being edited is not in the state broadcast; it is
+// fetched by hash. Holding the editor body back until it arrives keeps
+// `DrawingCanvas` mounting once, with its ops already known.
+export function CardEditor(props: Props) {
+  const { editingCardId, editingOpsHash } = props;
+  const [initialOps, setInitialOps] = useState<DrawOp[] | null>(
+    editingOpsHash ? getCachedOps(editingOpsHash) ?? null : [],
+  );
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    if (initialOps || !editingCardId || !editingOpsHash) return;
+    let live = true;
+    fetchCardOps(editingCardId, editingOpsHash).then(
+      ops => { if (live) setInitialOps(ops); },
+      () => { if (live) setFailed(true); },
+    );
+    return () => { live = false; };
+  }, [editingCardId, editingOpsHash, initialOps]);
+
+  if (initialOps === null) {
+    return (
+      <div className="bwc-card-editor">
+        <h3>Edit Card</h3>
+        <p>{failed ? 'Could not load this card’s art.' : 'Loading art…'}</p>
+        <div className="bwc-card-editor-actions">
+          <button onClick={props.onDone}>Cancel</button>
+        </div>
+      </div>
+    );
+  }
+  return <CardEditorBody {...props} initialOps={initialOps} />;
+}
+
+function CardEditorBody({
+  send, onDone, editingCardId, initialOps, initialName, initialCardType, initialText,
+}: Props & { initialOps: DrawOp[] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const opsRef = useRef<DrawOp[]>(initialOps ? [...initialOps] : []);
+  const opsRef = useRef<DrawOp[]>([...initialOps]);
   const [name, setName] = useState(initialName ?? '');
   const [cardType, setCardType] = useState(initialCardType ?? '');
   const [text, setText] = useState(initialText ?? '');

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { BwcClientState, BwcClientPlayingState, BwcClientSeat, ClientMessage, CardId, DrawOp, Side } from '../../types';
+import type { BwcClientState, BwcClientPlayingState, BwcClientSeat, ClientMessage, CardId, Side } from '../../types';
 import { WaitingRoom } from '../WaitingRoom';
 import { Modal } from '../Modal';
 import { CardEditor } from './CardEditor';
@@ -36,7 +36,7 @@ function Scoreboard({ seats, send }: { seats: BwcClientSeat[]; send: (msg: Clien
 type EditorState =
   | { mode: 'closed' }
   | { mode: 'create' }
-  | { mode: 'edit'; cardId: CardId; ops: DrawOp[]; name: string; cardType: string; text: string };
+  | { mode: 'edit'; cardId: CardId; opsHash: string; name: string; cardType: string; text: string };
 
 type Props = {
   state: BwcClientState;
@@ -58,8 +58,8 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
     return () => document.removeEventListener('bwc-score-drop', handler);
   }, [send]);
 
-  function handleEdit(cardId: CardId, ops: DrawOp[], name: string, cardType: string, text: string) {
-    setEditor({ mode: 'edit', cardId, ops, name, cardType, text });
+  function handleEdit(cardId: CardId, opsHash: string, name: string, cardType: string, text: string) {
+    setEditor({ mode: 'edit', cardId, opsHash, name, cardType, text });
   }
 
   const base = import.meta.env.BASE_URL;
@@ -112,7 +112,7 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
               send={send}
               onDone={() => setEditor({ mode: 'closed' })}
               editingCardId={editor.cardId}
-              initialOps={editor.ops}
+              editingOpsHash={editor.opsHash}
               initialName={editor.name}
               initialCardType={editor.cardType}
               initialText={editor.text}
@@ -127,8 +127,8 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
 export function BwcGame({ state, playerId, send }: Props) {
   const [editor, setEditor] = useState<EditorState>({ mode: 'closed' });
 
-  function handleEdit(cardId: CardId, ops: DrawOp[], name: string, cardType: string, text: string) {
-    setEditor({ mode: 'edit', cardId, ops, name, cardType, text });
+  function handleEdit(cardId: CardId, opsHash: string, name: string, cardType: string, text: string) {
+    setEditor({ mode: 'edit', cardId, opsHash, name, cardType, text });
   }
 
   switch (state.phase) {
@@ -163,7 +163,7 @@ export function BwcGame({ state, playerId, send }: Props) {
                   send={send}
                   onDone={() => setEditor({ mode: 'closed' })}
                   editingCardId={editor.cardId}
-                  initialOps={editor.ops}
+                  editingOpsHash={editor.opsHash}
                   initialName={editor.name}
                   initialCardType={editor.cardType}
                   initialText={editor.text}
