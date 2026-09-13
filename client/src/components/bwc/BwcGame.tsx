@@ -33,10 +33,14 @@ function Scoreboard({ seats, send }: { seats: BwcClientSeat[]; send: (msg: Clien
   );
 }
 
-type EditorState =
-  | { mode: 'closed' }
-  | { mode: 'create' }
-  | { mode: 'edit'; cardId: CardId; opsHash: string; name: string; cardType: string; text: string };
+// Opening the editor on an existing card. Both phases can do this.
+type EditingCard = { mode: 'edit'; cardId: CardId; opsHash: string; name: string; cardType: string; text: string };
+
+// During play there is no "new card" route: authoring happens by drawing a
+// blank from the stock and filling it in, which is an edit like any other.
+type PlayEditorState = { mode: 'closed' } | EditingCard;
+
+type EditorState = PlayEditorState | { mode: 'create' };
 
 type Props = {
   state: BwcClientState;
@@ -45,7 +49,7 @@ type Props = {
 };
 
 function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; playerId: string; send: (msg: ClientMessage) => void }) {
-  const [editor, setEditor] = useState<EditorState>({ mode: 'closed' });
+  const [editor, setEditor] = useState<PlayEditorState>({ mode: 'closed' });
   const mySide: Side = state.seats.find(s => s.seat === state.mySeat)?.side ?? 'S';
 
   // Listen for score chip drops (CustomEvent from ScoreChip component).
@@ -83,9 +87,6 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
           />
         </div>
         <div className="bwc-sidebar">
-          <button onClick={() => setEditor(e => e.mode === 'create' ? { mode: 'closed' } : { mode: 'create' })}>
-            {editor.mode === 'create' ? 'Close Editor' : 'New Card'}
-          </button>
           <button
             onClick={() => send({ type: 'bwc-create-blank-deck' })}
             disabled={state.blanksAvailable === 0}
@@ -102,27 +103,18 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
           <Scoreboard seats={state.seats} send={send} />
         </div>
       </div>
-      {editor.mode !== 'closed' && (
+      {editor.mode === 'edit' && (
         <Modal onClose={() => setEditor({ mode: 'closed' })}>
-          {editor.mode === 'create' && (
-            <CardEditor
-              key="create"
-              send={send}
-              onDone={() => setEditor({ mode: 'closed' })}
-            />
-          )}
-          {editor.mode === 'edit' && (
-            <CardEditor
-              key={`edit-${editor.cardId}`}
-              send={send}
-              onDone={() => setEditor({ mode: 'closed' })}
-              editingCardId={editor.cardId}
-              editingOpsHash={editor.opsHash}
-              initialName={editor.name}
-              initialCardType={editor.cardType}
-              initialText={editor.text}
-            />
-          )}
+          <CardEditor
+            key={`edit-${editor.cardId}`}
+            send={send}
+            onDone={() => setEditor({ mode: 'closed' })}
+            editingCardId={editor.cardId}
+            editingOpsHash={editor.opsHash}
+            initialName={editor.name}
+            initialCardType={editor.cardType}
+            initialText={editor.text}
+          />
         </Modal>
       )}
     </div>
