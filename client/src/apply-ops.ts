@@ -74,14 +74,26 @@ export function applyOp(
   }
 }
 
-// Replay all ops onto a fresh imageData, returning the final imageData and snapshots.
-export function replayOps(ops: DrawOp[], w = CANVAS_WIDTH, h = CANVAS_HEIGHT): { imageData: ImageData; snapshots: ImageData[] } {
+// Replay all ops onto a fresh imageData, returning the final imageData and
+// snapshots.
+//
+// Snapshots exist to serve `draw-undo`, and each one is a full-buffer copy
+// taken at every stroke end. A caller that wants only the final image can
+// pass `retainSnapshots: false` and skip them, except when the ops contain an
+// undo, which needs the history to replay correctly.
+export function replayOps(
+  ops: DrawOp[],
+  w = CANVAS_WIDTH,
+  h = CANVAS_HEIGHT,
+  { retainSnapshots = true }: { retainSnapshots?: boolean } = {},
+): { imageData: ImageData; snapshots: ImageData[] } {
+  const keepSnapshots = retainSnapshots || ops.some(op => op.type === 'draw-undo');
   const imageData = createBlankImageData(w, h);
-  const snapshots: ImageData[] = [cloneImageData(imageData)];
+  const snapshots: ImageData[] = keepSnapshots ? [cloneImageData(imageData)] : [];
   const drawState = createDrawState();
   for (const op of ops) {
     const shouldSnapshot = applyOp(imageData, op, drawState, snapshots);
-    if (shouldSnapshot) {
+    if (shouldSnapshot && keepSnapshots) {
       snapshots.push(cloneImageData(imageData));
       if (snapshots.length > 30) snapshots.shift();
     }

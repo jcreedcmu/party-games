@@ -46,7 +46,7 @@ export function getOrReplay(opsHash: string, ops: DrawOp[], w: number, h: number
       return cached;
     }
   }
-  const { imageData } = replayOps(ops, w, h);
+  const { imageData } = replayOps(ops, w, h, { retainSnapshots: false });
   if (opsHash) put(opsHash, imageData);
   return imageData;
 }

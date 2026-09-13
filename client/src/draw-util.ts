@@ -1,15 +1,21 @@
 export const CANVAS_WIDTH = 800;
 export const CANVAS_HEIGHT = 500;
 
+// Every color reaching the pixel code is `#rgb` or `#rrggbb`: the toolbar's
+// presets are written that way, the custom picker is an `<input type=color>`,
+// and the eyedropper formats the pixel it sampled. Anything else reads as
+// black. Parsing the text directly keeps this callable from a worker, where
+// there is no `document` to build a scratch canvas with.
 export function parseColor(color: string): [number, number, number] {
-  const tmp = document.createElement('canvas');
-  tmp.width = 1;
-  tmp.height = 1;
-  const ctx = tmp.getContext('2d')!;
-  ctx.fillStyle = color;
-  ctx.fillRect(0, 0, 1, 1);
-  const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
-  return [r, g, b];
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color);
+  if (!m) return [0, 0, 0];
+  const hex = m[1];
+  const step = hex.length / 3;
+  const chan = (i: number) => {
+    const s = hex.slice(i * step, i * step + step);
+    return parseInt(step === 1 ? s + s : s, 16);
+  };
+  return [chan(0), chan(1), chan(2)];
 }
 
 function setPixel(data: Uint8ClampedArray, x: number, y: number, r: number, g: number, b: number, w: number, h: number): void {

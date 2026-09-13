@@ -196,3 +196,69 @@ describe('replayOps on hand-built op sequences', () => {
     expect(isBlank(imageData)).toBe(true);
   });
 });
+
+describe('parseColor', () => {
+  // Every color the toolbar can produce. The presets are these literals, the
+  // custom picker is an `<input type=color>`, and the eyedropper formats the
+  // sampled pixel the same way.
+  const PALETTE = [
+    '#000000', '#555555', '#e74c3c', '#f39c12', '#f1c40f',
+    '#2ecc71', '#3498db', '#9b59b6', '#e91e8f', '#8B4513',
+    '#ffffff',
+  ];
+
+  it('reads the toolbar palette', () => {
+    const expected: Record<string, [number, number, number]> = {
+      '#000000': [0, 0, 0],
+      '#555555': [85, 85, 85],
+      '#e74c3c': [231, 76, 60],
+      '#f39c12': [243, 156, 18],
+      '#f1c40f': [241, 196, 15],
+      '#2ecc71': [46, 204, 113],
+      '#3498db': [52, 152, 219],
+      '#9b59b6': [155, 89, 182],
+      '#e91e8f': [233, 30, 143],
+      '#8B4513': [139, 69, 19],
+      '#ffffff': [255, 255, 255],
+    };
+    for (const color of PALETTE) {
+      expect(parseColor(color), color).toEqual(expected[color]);
+    }
+  });
+
+  it('expands the three-digit form', () => {
+    expect(parseColor('#f0a')).toEqual([255, 0, 170]);
+  });
+
+  it('reads anything unparseable as black', () => {
+    expect(parseColor('rebeccapurple')).toEqual([0, 0, 0]);
+    expect(parseColor('#12345')).toEqual([0, 0, 0]);
+  });
+});
+
+describe('replayOps snapshot retention', () => {
+  const OPS: DrawOp[] = [
+    { type: 'draw-start', color: '#e74c3c', size: 5, x: 2, y: 2 },
+    { type: 'draw-move', points: [{ x: 6, y: 2 }] },
+    { type: 'draw-end' },
+    { type: 'draw-fill', x: 0, y: 0, color: '#3498db' },
+  ];
+
+  it('produces the same pixels with snapshots skipped', () => {
+    const retained = replayOps(OPS, W, H);
+    const skipped = replayOps(OPS, W, H, { retainSnapshots: false });
+    expect(Array.from(skipped.imageData.data)).toEqual(Array.from(retained.imageData.data));
+    expect(retained.snapshots.length).toBeGreaterThan(1);
+    expect(skipped.snapshots).toEqual([]);
+  });
+
+  it('still builds snapshots when the ops contain an undo', () => {
+    const withUndo: DrawOp[] = [...OPS, { type: 'draw-undo' }];
+    const retained = replayOps(withUndo, W, H);
+    const skipped = replayOps(withUndo, W, H, { retainSnapshots: false });
+    expect(Array.from(skipped.imageData.data)).toEqual(Array.from(retained.imageData.data));
+    expect(skipped.snapshots.length).toBe(retained.snapshots.length);
+    // The fill was undone, so the stroke is back on a white ground.
+    expect(isBlank(skipped.imageData)).toBe(false);
+  });
+});
