@@ -11,6 +11,17 @@ export type DrawState = {
   started: boolean;
 };
 
+// A snapshot is a full-buffer copy: 1.9 MB at 800x600. Bounding the stack by
+// total bytes rather than by count keeps a small canvas's history deep and a
+// large one's memory finite. The editor and the replay path both derive their
+// cap from here, so an undo that the editor refused to perform is also one
+// that replay refuses, and the two agree on what a card looks like.
+const UNDO_BUDGET_BYTES = 24 * 1024 * 1024;
+
+export function maxSnapshotsFor(w: number, h: number): number {
+  return Math.max(2, Math.min(30, Math.floor(UNDO_BUDGET_BYTES / (w * h * 4))));
+}
+
 export function createDrawState(): DrawState {
   return { color: '#000000', rgb: [0, 0, 0], size: 5, radius: 2, lastX: 0, lastY: 0, started: false };
 }
@@ -88,6 +99,7 @@ export function replayOps(
   { retainSnapshots = true }: { retainSnapshots?: boolean } = {},
 ): { imageData: ImageData; snapshots: ImageData[] } {
   const keepSnapshots = retainSnapshots || ops.some(op => op.type === 'draw-undo');
+  const maxSnapshots = maxSnapshotsFor(w, h);
   const imageData = createBlankImageData(w, h);
   const snapshots: ImageData[] = keepSnapshots ? [cloneImageData(imageData)] : [];
   const drawState = createDrawState();
@@ -95,7 +107,7 @@ export function replayOps(
     const shouldSnapshot = applyOp(imageData, op, drawState, snapshots);
     if (shouldSnapshot && keepSnapshots) {
       snapshots.push(cloneImageData(imageData));
-      if (snapshots.length > 30) snapshots.shift();
+      if (snapshots.length > maxSnapshots) snapshots.shift();
     }
   }
   return { imageData, snapshots };

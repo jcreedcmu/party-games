@@ -1,4 +1,5 @@
 import { fetchCardOps, getCachedOps } from './card-ops';
+import { loadArt, saveArt, trimArt } from './art-db';
 import { replayOps } from './apply-ops';
 import type { DrawOp } from './types';
 import type { RenderRequest, RenderResponse } from './card-art.worker';
@@ -13,6 +14,12 @@ export const ART_H = 600;
 // library thumbnails are not.
 export const PRIORITY_VISIBLE = 0;
 export const PRIORITY_BACKGROUND = 1;
+
+// At tens of KB per card this is on the order of 20 MB, far above any one
+// library, so in practice nothing is ever evicted.
+const MAX_STORED_ART = 500;
+
+void trimArt(MAX_STORED_ART);
 
 const urls = new Map<string, string>();
 const listeners = new Map<string, Set<() => void>>();
@@ -33,6 +40,7 @@ function publish(opsHash: string, url: string): void {
 // straight to the store spares a fetch and a re-render.
 export function seedArt(opsHash: string, blob: Blob): void {
   if (urls.has(opsHash)) return;
+  void saveArt(opsHash, blob);
   publish(opsHash, URL.createObjectURL(blob));
 }
 
@@ -80,9 +88,7 @@ async function pump(): Promise<void> {
   if (!next) return;
   rendering = true;
   try {
-    const ops = getCachedOps(next.opsHash) ?? await fetchCardOps(next.cardId, next.opsHash);
-    const blob = await render(next.opsHash, ops);
-    publish(next.opsHash, URL.createObjectURL(blob));
+    publish(next.opsHash, URL.createObjectURL(await obtain(next.cardId, next.opsHash)));
   } catch (err) {
     console.error(`card art ${next.cardId}/${next.opsHash}:`, err);
     pending.delete(next.opsHash);
@@ -90,6 +96,17 @@ async function pump(): Promise<void> {
     rendering = false;
   }
   void pump();
+}
+
+// The stored blob is checked before the ops are, so a card seen in an
+// earlier session costs neither a fetch nor a replay.
+async function obtain(cardId: string, opsHash: string): Promise<Blob> {
+  const stored = await loadArt(opsHash);
+  if (stored) return stored;
+  const ops = getCachedOps(opsHash) ?? await fetchCardOps(cardId, opsHash);
+  const blob = await render(opsHash, ops);
+  void saveArt(opsHash, blob);
+  return blob;
 }
 
 // --- Rendering backends ---
