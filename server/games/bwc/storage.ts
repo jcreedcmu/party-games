@@ -1,9 +1,9 @@
 import type { Card, CardId, CardLibrary } from './types.js';
-import { hashOps } from '../../draw-ops.js';
+import { hashOps, normalizeOps } from '../../draw-ops.js';
 
 // --- Card library persistence ---
 
-type SerializedLibrary = {
+export type SerializedLibrary = {
   cards: Record<string, {
     ops: unknown[];
     name: string;
@@ -14,7 +14,13 @@ type SerializedLibrary = {
   }>;
 };
 
+// Card edits arrive in bursts while someone is authoring, and the library is
+// rewritten whole each time, so writes are coalesced rather than run per edit.
+const LIBRARY_WRITE_DEBOUNCE_MS = 2000;
+
 let persistLibraryFn: ((data: SerializedLibrary) => void) | null = null;
+let pendingLibrary: SerializedLibrary | null = null;
+let libraryTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function configureLibrary(
   initial: SerializedLibrary | null,
@@ -24,7 +30,7 @@ export function configureLibrary(
   if (!initial || !initial.cards) return new Map();
   const library: CardLibrary = new Map();
   for (const [id, entry] of Object.entries(initial.cards)) {
-    const ops = entry.ops as Card['ops'];
+    const ops = normalizeOps(entry.ops as Card['ops']);
     library.set(id, {
       id,
       ops,
@@ -39,8 +45,7 @@ export function configureLibrary(
   return library;
 }
 
-export function persistLibrary(library: CardLibrary): void {
-  if (!persistLibraryFn) return;
+function serializeLibrary(library: CardLibrary): SerializedLibrary {
   const cards: SerializedLibrary['cards'] = {};
   for (const [id, card] of library) {
     cards[id] = {
@@ -52,7 +57,38 @@ export function persistLibrary(library: CardLibrary): void {
       createdAt: card.createdAt,
     };
   }
-  persistLibraryFn({ cards });
+  return { cards };
+}
+
+// One line per card: the file stays valid JSON and stays diffable, with an
+// edited card showing up as a single changed line.
+export function formatLibrary(data: SerializedLibrary): string {
+  const entries = Object.entries(data.cards).map(
+    ([id, card]) => `    ${JSON.stringify(id)}: ${JSON.stringify(card)}`,
+  );
+  if (entries.length === 0) return '{\n  "cards": {}\n}\n';
+  return `{\n  "cards": {\n${entries.join(',\n')}\n  }\n}\n`;
+}
+
+export function persistLibrary(library: CardLibrary): void {
+  if (!persistLibraryFn) return;
+  pendingLibrary = serializeLibrary(library);
+  if (libraryTimer) return;
+  libraryTimer = setTimeout(() => {
+    libraryTimer = null;
+    flushLibrary();
+  }, LIBRARY_WRITE_DEBOUNCE_MS);
+}
+
+export function flushLibrary(): void {
+  if (libraryTimer) {
+    clearTimeout(libraryTimer);
+    libraryTimer = null;
+  }
+  if (pendingLibrary && persistLibraryFn) {
+    persistLibraryFn(pendingLibrary);
+    pendingLibrary = null;
+  }
 }
 
 // --- Table snapshot persistence ---

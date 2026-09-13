@@ -4,7 +4,7 @@ import { createServer } from './server.js';
 import type { GameType } from './types.js';
 import { configureWords, configureStats } from './games/pictionary/words.js';
 import type { WordStats } from './games/pictionary/words.js';
-import { configureLibrary, configureSnapshot, flushSnapshot } from './games/bwc/storage.js';
+import { configureLibrary, configureSnapshot, flushSnapshot, flushLibrary, formatLibrary, persistLibrary } from './games/bwc/storage.js';
 import { setPreloadedLibrary } from './games/bwc/state.js';
 
 function parseArgs(args: string[]): { password: string; port: number; host: string; game: GameType } {
@@ -87,12 +87,18 @@ try {
 }
 const library = configureLibrary(libraryData, (data) => {
   try {
-    fs.writeFileSync(libraryPath, JSON.stringify(data, null, 2) + '\n');
+    // Write-then-rename so a crash mid-write cannot truncate the archive.
+    const tmpPath = libraryPath + '.tmp';
+    fs.writeFileSync(tmpPath, formatLibrary(data));
+    fs.renameSync(tmpPath, libraryPath);
   } catch (e) {
     console.error('Failed to persist BWC card library:', e);
   }
 });
 setPreloadedLibrary(library);
+// Rewrite once at startup so a library stored in an older, larger format is
+// migrated to the normalized one.
+persistLibrary(library);
 
 // Configure BWC table snapshot persistence
 const snapshotPath = path.join(bwcDataDir, 'table.json');
@@ -118,9 +124,11 @@ server.listen(port, host, () => {
 // Flush snapshot on clean shutdown.
 process.on('SIGINT', () => {
   flushSnapshot();
+  flushLibrary();
   process.exit(0);
 });
 process.on('SIGTERM', () => {
   flushSnapshot();
+  flushLibrary();
   process.exit(0);
 });

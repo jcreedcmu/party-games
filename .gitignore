@@ -4,3 +4,4 @@ dist
 preview-dist
 test-results
 data/bwc/table.json
+data/bwc/cards.json.tmp

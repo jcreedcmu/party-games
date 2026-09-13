@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import type { PlayerId, PlayerInfo, ServerState, ReduceResult, Effect } from '../../types.js';
 import type { ClientMessage } from '../../protocol.js';
-import { hashOps, type DrawOp } from '../../draw-ops.js';
+import { hashOps, normalizeOps, type DrawOp } from '../../draw-ops.js';
 import { persistLibrary, markSnapshotDirty, clearSnapshot } from './storage.js';
 import type {
   BwcState,
@@ -93,10 +93,11 @@ function createCard(
   creator: string,
 ): { library: CardLibrary; cardId: string } {
   const cardId = crypto.randomUUID();
+  const normalized = normalizeOps(ops);
   const card: Card = {
     id: cardId,
-    ops,
-    opsHash: hashOps(ops),
+    ops: normalized,
+    opsHash: hashOps(normalized),
     name,
     cardType,
     text,
@@ -781,7 +782,8 @@ function bwcReduceSingle(state: ServerState, playerId: PlayerId, msg: ClientMess
       const handle = state.players.get(playerId)?.handle ?? 'unknown';
       const creator = existing.creator || handle;
       const library = new Map(state.library);
-      library.set(msg.cardId, { ...existing, ops: msg.ops, opsHash: hashOps(msg.ops), name: msg.name, cardType: msg.cardType, text: msg.text, creator });
+      const ops = normalizeOps(msg.ops);
+      library.set(msg.cardId, { ...existing, ops, opsHash: hashOps(ops), name: msg.name, cardType: msg.cardType, text: msg.text, creator });
       persistLibrary(library);
       return { state: { ...state, library }, effects: [{ type: 'broadcast' }] };
     }

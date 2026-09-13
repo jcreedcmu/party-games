@@ -5,7 +5,13 @@ import type { Connection, TransportHandler } from '../transport.js';
 const HEARTBEAT_INTERVAL_MS = 30_000;
 
 export function attachWebSocketTransport(httpServer: http.Server, handler: TransportHandler): void {
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  // State broadcasts are large and highly repetitive, so they compress well.
+  // The threshold keeps the per-message overhead off the small ones.
+  const wss = new WebSocketServer({
+    server: httpServer,
+    path: '/ws',
+    perMessageDeflate: { threshold: 1024 },
+  });
   let nextId = 1;
   const alive = new Map<WebSocket, boolean>();
 
