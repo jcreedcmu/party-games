@@ -1,6 +1,6 @@
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import type {
-  BwcVisibleObject, BwcVisibleSurface, BwcClientSeat, BwcClientCardFull,
+  BwcVisibleObject, BwcVisibleSurface, BwcClientSeat, BwcClientCards,
   ClientMessage, Pose, Side, SurfaceId, CardId,
 } from '../../types';
 import { CardView, CardBack, CardFaceBlank } from './CardView';
@@ -90,15 +90,17 @@ export function deckStackOffset(count: number): { dx: number; dy: number } {
   return { dx: offset, dy: offset };
 }
 
-function CardContent({ obj }: { obj: BwcVisibleObject }) {
+function CardContent({ obj, cards }: { obj: BwcVisibleObject; cards: BwcClientCards }) {
   if (obj.kind === 'card') {
-    return obj.faceUp && obj.card ? <CardView card={obj.card} /> : <CardBack />;
+    const card = obj.cardId ? cards[obj.cardId] : undefined;
+    return obj.faceUp && card ? <CardView card={card} /> : <CardBack />;
   }
   const count = obj.count;
   const visibleCards = Math.min(count, 4);
   const numBacks = visibleCards - 1;
-  const topCard = obj.faceUp && obj.topCard
-    ? <CardView card={obj.topCard} />
+  const topCardMeta = obj.topCardId ? cards[obj.topCardId] : undefined;
+  const topCard = obj.faceUp && topCardMeta
+    ? <CardView card={topCardMeta} />
     : <CardBack />;
   return (
     <div className="bwc-deck-view">
@@ -148,6 +150,7 @@ function DrawHandle({ offset, onPointerDown }: { offset: { dx: number; dy: numbe
 
 type ObjectViewProps = {
   ro: RenderedObject;
+  cards: BwcClientCards;
   selected: boolean;
   displayCenter: Point;  // may differ from ro.rectInScreen.center during drag/pending
   onPointerDown: (e: React.PointerEvent, ro: RenderedObject) => void;
@@ -158,7 +161,7 @@ type ObjectViewProps = {
   onPointerLeave: (ro: RenderedObject) => void;
 };
 
-function ObjectView({ ro, selected, displayCenter, onPointerDown, onDrawHandlePointerDown, onDoubleClick, onContextMenu, onPointerEnter, onPointerLeave }: ObjectViewProps) {
+function ObjectView({ ro, cards, selected, displayCenter, onPointerDown, onDrawHandlePointerDown, onDoubleClick, onContextMenu, onPointerEnter, onPointerLeave }: ObjectViewProps) {
   const rect: OrientedRect = { ...ro.rectInScreen, center: displayCenter };
   const style = orientedRectToStyle(rect);
   const isDragging = displayCenter !== ro.rectInScreen.center;
@@ -180,7 +183,7 @@ function ObjectView({ ro, selected, displayCenter, onPointerDown, onDrawHandlePo
       onPointerEnter={() => onPointerEnter(ro)}
       onPointerLeave={() => onPointerLeave(ro)}
     >
-      <CardContent obj={ro.obj} />
+      <CardContent obj={ro.obj} cards={cards} />
       {ro.obj.kind === 'deck' && (
         <DrawHandle offset={deckStackOffset(ro.obj.count)} onPointerDown={e => onDrawHandlePointerDown(e, ro)} />
       )}
@@ -223,6 +226,7 @@ function SeatLabel({ seat, screenOfTable }: {
 type Props = {
   table: BwcVisibleSurface;
   myHand: BwcVisibleSurface;
+  cards: BwcClientCards;
   seats: BwcClientSeat[];
   mySide: Side;
   playerId: string;
@@ -230,7 +234,7 @@ type Props = {
   onEdit: (cardId: CardId, opsHash: string, name: string, cardType: string, text: string) => void;
 };
 
-export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEdit }: Props) {
+export function BwcPlayArea({ table, myHand, cards, seats, mySide, playerId, send, onEdit }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(TABLE_LOGICAL);
 
@@ -284,7 +288,9 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
   const [pieMenu, setPieMenu] = useState<PieMenuState>(null);
 
   // --- Card zoom/view state ---
-  const [viewingCard, setViewingCard] = useState<BwcClientCardFull | null>(null);
+  // Held by id, not by value: the card's metadata can change under us when
+  // its author saves an edit while the zoom overlay is open.
+  const [viewingCardId, setViewingCardId] = useState<CardId | null>(null);
 
   // --- Draw-drag state: when dragging from a deck's draw handle ---
   // We send bwc-draw-from-deck and wait for the new card to appear.
@@ -672,11 +678,15 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
     }
 
     // Single face-up card actions.
-    if (ros.length === 1 && ros[0].obj.kind === 'card' && ros[0].obj.faceUp && ros[0].obj.card) {
-      const card = ros[0].obj.card;
+    const singleCardId = ros.length === 1 && ros[0].obj.kind === 'card' && ros[0].obj.faceUp
+      ? ros[0].obj.cardId
+      : undefined;
+    const singleCard = singleCardId ? cards[singleCardId] : undefined;
+    if (singleCard) {
+      const card = singleCard;
       items.push({
         label: 'View (V)',
-        action: () => setViewingCard(card),
+        action: () => setViewingCardId(card.id),
       });
       items.push({
         label: 'Edit',
@@ -729,8 +739,8 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
     function handleKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
-      if (viewingCard) {
-        setViewingCard(null);
+      if (viewingCardId) {
+        setViewingCardId(null);
         return;
       }
 
@@ -777,9 +787,9 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
       if (e.key === 'v' || e.key === 'V') {
         if (targets.length === 1) {
           const ro = targets[0];
-          if (ro.obj.kind === 'card' && ro.obj.faceUp && ro.obj.card) {
+          if (ro.obj.kind === 'card' && ro.obj.faceUp && ro.obj.cardId) {
             e.preventDefault();
-            setViewingCard(ro.obj.card);
+            setViewingCardId(ro.obj.cardId);
           }
         }
         return;
@@ -806,7 +816,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [rotateSingle, rotateGroup, handleDeckAction, rendered, istate.selection, istate.interaction, viewingCard]);
+  }, [rotateSingle, rotateGroup, handleDeckAction, rendered, istate.selection, istate.interaction, viewingCardId]);
 
   return (
     <div
@@ -843,6 +853,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
         <ObjectView
           key={ro.obj.id}
           ro={ro}
+          cards={cards}
           selected={selection.has(ro.obj.id)}
           displayCenter={getDisplayCenter(ro, istate)}
           onPointerDown={handleObjectPointerDown}
@@ -850,7 +861,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
           onDoubleClick={handleDoubleClick}
           onContextMenu={handleContextMenu}
           onPointerEnter={ro => { hoveredRef.current = ro.obj.id; }}
-          onPointerLeave={ro => { if (hoveredRef.current === ro.obj.id && !viewingCard) hoveredRef.current = null; }}
+          onPointerLeave={ro => { if (hoveredRef.current === ro.obj.id && !viewingCardId) hoveredRef.current = null; }}
         />
       ))}
 
@@ -884,8 +895,8 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
       })()}
 
       {/* Card zoom overlay */}
-      {viewingCard && (
-        <div className="bwc-card-zoom-overlay" onPointerDown={e => { e.stopPropagation(); setViewingCard(null); }}>
+      {viewingCardId && cards[viewingCardId] && (
+        <div className="bwc-card-zoom-overlay" onPointerDown={e => { e.stopPropagation(); setViewingCardId(null); }}>
           <div className="bwc-card-zoom-card" style={orientedRectToStyle({
             center: { x: containerWidth / 2, y: (tableScreenH + HAND_LOGICAL_H * scale) / 2 },
             halfSize: { x: CARD_W / 2, y: CARD_H / 2 },
@@ -895,7 +906,7 @@ export function BwcPlayArea({ table, myHand, seats, mySide, playerId, send, onEd
             ),
             rotDeg: 0,
           })}>
-            <CardView card={viewingCard} />
+            <CardView card={cards[viewingCardId]} />
           </div>
         </div>
       )}

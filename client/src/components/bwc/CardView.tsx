@@ -1,6 +1,7 @@
 import { useRef } from 'react';
-import type { BwcClientCardFull } from '../../types';
-import { getImageUrl } from '../../image-cache';
+import type { BwcClientCardMeta } from '../../types';
+import { useCardArt } from '../../hooks/useCardArt';
+import { PRIORITY_VISIBLE } from '../../card-art';
 
 function ScoreChip({ value, interactive }: { value: string; interactive: boolean }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -146,17 +147,20 @@ function textFits(ctx: CanvasRenderingContext2D, text: string, fontSize: number)
 }
 
 type Props = {
-  card: BwcClientCardFull;
+  card: BwcClientCardMeta;
   isInteractive?: boolean;
+  artPriority?: number;
 };
 
-export function CardView({ card, isInteractive = true }: Props) {
-  const src = getImageUrl(card.opsHash, card.ops, 800, 600);
+export function CardView({ card, isInteractive = true, artPriority = PRIORITY_VISIBLE }: Props) {
+  // Art arrives asynchronously. Until it does the card shows its frame and
+  // an empty art box, and stays draggable and readable throughout.
+  const src = useCardArt(card.id, card.opsHash, artPriority);
   return (
     <div className="bwc-card-face">
       <div className="bwc-card-name">{card.name}</div>
       <div className="bwc-card-art">
-        <img src={src} className="bwc-card-canvas" draggable={false} />
+        {src && <img src={src} className="bwc-card-canvas" draggable={false} />}
       </div>
       <div className="bwc-card-type">{card.cardType}</div>
       <div className="bwc-card-rules" style={{ fontSize: computeRulesFontSize(card.text) }}><RulesText text={card.text} interactive={isInteractive} /></div>

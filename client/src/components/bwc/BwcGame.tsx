@@ -74,6 +74,7 @@ function BwcPlaying({ state, playerId, send }: { state: BwcClientPlayingState; p
           <BwcPlayArea
             table={state.table}
             myHand={state.myHand}
+            cards={state.cards}
             seats={state.seats}
             mySide={mySide}
             playerId={playerId}
@@ -147,7 +148,10 @@ export function BwcGame({ state, playerId, send }: Props) {
           <button className="btn-primary" onClick={() => setEditor({ mode: 'create' })}>
             New Card
           </button>
-          <CardLibraryPanel cards={state.library} onEdit={handleEdit} />
+          <CardLibraryPanel
+            cards={state.library.map(id => state.cards[id])}
+            onEdit={handleEdit}
+          />
           {editor.mode !== 'closed' && (
             <Modal onClose={() => setEditor({ mode: 'closed' })}>
               {editor.mode === 'create' && (

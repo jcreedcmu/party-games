@@ -1,19 +1,21 @@
 import { useRef, useState, useLayoutEffect } from 'react';
-import type { BwcClientCardSummary, CardId } from '../../types';
+import type { BwcClientCardMeta, CardId } from '../../types';
 import { CardView } from './CardView';
 import { CARD_W, CARD_H } from '../../../../server/games/bwc/constants';
+import { PRIORITY_VISIBLE, PRIORITY_BACKGROUND } from '../../card-art';
 
 type Props = {
-  cards: BwcClientCardSummary[];
+  cards: BwcClientCardMeta[];
   onEdit?: (cardId: CardId, opsHash: string, name: string, cardType: string, text: string) => void;
 };
 
 function LibraryCard({ card, onEdit }: {
-  card: BwcClientCardSummary;
+  card: BwcClientCardMeta;
   onEdit?: (cardId: CardId, opsHash: string, name: string, cardType: string, text: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [onScreen, setOnScreen] = useState(false);
 
   useLayoutEffect(() => {
     const el = containerRef.current;
@@ -21,6 +23,16 @@ function LibraryCard({ card, onEdit }: {
     const observer = new ResizeObserver(([entry]) => {
       setScale(entry.contentRect.width / CARD_W);
     });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Every card in the panel is queued, so the whole library renders in the
+  // background; the ones actually scrolled into view jump the queue.
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => setOnScreen(entry.isIntersecting));
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
@@ -34,7 +46,11 @@ function LibraryCard({ card, onEdit }: {
           transform: `scale(${scale})`,
           transformOrigin: 'top left',
         }}>
-          <CardView card={card} isInteractive={false} />
+          <CardView
+            card={card}
+            isInteractive={false}
+            artPriority={onScreen ? PRIORITY_VISIBLE : PRIORITY_BACKGROUND}
+          />
         </div>
       </div>
       <div className="bwc-library-card-actions">

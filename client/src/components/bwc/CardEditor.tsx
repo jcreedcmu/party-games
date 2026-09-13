@@ -1,8 +1,9 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import type { DrawOp, ClientMessage, CardId } from '../../types';
 import { DrawingCanvas } from '../DrawingCanvas';
-import { putOps } from '../../image-cache';
-import { fetchCardOps, getCachedOps } from '../../card-ops';
+import { fetchCardOps, getCachedOps, putCachedOps } from '../../card-ops';
+import { seedArt } from '../../card-art';
+import { hashOps, normalizeOps } from '../../../../server/draw-ops';
 
 type Props = {
   send: (msg: ClientMessage) => void;
@@ -62,12 +63,14 @@ function CardEditorBody({
   }, []);
 
   function handleSubmit() {
-    // Cache the current canvas image so we don't need to replay ops
-    const ctx = canvasRef.current?.getContext('2d');
-    if (ctx) {
-      const imageData = ctx.getImageData(0, 0, canvasRef.current!.width, canvasRef.current!.height);
-      putOps(opsRef.current, imageData);
-    }
+    // The author already has these pixels on screen. Seeding them under the
+    // hash the server will compute means the card comes back from the
+    // broadcast already rendered, with no fetch and no replay. The server
+    // normalizes and hashes the same way, so the key matches.
+    const ops = normalizeOps(opsRef.current);
+    const opsHash = hashOps(ops);
+    putCachedOps(opsHash, ops);
+    canvasRef.current?.toBlob(blob => { if (blob) seedArt(opsHash, blob); }, 'image/png');
 
     if (editingCardId) {
       send({

@@ -53,8 +53,8 @@ export type {
   BwcClientPlayingState,
   BwcClientState,
   BwcClientSeat,
-  BwcClientCardSummary,
-  BwcClientCardFull,
+  BwcClientCardMeta,
+  BwcClientCards,
   BwcVisibleObject,
   BwcVisibleSurface,
 } from '../../server/games/bwc/client-state.js';

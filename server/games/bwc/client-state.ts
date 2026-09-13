@@ -1,5 +1,4 @@
 import type { PlayerId } from '../../types.js';
-import type { DrawOp } from '../../draw-ops.js';
 import type {
   BwcState,
   BwcWaitingState,
@@ -11,6 +10,27 @@ import type {
   SurfaceId,
 } from './types.js';
 
+// --- Cards ---
+
+// Everything a client needs to draw a card except its art, which it fetches
+// from /api/bwc/card/:cardId/:opsHash and renders itself. Ops are far larger
+// than all of this put together, and they never change without the hash
+// changing, so they have no business in a snapshot that ships on every move.
+export type BwcClientCardMeta = {
+  id: CardId;
+  opsHash: string;
+  name: string;
+  cardType: string;
+  text: string;
+  creatorHandle: string;
+};
+
+// The cards a viewer can currently see, by id. A card is in exactly one
+// place at a time, so this is a flat lookup with no duplicates: in the
+// waiting room it is the whole library, and during play it is what is face
+// up on the table plus what is in the viewer's own hand.
+export type BwcClientCards = Record<CardId, BwcClientCardMeta>;
+
 // --- Waiting phase projection ---
 
 export type BwcClientWaitingState = {
@@ -18,31 +38,11 @@ export type BwcClientWaitingState = {
   players: Array<{ id: string; handle: string; ready: boolean; connected: boolean }>;
   // Library is exposed even in waiting so authors can preview the existing
   // card collection while the room fills up.
-  library: BwcClientCardSummary[];
+  library: CardId[];
+  cards: BwcClientCards;
 };
 
 // --- Playing phase projection ---
-
-export type BwcClientCardSummary = {
-  id: CardId;
-  ops: DrawOp[];
-  opsHash: string;
-  name: string;
-  cardType: string;
-  text: string;
-  creatorHandle: string;
-  createdAt: string;
-};
-
-export type BwcClientCardFull = {
-  id: CardId;
-  ops: DrawOp[];
-  opsHash: string;
-  name: string;
-  cardType: string;
-  text: string;
-  creatorHandle: string;
-};
 
 export type BwcVisibleObject =
   | {
@@ -53,7 +53,8 @@ export type BwcVisibleObject =
       faceUp: boolean;
       // Present iff faceUp; nulled out for face-down cards everywhere
       // (including in the owner's own hand — face-down means face-down).
-      card?: BwcClientCardFull;
+      // Look it up in the state's `cards`.
+      cardId?: CardId;
     }
   | {
       kind: 'deck';
@@ -63,7 +64,7 @@ export type BwcVisibleObject =
       faceUp: boolean;
       count: number;
       // Present iff the deck is face-up.
-      topCard?: BwcClientCardFull;
+      topCardId?: CardId;
     };
 
 // A surface as seen by a particular client. The shared table is always
@@ -90,32 +91,27 @@ export type BwcClientPlayingState = {
   table: BwcVisibleSurface;       // always 'full'
   myHand: BwcVisibleSurface;      // always 'full'
   otherHands: BwcVisibleSurface[]; // always 'opaque'
-  library: BwcClientCardSummary[];
+  cards: BwcClientCards;
 };
 
 export type BwcClientState = BwcClientWaitingState | BwcClientPlayingState;
 
 // --- Projection ---
 
-function summarizeLibrary(state: BwcWaitingState | BwcPlayingState): BwcClientCardSummary[] {
-  const out: BwcClientCardSummary[] = [];
-  for (const card of state.library.values()) {
-    const creatorHandle = card.creator;
-    out.push({
-      id: card.id,
-      ops: card.ops,
-      opsHash: card.opsHash,
-      name: card.name,
-      cardType: card.cardType,
-      text: card.text,
-      creatorHandle,
-      createdAt: card.createdAt,
-    });
-  }
-  return out;
+function cardMeta(card: import('./types.js').Card): BwcClientCardMeta {
+  return {
+    id: card.id,
+    opsHash: card.opsHash,
+    name: card.name,
+    cardType: card.cardType,
+    text: card.text,
+    creatorHandle: card.creator,
+  };
 }
 
 function getWaitingClientState(state: BwcWaitingState): BwcClientWaitingState {
+  const cards: BwcClientCards = {};
+  for (const card of state.library.values()) cards[card.id] = cardMeta(card);
   return {
     phase: 'bwc-waiting',
     players: Array.from(state.players.values()).map(p => ({
@@ -124,39 +120,39 @@ function getWaitingClientState(state: BwcWaitingState): BwcClientWaitingState {
       ready: p.ready,
       connected: p.connected,
     })),
-    library: summarizeLibrary(state),
+    library: Array.from(state.library.keys()),
+    cards,
   };
 }
 
+// Projecting an object also records the card it reveals, so the `cards` map
+// ends up holding exactly what the viewer can see and nothing more.
 function projectObject(
   obj: import('./types.js').TableObject,
   library: import('./types.js').CardLibrary,
-  players: Map<PlayerId, import('../../types.js').PlayerInfo>,
+  seen: BwcClientCards,
 ): BwcVisibleObject {
+  function reveal(cardId: CardId | undefined): CardId | undefined {
+    const card = cardId ? library.get(cardId) : undefined;
+    if (!card) return undefined;
+    seen[card.id] = cardMeta(card);
+    return card.id;
+  }
+
   if (obj.kind === 'card') {
-    const card = library.get(obj.cardId);
+    const cardId = obj.faceUp ? reveal(obj.cardId) : undefined;
     return {
       kind: 'card',
       id: obj.id,
       pose: obj.pose,
       z: obj.z,
       faceUp: obj.faceUp,
-      ...(obj.faceUp && card ? {
-        card: {
-          id: card.id,
-          ops: card.ops,
-          opsHash: card.opsHash,
-          name: card.name,
-          cardType: card.cardType,
-          text: card.text,
-          creatorHandle: card.creator,
-        },
-      } : {}),
+      ...(cardId ? { cardId } : {}),
     };
   }
-  // deck
-  const topCardId = obj.cardIds.length > 0 ? obj.cardIds[obj.cardIds.length - 1] : undefined;
-  const topCardDef = topCardId ? library.get(topCardId) : undefined;
+  const topCardId = obj.faceUp && obj.cardIds.length > 0
+    ? reveal(obj.cardIds[obj.cardIds.length - 1])
+    : undefined;
   return {
     kind: 'deck',
     id: obj.id,
@@ -164,27 +160,17 @@ function projectObject(
     z: obj.z,
     faceUp: obj.faceUp,
     count: obj.cardIds.length,
-    ...(obj.faceUp && topCardDef ? {
-      topCard: {
-        id: topCardDef.id,
-        ops: topCardDef.ops,
-        opsHash: topCardDef.opsHash,
-        name: topCardDef.name,
-        cardType: topCardDef.cardType,
-        text: topCardDef.text,
-        creatorHandle: topCardDef.creator,
-      },
-    } : {}),
+    ...(topCardId ? { topCardId } : {}),
   };
 }
 
 function projectSurfaceFull(
   surface: import('./types.js').Surface,
   library: import('./types.js').CardLibrary,
-  players: Map<PlayerId, import('../../types.js').PlayerInfo>,
+  seen: BwcClientCards,
 ): BwcVisibleSurface {
   const objects = Array.from(surface.objects.values()).map(obj =>
-    projectObject(obj, library, players)
+    projectObject(obj, library, seen)
   );
   return { id: surface.id, visibility: 'full', objects };
 }
@@ -219,16 +205,17 @@ function getPlayingClientState(
     otherHands.push(projectSurfaceOpaque(hand));
   }
 
+  const cards: BwcClientCards = {};
   return {
     phase: 'bwc-playing',
     mySeat: state.seats.get(playerId)?.seatIndex ?? 0,
     seats,
-    table: projectSurfaceFull(state.table, state.library, state.players),
+    table: projectSurfaceFull(state.table, state.library, cards),
     myHand: myHand
-      ? projectSurfaceFull(myHand, state.library, state.players)
+      ? projectSurfaceFull(myHand, state.library, cards)
       : { id: { kind: 'hand', ownerId: playerId }, visibility: 'full', objects: [] },
     otherHands,
-    library: summarizeLibrary(state),
+    cards,
   };
 }
 

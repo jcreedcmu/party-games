@@ -4,7 +4,7 @@ import { createServer } from '../server.js';
 import WebSocket from 'ws';
 import type { Server } from 'node:http';
 import type { ServerMessage, ClientMessage } from '../protocol.js';
-import type { DrawOp } from '../draw-ops.js';
+import { normalizeOps, type DrawOp } from '../draw-ops.js';
 
 let server: Server;
 let port: number;
@@ -123,9 +123,10 @@ describe('bwc card creation', () => {
     expect(stateForAlice.type).toBe('state');
     if (stateForAlice.type === 'state' && stateForAlice.state.phase === 'bwc-waiting') {
       expect(stateForAlice.state.library.length).toBe(1);
-      expect(stateForAlice.state.library[0].text).toBe('Test card');
-      expect(stateForAlice.state.library[0].creatorHandle).toBe('Alice');
-      expect(stateForAlice.state.library[0].ops.length).toBe(2);
+      const card = stateForAlice.state.cards[stateForAlice.state.library[0]];
+      expect(card.text).toBe('Test card');
+      expect(card.creatorHandle).toBe('Alice');
+      expect(card.opsHash).toBeTruthy();
     }
 
     expect(stateForBob.type).toBe('state');
@@ -187,7 +188,7 @@ describe('bwc card editing', () => {
     await c2.next();
     let cardId: string | undefined;
     if (afterCreate.type === 'state' && afterCreate.state.phase === 'bwc-waiting') {
-      cardId = afterCreate.state.library[0]?.id;
+      cardId = afterCreate.state.library[0];
     }
     expect(cardId).toBeDefined();
 
@@ -210,11 +211,10 @@ describe('bwc card editing', () => {
 
     if (afterEdit.type === 'state' && afterEdit.state.phase === 'bwc-waiting') {
       expect(afterEdit.state.library.length).toBe(1);
-      expect(afterEdit.state.library[0].text).toBe('Edited');
-      expect(afterEdit.state.library[0].ops.length).toBe(4);
+      expect(afterEdit.state.cards[afterEdit.state.library[0]].text).toBe('Edited');
     }
     if (afterEditBob.type === 'state' && afterEditBob.state.phase === 'bwc-waiting') {
-      expect(afterEditBob.state.library[0].text).toBe('Edited');
+      expect(afterEditBob.state.cards[afterEditBob.state.library[0]].text).toBe('Edited');
     }
   });
 });
@@ -239,7 +239,7 @@ describe('bwc playing phase', () => {
     await c2.next(); // same broadcast
     let cardId: string | undefined;
     if (stateAfterCreate.type === 'state' && stateAfterCreate.state.phase === 'bwc-waiting') {
-      cardId = stateAfterCreate.state.library[0]?.id;
+      cardId = stateAfterCreate.state.library[0];
     }
     expect(cardId).toBeDefined();
 
@@ -289,7 +289,7 @@ describe('bwc playing phase', () => {
         expect(obj.kind).toBe('card');
         if (obj.kind === 'card') {
           expect(obj.faceUp).toBe(true);
-          expect(obj.card?.text).toBe('Test card');
+          expect(afterDraw.state.cards[obj.cardId!].text).toBe('Test card');
           drawnObjId = obj.id;
         }
       }
@@ -323,7 +323,7 @@ describe('bwc playing phase', () => {
         const obj = table.objects[0];
         expect(obj.faceUp).toBe(false);
         if (obj.kind === 'card') {
-          expect(obj.card).toBeUndefined();
+          expect(obj.cardId).toBeUndefined();
         }
       }
     }
@@ -337,7 +337,9 @@ describe('bwc playing phase', () => {
       if (table.visibility === 'full') {
         expect(table.objects.length).toBe(0);
       }
-      expect(afterDelete.state.library.length).toBe(1);
+      // The card is back in library limbo, which the client can no longer
+      // see: nothing visible references it, so it drops out of `cards`.
+      expect(Object.keys(afterDelete.state.cards)).toEqual([]);
     }
   });
 
@@ -380,7 +382,7 @@ describe('bwc playing phase', () => {
         if (obj.kind === 'card') {
           expect(obj.faceUp).toBe(false);
           // Face-down card should not expose its content.
-          expect(obj.card).toBeUndefined();
+          expect(obj.cardId).toBeUndefined();
         }
       }
     }
@@ -425,7 +427,7 @@ describe('bwc playing phase', () => {
         expect(obj.kind).toBe('card');
         if (obj.kind === 'card') {
           expect(obj.faceUp).toBe(true);
-          expect(obj.card?.text).toBe('Shown card');
+          expect(afterDraw.state.cards[obj.cardId!].text).toBe('Shown card');
         }
       }
     }
@@ -532,8 +534,11 @@ describe('bwc card art route', () => {
     if (msg.type !== 'state' || msg.state.phase !== 'bwc-waiting') {
       throw new Error('Expected a waiting-phase state broadcast');
     }
-    return msg.state.library[msg.state.library.length - 1];
+    const cardId = msg.state.library[msg.state.library.length - 1];
+    return msg.state.cards[cardId];
   }
+
+  const EDITED_OPS: DrawOp[] = [...OPS, { type: 'draw-fill', x: 1, y: 1, color: '#ff0000' }];
 
   function artUrl(cardId: string, opsHash: string): string {
     return `http://localhost:${port}/api/bwc/card/${cardId}/${opsHash}`;
@@ -546,7 +551,7 @@ describe('bwc card art route', () => {
     const res = await fetch(artUrl(card.id, card.opsHash));
     expect(res.status).toBe(200);
     expect(res.headers.get('cache-control')).toContain('immutable');
-    expect(await res.json()).toEqual({ ops: card.ops });
+    expect(await res.json()).toEqual({ ops: normalizeOps(OPS) });
   });
 
   it('keeps a superseded hash resolvable after an edit', async () => {
@@ -557,26 +562,132 @@ describe('bwc card art route', () => {
       type: 'bwc-edit-card',
       cardId: before.id,
       name: '', cardType: '', text: 'Revised',
-      ops: [...OPS, { type: 'draw-fill', x: 1, y: 1, color: '#ff0000' }],
+      ops: EDITED_OPS,
     });
     const msg = await client.next();
     if (msg.type !== 'state' || msg.state.phase !== 'bwc-waiting') throw new Error('expected state');
-    const after = msg.state.library[0];
+    const after = msg.state.cards[msg.state.library[0]];
     expect(after.opsHash).not.toBe(before.opsHash);
 
     // A client still holding the pre-edit state must not get a 404.
     const stale = await fetch(artUrl(before.id, before.opsHash));
     expect(stale.status).toBe(200);
-    expect(await stale.json()).toEqual({ ops: before.ops });
+    expect(await stale.json()).toEqual({ ops: normalizeOps(OPS) });
 
     const fresh = await fetch(artUrl(after.id, after.opsHash));
     expect(fresh.status).toBe(200);
-    expect(await fresh.json()).toEqual({ ops: after.ops });
+    expect(await fresh.json()).toEqual({ ops: normalizeOps(EDITED_OPS) });
   });
 
   it('404s an unknown hash without caching the miss', async () => {
     const res = await fetch(artUrl('no-such-card', 'nosuchhash'));
     expect(res.status).toBe(404);
     expect(res.headers.get('cache-control')).toBeNull();
+  });
+});
+
+describe('bwc projection carries no ops', () => {
+  beforeEach(async () => { await startServer(); });
+  afterEach(async () => { await stopServer(); });
+
+  const ART: DrawOp[] = [
+    { type: 'draw-start', color: '#000000', size: 5, x: 10, y: 10 },
+    { type: 'draw-move', points: [{ x: 40, y: 40 }] },
+    { type: 'draw-end' },
+  ];
+
+  it('never puts ops on the wire, in either phase', async () => {
+    const { client: c1 } = await joinBwc('Alice', 'cid-A');
+    const { client: c2 } = await joinBwc('Bob', 'cid-B');
+    await c1.next();
+
+    const seen: string[] = [];
+    c1.send({ type: 'bwc-create-card', name: 'A', cardType: 'T', ops: ART, text: 'one' });
+    seen.push(JSON.stringify(await c1.next()));
+    await c2.next();
+
+    c1.send({ type: 'ready' });
+    seen.push(JSON.stringify(await c1.next()));
+    await c2.next();
+    c2.send({ type: 'ready' });
+    seen.push(JSON.stringify(await c1.next()));
+    await c2.next();
+
+    for (const raw of seen) {
+      expect(raw).not.toContain('"ops"');
+      expect(raw).not.toContain('draw-start');
+    }
+  });
+
+  it('exposes exactly the cards the viewer can see', async () => {
+    const { client: c1, playerId: alice } = await joinBwc('Alice', 'cid-A');
+    const { client: c2 } = await joinBwc('Bob', 'cid-B');
+    await c1.next();
+
+    for (const text of ['one', 'two', 'three']) {
+      c1.send({ type: 'bwc-create-card', name: text, cardType: 'T', ops: ART, text });
+      await c1.next();
+      await c2.next();
+    }
+
+    // Waiting: the whole library is visible, and `library` indexes into it.
+    const waiting = await (async () => {
+      c1.send({ type: 'ready' });
+      const msg = await c1.next();
+      await c2.next();
+      if (msg.type !== 'state' || msg.state.phase !== 'bwc-waiting') throw new Error('expected waiting');
+      return msg.state;
+    })();
+    expect(waiting.library.length).toBe(3);
+    expect(Object.keys(waiting.cards).sort()).toEqual([...waiting.library].sort());
+
+    c2.send({ type: 'ready' });
+    let playing = await c1.next();
+    while (playing.type === 'state' && playing.state.phase === 'bwc-waiting') playing = await c1.next();
+    if (playing.type !== 'state' || playing.state.phase !== 'bwc-playing') throw new Error('expected playing');
+
+    // Playing: the deck is face-down, so only its top card is hidden too —
+    // nothing on the table is revealed and the map is empty.
+    expect(playing.state.cards).toEqual({});
+
+    // Draw a card into Alice's hand and it becomes the one visible card.
+    const table = playing.state.table;
+    if (table.visibility !== 'full') throw new Error('expected a full table');
+    const deck = table.objects.find(o => o.kind === 'deck');
+    if (!deck) throw new Error('expected a deck');
+    c1.send({
+      type: 'bwc-draw-from-deck',
+      surface: { kind: 'table' },
+      deckId: deck.id,
+      to: { kind: 'hand', ownerId: alice },
+      pose: { x: 100, y: 100, rot: 0 },
+    });
+    const afterDraw = await c1.next();
+    await c2.next();
+    if (afterDraw.type !== 'state' || afterDraw.state.phase !== 'bwc-playing') throw new Error('expected playing');
+
+    // The deck was face-down, so the drawn card is too, and stays hidden.
+    const faceDownHand = afterDraw.state.myHand;
+    if (faceDownHand.visibility !== 'full') throw new Error('expected a full hand');
+    expect(afterDraw.state.cards).toEqual({});
+
+    c1.send({
+      type: 'bwc-flip-object',
+      surface: { kind: 'hand', ownerId: alice },
+      objectId: faceDownHand.objects[0].id,
+    });
+    const afterFlip = await c1.next();
+    const bobsView = await c2.next();
+    if (afterFlip.type !== 'state' || afterFlip.state.phase !== 'bwc-playing') throw new Error('expected playing');
+    if (bobsView.type !== 'state' || bobsView.state.phase !== 'bwc-playing') throw new Error('expected playing');
+
+    const hand = afterFlip.state.myHand;
+    if (hand.visibility !== 'full') throw new Error('expected a full hand');
+    const drawn = hand.objects[0];
+    if (drawn.kind !== 'card' || !drawn.cardId) throw new Error('expected a face-up card');
+    expect(Object.keys(afterFlip.state.cards)).toEqual([drawn.cardId]);
+
+    // Bob sees Alice's hand as opaque, so the card is not in his map.
+    expect(bobsView.state.cards).toEqual({});
   });
 });
