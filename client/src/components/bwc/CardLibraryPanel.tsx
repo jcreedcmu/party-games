@@ -4,14 +4,23 @@ import { CardView } from './CardView';
 import { CARD_W, CARD_H } from '../../../../server/games/bwc/constants';
 import { PRIORITY_VISIBLE, PRIORITY_BACKGROUND } from '../../card-art';
 
+type EditHandler = (cardId: CardId, opsHash: string, name: string, cardType: string, text: string) => void;
+
 type Props = {
   cards: BwcClientCardMeta[];
-  onEdit?: (cardId: CardId, opsHash: string, name: string, cardType: string, text: string) => void;
+  onEdit?: EditHandler;
+  // Deck curation. Present only in the waiting room, where there is a next
+  // game to curate.
+  excluded?: Set<CardId>;
+  onSetIncluded?: (cardId: CardId, included: boolean) => void;
+  onSetAllIncluded?: (included: boolean) => void;
 };
 
-function LibraryCard({ card, onEdit }: {
+function LibraryCard({ card, onEdit, included, onSetIncluded }: {
   card: BwcClientCardMeta;
-  onEdit?: (cardId: CardId, opsHash: string, name: string, cardType: string, text: string) => void;
+  onEdit?: EditHandler;
+  included?: boolean;
+  onSetIncluded?: (cardId: CardId, included: boolean) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -38,7 +47,7 @@ function LibraryCard({ card, onEdit }: {
   }, []);
 
   return (
-    <div className="bwc-library-card" ref={containerRef}>
+    <div className={`bwc-library-card${included === false ? ' bwc-library-card-excluded' : ''}`} ref={containerRef}>
       <div style={{ height: CARD_H * scale }}>
         <div style={{
           width: CARD_W,
@@ -54,6 +63,16 @@ function LibraryCard({ card, onEdit }: {
         </div>
       </div>
       <div className="bwc-library-card-actions">
+        {onSetIncluded && (
+          <label className="bwc-include-toggle">
+            <input
+              type="checkbox"
+              checked={included !== false}
+              onChange={e => onSetIncluded(card.id, e.target.checked)}
+            />
+            In
+          </label>
+        )}
         {onEdit && card.editable && (
           <button className="bwc-edit-btn" onClick={() => onEdit(card.id, card.opsHash, card.name, card.cardType, card.text)}>
             Edit
@@ -64,7 +83,7 @@ function LibraryCard({ card, onEdit }: {
   );
 }
 
-export function CardLibraryPanel({ cards, onEdit }: Props) {
+export function CardLibraryPanel({ cards, onEdit, excluded, onSetIncluded, onSetAllIncluded }: Props) {
   if (cards.length === 0) {
     return (
       <div className="bwc-library-panel">
@@ -74,12 +93,31 @@ export function CardLibraryPanel({ cards, onEdit }: Props) {
     );
   }
 
+  const includedCount = excluded ? cards.length - excluded.size : cards.length;
+
   return (
     <div className="bwc-library-panel">
-      <h3>Card Library ({cards.length})</h3>
+      <div className="bwc-library-header">
+        <h3>
+          Card Library ({cards.length})
+          {excluded && <span className="bwc-library-included-count"> — {includedCount} in the deck</span>}
+        </h3>
+        {onSetAllIncluded && (
+          <div className="bwc-library-bulk">
+            <button onClick={() => onSetAllIncluded(true)}>All</button>
+            <button onClick={() => onSetAllIncluded(false)}>None</button>
+          </div>
+        )}
+      </div>
       <div className="bwc-library-grid">
         {cards.map(card => (
-          <LibraryCard key={card.id} card={card} onEdit={onEdit} />
+          <LibraryCard
+            key={card.id}
+            card={card}
+            onEdit={onEdit}
+            included={excluded ? !excluded.has(card.id) : undefined}
+            onSetIncluded={onSetIncluded}
+          />
         ))}
       </div>
     </div>

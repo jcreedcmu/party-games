@@ -35,6 +35,7 @@ export function createInitialState(): BwcWaitingState {
     players: new Map(),
     nextPlayerId: 1,
     library: preloadedLibrary,
+    excluded: new Set(),
   };
 }
 
@@ -332,11 +333,16 @@ function checkAllReady(state: BwcWaitingState): BwcWaitingState | BwcPlayingStat
     scores.set(p.id, 0);
   }
 
-  // Start with all library cards in a single shuffled deck at the center.
+  // The deck is what the room chose to include. Unfilled blanks are never
+  // in it; they enter play only through the blank-deck button.
   const table = emptySurface({ kind: 'table' });
   const inPlay = new Set<CardId>();
   let nextObjId = 1;
-  const allCardIds = shuffle(Array.from(state.library.keys()));
+  const allCardIds = shuffle(
+    Array.from(state.library.values())
+      .filter(card => !isBlankCard(card) && !state.excluded.has(card.id))
+      .map(card => card.id),
+  );
 
   if (allCardIds.length > 0) {
     const deckId = `obj-${nextObjId++}`;
@@ -680,6 +686,11 @@ function resetGame(state: BwcState): BwcWaitingState {
     players,
     nextPlayerId: Math.max(0, ...Array.from(state.players.keys()).map(Number)) + 1,
     library: state.library,
+    // A reset starts a fresh room, and a fresh room plays with everything.
+    // Carrying the choice through a game would mean threading it across the
+    // playing state, where it means nothing, and the table snapshot does not
+    // store it either, so a restart would lose it anyway.
+    excluded: new Set(),
   };
 }
 
@@ -837,6 +848,30 @@ function bwcReduceSingle(state: ServerState, playerId: PlayerId, msg: ClientMess
       library.set(msg.cardId, edited);
       persistLibrary(library);
       return { state: { ...state, library }, effects: [{ type: 'broadcast' }] };
+    }
+
+    case 'bwc-set-card-included': {
+      if (state.phase !== 'bwc-waiting') return { state, effects: [] };
+      const card = state.library.get(msg.cardId);
+      // Blanks are not listed, so they cannot be toggled either.
+      if (!card || isBlankCard(card)) return { state, effects: [] };
+      const excluded = new Set(state.excluded);
+      if (msg.included) excluded.delete(msg.cardId);
+      else excluded.add(msg.cardId);
+      // Exactly one add or delete, so a size match means nothing changed.
+      if (excluded.size === state.excluded.size) return { state, effects: [] };
+      return { state: { ...state, excluded }, effects: [{ type: 'broadcast' }] };
+    }
+    case 'bwc-set-all-cards-included': {
+      if (state.phase !== 'bwc-waiting') return { state, effects: [] };
+      const excluded = msg.included
+        ? new Set<CardId>()
+        : new Set(
+            Array.from(state.library.values())
+              .filter(card => !isBlankCard(card))
+              .map(card => card.id),
+          );
+      return { state: { ...state, excluded }, effects: [{ type: 'broadcast' }] };
     }
 
     // -- Playing-only messages --

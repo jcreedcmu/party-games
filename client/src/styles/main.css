@@ -1064,6 +1064,36 @@ button:disabled {
   gap: 0.5rem;
 }
 
+.bwc-library-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.bwc-library-included-count {
+  font-weight: normal;
+  opacity: 0.7;
+}
+
+.bwc-library-bulk {
+  display: flex;
+  gap: 4px;
+}
+
+.bwc-library-card-excluded {
+  opacity: 0.4;
+}
+
+.bwc-include-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  cursor: pointer;
+  user-select: none;
+}
+
 .bwc-library-panel {
   margin-top: 1.5rem;
 }

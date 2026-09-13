@@ -151,6 +151,9 @@ export function BwcGame({ state, playerId, send }: Props) {
           <CardLibraryPanel
             cards={state.library.map(id => state.cards[id])}
             onEdit={handleEdit}
+            excluded={new Set(state.excluded)}
+            onSetIncluded={(cardId, included) => send({ type: 'bwc-set-card-included', cardId, included })}
+            onSetAllIncluded={included => send({ type: 'bwc-set-all-cards-included', included })}
           />
           {editor.mode !== 'closed' && (
             <Modal onClose={() => setEditor({ mode: 'closed' })}>

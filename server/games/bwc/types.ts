@@ -86,6 +86,11 @@ export type BwcWaitingState = {
   players: Map<PlayerId, PlayerInfo>;
   nextPlayerId: number;
   library: CardLibrary;
+  // Cards held out of the next game's deck. Kept as the exclusions rather
+  // than the inclusions so that a card authored in the waiting room is in
+  // the deck without anyone having to remember to add it, and so that the
+  // set stays small in the normal case of playing with nearly everything.
+  excluded: Set<CardId>;
 };
 
 export type BwcPlayingState = {

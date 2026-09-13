@@ -66,6 +66,20 @@ export type BwcEditCardMessage = {
   text: string;
 };
 
+// Deck curation, waiting room only. Any player may toggle any card.
+export type BwcSetCardIncludedMessage = {
+  type: 'bwc-set-card-included';
+  cardId: CardId;
+  included: boolean;
+};
+
+// The all/none buttons. One message rather than one per card, since a
+// library of any size would otherwise mean a burst of them.
+export type BwcSetAllCardsIncludedMessage = {
+  type: 'bwc-set-all-cards-included';
+  included: boolean;
+};
+
 export type BwcSpawnCardMessage = {
   type: 'bwc-spawn-card';
   cardId: CardId;
@@ -154,6 +168,8 @@ export type BwcCreateBlankDeckMessage = {
 export type BwcSingleMessage =
   | BwcCreateCardMessage
   | BwcEditCardMessage
+  | BwcSetCardIncludedMessage
+  | BwcSetAllCardsIncludedMessage
   | BwcSpawnCardMessage
   | BwcMoveObjectMessage
   | BwcFlipObjectMessage

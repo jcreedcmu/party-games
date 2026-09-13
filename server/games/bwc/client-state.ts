@@ -1,5 +1,5 @@
 import type { PlayerId } from '../../types.js';
-import { canEditCard } from './state.js';
+import { canEditCard, isBlankCard } from './state.js';
 import type {
   BwcState,
   BwcWaitingState,
@@ -41,9 +41,15 @@ export type BwcClientWaitingState = {
   phase: 'bwc-waiting';
   players: Array<{ id: string; handle: string; ready: boolean; connected: boolean }>;
   // Library is exposed even in waiting so authors can preview the existing
-  // card collection while the room fills up.
+  // card collection while the room fills up, and so the room can decide
+  // which of them the next game is played with. Unfilled blanks are left
+  // out: they are stock, not content, and reach the table by their own
+  // button.
   library: CardId[];
   cards: BwcClientCards;
+  // Cards held out of the next game's deck. Everything in `library` not
+  // named here is in.
+  excluded: CardId[];
 };
 
 // --- Playing phase projection ---
@@ -120,7 +126,12 @@ function cardMeta(
 function getWaitingClientState(state: BwcWaitingState, playerId: PlayerId): BwcClientWaitingState {
   const viewer = state.players.get(playerId);
   const cards: BwcClientCards = {};
-  for (const card of state.library.values()) cards[card.id] = cardMeta(card, viewer);
+  const library: CardId[] = [];
+  for (const card of state.library.values()) {
+    if (isBlankCard(card)) continue;
+    library.push(card.id);
+    cards[card.id] = cardMeta(card, viewer);
+  }
   return {
     phase: 'bwc-waiting',
     players: Array.from(state.players.values()).map(p => ({
@@ -129,8 +140,9 @@ function getWaitingClientState(state: BwcWaitingState, playerId: PlayerId): BwcC
       ready: p.ready,
       connected: p.connected,
     })),
-    library: Array.from(state.library.keys()),
+    library,
     cards,
+    excluded: library.filter(id => state.excluded.has(id)),
   };
 }
 
