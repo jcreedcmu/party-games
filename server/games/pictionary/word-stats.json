@@ -7,10 +7,10 @@
     "guessFailures": 0
   },
   "hurricane": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
     "guessFailures": 0
   },
   "encyclopedia": {
@@ -35,7 +35,7 @@
     "guessFailures": 10
   },
   "bubblegum": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 1,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -49,21 +49,21 @@
     "guessFailures": 0
   },
   "didgeridoo": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
-    "guessFailures": 0
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 8,
+    "guessSuccesses": 3,
+    "guessFailures": 5
   },
   "bed": {
-    "presented": 1,
+    "presented": 3,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "rocket": {
-    "presented": 1,
+    "presented": 3,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -84,11 +84,11 @@
     "guessFailures": 0
   },
   "moonshine": {
-    "presented": 2,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
-    "guessFailures": 0
+    "presented": 4,
+    "chosen": 1,
+    "guessExposures": 16,
+    "guessSuccesses": 2,
+    "guessFailures": 14
   },
   "lobster": {
     "presented": 2,
@@ -133,7 +133,7 @@
     "guessFailures": 0
   },
   "angel": {
-    "presented": 2,
+    "presented": 3,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -168,7 +168,7 @@
     "guessFailures": 0
   },
   "lightning": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -189,7 +189,7 @@
     "guessFailures": 15
   },
   "declaration of independence": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -224,11 +224,11 @@
     "guessFailures": 11
   },
   "pasta salad": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
-    "guessFailures": 0
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 5,
+    "guessSuccesses": 2,
+    "guessFailures": 3
   },
   "skittles": {
     "presented": 1,
@@ -238,11 +238,11 @@
     "guessFailures": 10
   },
   "blender": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
-    "guessFailures": 0
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 2,
+    "guessFailures": 4
   },
   "necklace": {
     "presented": 1,
@@ -259,7 +259,7 @@
     "guessFailures": 3
   },
   "arrow": {
-    "presented": 1,
+    "presented": 4,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -273,28 +273,28 @@
     "guessFailures": 0
   },
   "lounge chair": {
-    "presented": 2,
+    "presented": 4,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "pineapple": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 1,
     "guessExposures": 5,
     "guessSuccesses": 3,
     "guessFailures": 2
   },
   "frankenstein": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "door": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -322,14 +322,14 @@
     "guessFailures": 9
   },
   "chonky": {
-    "presented": 1,
+    "presented": 3,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "rocket ship": {
-    "presented": 2,
+    "presented": 3,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -343,21 +343,21 @@
     "guessFailures": 0
   },
   "broom": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
-    "guessFailures": 0
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 15,
+    "guessSuccesses": 3,
+    "guessFailures": 12
   },
   "cup": {
-    "presented": 2,
+    "presented": 6,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "scrabble": {
-    "presented": 1,
+    "presented": 3,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -371,7 +371,7 @@
     "guessFailures": 5
   },
   "canoe": {
-    "presented": 2,
+    "presented": 3,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -406,11 +406,11 @@
     "guessFailures": 18
   },
   "doctor": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
-    "guessFailures": 0
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 3,
+    "guessFailures": 1
   },
   "furby": {
     "presented": 1,
@@ -420,18 +420,18 @@
     "guessFailures": 2
   },
   "seahorse": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "floppy disk": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
-    "guessFailures": 0
+    "presented": 3,
+    "chosen": 2,
+    "guessExposures": 14,
+    "guessSuccesses": 5,
+    "guessFailures": 9
   },
   "ant": {
     "presented": 2,
@@ -441,28 +441,28 @@
     "guessFailures": 9
   },
   "popcorn": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
+    "presented": 3,
+    "chosen": 1,
+    "guessExposures": 2,
+    "guessSuccesses": 2,
     "guessFailures": 0
   },
   "bingo": {
-    "presented": 2,
+    "presented": 3,
     "chosen": 1,
     "guessExposures": 19,
     "guessSuccesses": 3,
     "guessFailures": 16
   },
   "moon": {
-    "presented": 1,
+    "presented": 3,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "candle": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -476,21 +476,21 @@
     "guessFailures": 5
   },
   "sandwich": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "artemis": {
-    "presented": 1,
+    "presented": 3,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "pine tree": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 1,
     "guessExposures": 5,
     "guessSuccesses": 3,
@@ -504,18 +504,18 @@
     "guessFailures": 11
   },
   "axe": {
-    "presented": 1,
+    "presented": 3,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "excited": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
-    "guessFailures": 0
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 11,
+    "guessSuccesses": 3,
+    "guessFailures": 8
   },
   "robot": {
     "presented": 1,
@@ -525,56 +525,56 @@
     "guessFailures": 2
   },
   "bridge": {
-    "presented": 1,
+    "presented": 3,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "tall": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "wet blanket": {
-    "presented": 1,
-    "chosen": 1,
-    "guessExposures": 6,
-    "guessSuccesses": 3,
-    "guessFailures": 3
+    "presented": 2,
+    "chosen": 2,
+    "guessExposures": 13,
+    "guessSuccesses": 6,
+    "guessFailures": 7
   },
   "spots": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
-    "guessFailures": 0
+    "presented": 3,
+    "chosen": 1,
+    "guessExposures": 12,
+    "guessSuccesses": 1,
+    "guessFailures": 11
   },
   "typeface": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "meat": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "pyramid": {
-    "presented": 1,
-    "chosen": 0,
+    "presented": 2,
+    "chosen": 1,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "artifice": {
-    "presented": 2,
+    "presented": 3,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -588,14 +588,14 @@
     "guessFailures": 1
   },
   "lamppost": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
-    "guessFailures": 0
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 8,
+    "guessSuccesses": 2,
+    "guessFailures": 6
   },
   "basket": {
-    "presented": 1,
+    "presented": 4,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -609,18 +609,18 @@
     "guessFailures": 11
   },
   "stool": {
-    "presented": 2,
+    "presented": 4,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "lollipop": {
-    "presented": 1,
-    "chosen": 1,
-    "guessExposures": 6,
-    "guessSuccesses": 3,
-    "guessFailures": 3
+    "presented": 3,
+    "chosen": 2,
+    "guessExposures": 15,
+    "guessSuccesses": 6,
+    "guessFailures": 9
   },
   "menorah": {
     "presented": 1,
@@ -637,7 +637,7 @@
     "guessFailures": 0
   },
   "short": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -651,18 +651,18 @@
     "guessFailures": 0
   },
   "apple": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "toaster": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
-    "guessFailures": 0
+    "presented": 3,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 3,
+    "guessFailures": 1
   },
   "cheerleader": {
     "presented": 1,
@@ -679,24 +679,24 @@
     "guessFailures": 4
   },
   "book": {
-    "presented": 1,
+    "presented": 3,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "boat": {
-    "presented": 1,
+    "presented": 3,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "flamethrower": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
     "guessFailures": 0
   },
   "library": {
@@ -707,7 +707,7 @@
     "guessFailures": 15
   },
   "dream": {
-    "presented": 1,
+    "presented": 3,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -742,14 +742,14 @@
     "guessFailures": 7
   },
   "mister rogers": {
-    "presented": 1,
+    "presented": 3,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "bowtie": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 1,
     "guessExposures": 3,
     "guessSuccesses": 3,
@@ -763,17 +763,17 @@
     "guessFailures": 0
   },
   "cockroach": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "flamingo": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
+    "presented": 3,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
     "guessFailures": 0
   },
   "mushroom": {
@@ -791,11 +791,11 @@
     "guessFailures": 3
   },
   "transubstantiation": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
-    "guessFailures": 0
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 11,
+    "guessSuccesses": 3,
+    "guessFailures": 8
   },
   "hat": {
     "presented": 1,
@@ -805,7 +805,7 @@
     "guessFailures": 2
   },
   "rabbit": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 1,
     "guessExposures": 4,
     "guessSuccesses": 3,
@@ -826,21 +826,21 @@
     "guessFailures": 0
   },
   "typewriter": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 1,
     "guessExposures": 8,
     "guessSuccesses": 3,
     "guessFailures": 5
   },
   "sword": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "basketball": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -861,11 +861,11 @@
     "guessFailures": 16
   },
   "barn": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
-    "guessFailures": 0
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 9,
+    "guessSuccesses": 2,
+    "guessFailures": 7
   },
   "bovik": {
     "presented": 1,
@@ -896,14 +896,14 @@
     "guessFailures": 0
   },
   "star": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "julius caesar": {
-    "presented": 1,
+    "presented": 2,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -917,32 +917,32 @@
     "guessFailures": 5
   },
   "windmill": {
-    "presented": 2,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
-    "guessFailures": 0
+    "presented": 4,
+    "chosen": 1,
+    "guessExposures": 10,
+    "guessSuccesses": 2,
+    "guessFailures": 8
   },
   "sailboat": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
-    "guessFailures": 0
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 3,
+    "guessFailures": 1
   },
   "secret agent": {
-    "presented": 1,
-    "chosen": 1,
-    "guessExposures": 11,
-    "guessSuccesses": 1,
-    "guessFailures": 10
+    "presented": 2,
+    "chosen": 2,
+    "guessExposures": 23,
+    "guessSuccesses": 2,
+    "guessFailures": 21
   },
   "number two pencil": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
-    "guessFailures": 0
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 3,
+    "guessFailures": 3
   },
   "pudding": {
     "presented": 1,
@@ -959,10 +959,10 @@
     "guessFailures": 0
   },
   "mermaid": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 2,
+    "guessSuccesses": 2,
     "guessFailures": 0
   },
   "submarine": {
@@ -973,21 +973,21 @@
     "guessFailures": 8
   },
   "snake": {
-    "presented": 1,
+    "presented": 6,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "beard": {
-    "presented": 1,
+    "presented": 3,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
   },
   "xylophone": {
-    "presented": 1,
+    "presented": 3,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -1001,18 +1001,18 @@
     "guessFailures": 7
   },
   "george washington": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
-    "guessFailures": 0
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 5,
+    "guessSuccesses": 3,
+    "guessFailures": 2
   },
   "schoolbus": {
-    "presented": 1,
-    "chosen": 0,
-    "guessExposures": 0,
-    "guessSuccesses": 0,
-    "guessFailures": 0
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 3,
+    "guessFailures": 1
   },
   "piccolo": {
     "presented": 1,
@@ -1036,7 +1036,7 @@
     "guessFailures": 0
   },
   "shoe": {
-    "presented": 1,
+    "presented": 4,
     "chosen": 0,
     "guessExposures": 0,
     "guessSuccesses": 0,
@@ -1055,5 +1055,2560 @@
     "guessExposures": 0,
     "guessSuccesses": 0,
     "guessFailures": 0
+  },
+  "rainbow": {
+    "presented": 3,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "skateboard": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "crown": {
+    "presented": 4,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "cartwheel": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "turtle": {
+    "presented": 2,
+    "chosen": 2,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
+    "guessFailures": 0
+  },
+  "cow": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 2,
+    "guessFailures": 4
+  },
+  "santa claus": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 2,
+    "guessSuccesses": 2,
+    "guessFailures": 0
+  },
+  "pencil": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "marching band": {
+    "presented": 3,
+    "chosen": 1,
+    "guessExposures": 9,
+    "guessSuccesses": 2,
+    "guessFailures": 7
+  },
+  "tornado": {
+    "presented": 3,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "farmer": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 9,
+    "guessSuccesses": 3,
+    "guessFailures": 6
+  },
+  "window": {
+    "presented": 3,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "horse": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 2,
+    "guessSuccesses": 2,
+    "guessFailures": 0
+  },
+  "bug": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 2,
+    "guessFailures": 2
+  },
+  "jellyfish": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "guitar": {
+    "presented": 5,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "house plant": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 9,
+    "guessSuccesses": 2,
+    "guessFailures": 7
+  },
+  "taco": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 7,
+    "guessSuccesses": 3,
+    "guessFailures": 4
+  },
+  "house": {
+    "presented": 3,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "haunted house": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 2,
+    "guessFailures": 4
+  },
+  "witch": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 2,
+    "guessFailures": 2
+  },
+  "present": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "anchor": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 9,
+    "guessSuccesses": 2,
+    "guessFailures": 7
+  },
+  "pie": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 3,
+    "guessFailures": 3
+  },
+  "fork": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "flower": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 10,
+    "guessSuccesses": 2,
+    "guessFailures": 8
+  },
+  "scissors": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "trepanation": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 8,
+    "guessSuccesses": 1,
+    "guessFailures": 7
+  },
+  "penguin": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 8,
+    "guessSuccesses": 3,
+    "guessFailures": 5
+  },
+  "glove": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "adhd": {
+    "presented": 3,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "dog sledding": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 7,
+    "guessSuccesses": 2,
+    "guessFailures": 5
+  },
+  "animals": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "tongue": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "extension cord": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 7,
+    "guessSuccesses": 2,
+    "guessFailures": 5
+  },
+  "mountain": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "drawplodocus": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 2,
+    "guessSuccesses": 2,
+    "guessFailures": 0
+  },
+  "snail": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "trash can": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 7,
+    "guessSuccesses": 2,
+    "guessFailures": 5
+  },
+  "spiders georg": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 2,
+    "guessFailures": 1
+  },
+  "green thumb": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "whale fall": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 2,
+    "guessFailures": 1
+  },
+  "pirates": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 10,
+    "guessSuccesses": 2,
+    "guessFailures": 8
+  },
+  "balloon": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "museum": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 12,
+    "guessSuccesses": 2,
+    "guessFailures": 10
+  },
+  "moth": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "mirror": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "economy": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 10,
+    "guessSuccesses": 2,
+    "guessFailures": 8
+  },
+  "octopus": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 3,
+    "guessFailures": 3
+  },
+  "cookie": {
+    "presented": 3,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "piano": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 2,
+    "guessSuccesses": 2,
+    "guessFailures": 0
+  },
+  "giant eagle": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 9,
+    "guessSuccesses": 1,
+    "guessFailures": 8
+  },
+  "noodles": {
+    "presented": 3,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 3,
+    "guessFailures": 3
+  },
+  "brain": {
+    "presented": 3,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "kite": {
+    "presented": 4,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "isaac newton": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 2,
+    "guessFailures": 1
+  },
+  "conlang": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "skeleton": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 2,
+    "guessSuccesses": 2,
+    "guessFailures": 0
+  },
+  "facebook": {
+    "presented": 4,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "egg": {
+    "presented": 3,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "parachute": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "pants on fire": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 2,
+    "guessFailures": 4
+  },
+  "queen": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 2,
+    "guessFailures": 4
+  },
+  "elephant": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "mario kart": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 5,
+    "guessSuccesses": 2,
+    "guessFailures": 3
+  },
+  "lemon": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "flag": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "swan": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 5,
+    "guessSuccesses": 2,
+    "guessFailures": 3
+  },
+  "palm tree": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "wacom tablet": {
+    "presented": 2,
+    "chosen": 2,
+    "guessExposures": 21,
+    "guessSuccesses": 5,
+    "guessFailures": 16
+  },
+  "electric cat": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 10,
+    "guessSuccesses": 2,
+    "guessFailures": 8
+  },
+  "envelope": {
+    "presented": 3,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "bilbo baggins": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 3,
+    "guessFailures": 3
+  },
+  "candy": {
+    "presented": 3,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "weather": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 10,
+    "guessSuccesses": 3,
+    "guessFailures": 7
+  },
+  "crocodile": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 2,
+    "guessFailures": 4
+  },
+  "college campus": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 7,
+    "guessSuccesses": 0,
+    "guessFailures": 7
+  },
+  "artemis ii": {
+    "presented": 3,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "super metroid": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "superhero": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 13,
+    "guessSuccesses": 2,
+    "guessFailures": 11
+  },
+  "bread or filling": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "hamburger": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 2,
+    "guessFailures": 1
+  },
+  "soccer ball": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 9,
+    "guessSuccesses": 3,
+    "guessFailures": 6
+  },
+  "airplane": {
+    "presented": 3,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "pumpkin": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "bear": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "porcupine": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 5,
+    "guessSuccesses": 2,
+    "guessFailures": 3
+  },
+  "tarot card": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 11,
+    "guessSuccesses": 2,
+    "guessFailures": 9
+  },
+  "alarm clock": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "existentialism": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 7,
+    "guessSuccesses": 3,
+    "guessFailures": 4
+  },
+  "bathroom": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
+    "guessFailures": 0
+  },
+  "tardigrade": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 2,
+    "guessFailures": 1
+  },
+  "rain": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 1,
+    "guessSuccesses": 1,
+    "guessFailures": 0
+  },
+  "nudibranch": {
+    "presented": 3,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 2,
+    "guessFailures": 2
+  },
+  "dumpling": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 13,
+    "guessSuccesses": 1,
+    "guessFailures": 12
+  },
+  "helicopter": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
+    "guessFailures": 0
+  },
+  "alice in wonderland": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 2,
+    "guessFailures": 1
+  },
+  "cashier": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 14,
+    "guessSuccesses": 3,
+    "guessFailures": 11
+  },
+  "moby dick": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 13,
+    "guessSuccesses": 2,
+    "guessFailures": 11
+  },
+  "princess": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "leaf": {
+    "presented": 4,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "adamantium": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 11,
+    "guessSuccesses": 1,
+    "guessFailures": 10
+  },
+  "skull": {
+    "presented": 3,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
+    "guessFailures": 0
+  },
+  "giraffe": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "spider": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 2,
+    "guessFailures": 4
+  },
+  "goose": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 5,
+    "guessSuccesses": 2,
+    "guessFailures": 3
+  },
+  "backpack": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 5,
+    "guessSuccesses": 2,
+    "guessFailures": 3
+  },
+  "train": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "castle": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "cabinet of curiosities": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 7,
+    "guessSuccesses": 2,
+    "guessFailures": 5
+  },
+  "banana": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "dalek": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 2,
+    "guessSuccesses": 2,
+    "guessFailures": 0
+  },
+  "peach": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 2,
+    "guessFailures": 1
+  },
+  "quantum cryptography": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "pig": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "weathervane": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 3,
+    "guessFailures": 3
+  },
+  "snowflake": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "platypus": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 7,
+    "guessSuccesses": 3,
+    "guessFailures": 4
+  },
+  "butterfly": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "fentanyl": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "casino": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 13,
+    "guessSuccesses": 3,
+    "guessFailures": 10
+  },
+  "flute": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "hand": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "brutus": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 8,
+    "guessSuccesses": 3,
+    "guessFailures": 5
+  },
+  "raccoon": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 5,
+    "guessSuccesses": 3,
+    "guessFailures": 2
+  },
+  "tent": {
+    "presented": 4,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "undertaker": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 8,
+    "guessSuccesses": 0,
+    "guessFailures": 8
+  },
+  "tunnel": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 8,
+    "guessSuccesses": 3,
+    "guessFailures": 5
+  },
+  "emoji": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "pterodactyl": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 10,
+    "guessSuccesses": 3,
+    "guessFailures": 7
+  },
+  "shadow": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "scarecrow": {
+    "presented": 3,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "humanity": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "f-hole": {
+    "presented": 3,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 3,
+    "guessFailures": 3
+  },
+  "car": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "fossil": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 9,
+    "guessSuccesses": 3,
+    "guessFailures": 6
+  },
+  "lion": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
+    "guessFailures": 0
+  },
+  "crying": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 9,
+    "guessSuccesses": 3,
+    "guessFailures": 6
+  },
+  "http": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "fire": {
+    "presented": 3,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 3,
+    "guessFailures": 1
+  },
+  "steelers": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "pikachu": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 3,
+    "guessFailures": 1
+  },
+  "doobie": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "burnt toast": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 11,
+    "guessSuccesses": 3,
+    "guessFailures": 8
+  },
+  "cat condo": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 9,
+    "guessSuccesses": 2,
+    "guessFailures": 7
+  },
+  "tin foil": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 8,
+    "guessSuccesses": 3,
+    "guessFailures": 5
+  },
+  "timpani": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "camera": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 3,
+    "guessFailures": 3
+  },
+  "pride and prejudice": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 11,
+    "guessSuccesses": 3,
+    "guessFailures": 8
+  },
+  "tree": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "squid": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "ipad": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "crayon": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 3,
+    "guessFailures": 3
+  },
+  "starfish": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "cabbage": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
+    "guessFailures": 0
+  },
+  "software bug": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 9,
+    "guessSuccesses": 1,
+    "guessFailures": 8
+  },
+  "eagle": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "trinket": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 9,
+    "guessSuccesses": 2,
+    "guessFailures": 7
+  },
+  "zipper": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "dracula": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 7,
+    "guessSuccesses": 3,
+    "guessFailures": 4
+  },
+  "gumball machine": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
+    "guessFailures": 0
+  },
+  "sheep": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 3,
+    "guessFailures": 1
+  },
+  "placket": {
+    "presented": 3,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "lamp": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "blank card": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "fast food": {
+    "presented": 3,
+    "chosen": 1,
+    "guessExposures": 5,
+    "guessSuccesses": 3,
+    "guessFailures": 2
+  },
+  "pictionary": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 12,
+    "guessSuccesses": 0,
+    "guessFailures": 12
+  },
+  "microphone": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "algorithm": {
+    "presented": 4,
+    "chosen": 1,
+    "guessExposures": 9,
+    "guessSuccesses": 2,
+    "guessFailures": 7
+  },
+  "disney world": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 9,
+    "guessSuccesses": 3,
+    "guessFailures": 6
+  },
+  "stapler": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "panda": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 7,
+    "guessSuccesses": 3,
+    "guessFailures": 4
+  },
+  "lipstick": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
+    "guessFailures": 0
+  },
+  "menu": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 11,
+    "guessSuccesses": 3,
+    "guessFailures": 8
+  },
+  "breakfast cereal": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "medusa": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 8,
+    "guessSuccesses": 3,
+    "guessFailures": 5
+  },
+  "shark": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "qwerty": {
+    "presented": 3,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "popsicle": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 10,
+    "guessSuccesses": 3,
+    "guessFailures": 7
+  },
+  "meteor": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "goldilocks": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 3,
+    "guessFailures": 1
+  },
+  "turnip": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 7,
+    "guessSuccesses": 3,
+    "guessFailures": 4
+  },
+  "grass": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
+    "guessFailures": 0
+  },
+  "earthworm": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 8,
+    "guessSuccesses": 3,
+    "guessFailures": 5
+  },
+  "safety net": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "grapes": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "strongbad": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 5,
+    "guessSuccesses": 3,
+    "guessFailures": 2
+  },
+  "godzilla": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 3,
+    "guessFailures": 3
+  },
+  "cannabis": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 11,
+    "guessSuccesses": 3,
+    "guessFailures": 8
+  },
+  "mister met": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 7,
+    "guessSuccesses": 3,
+    "guessFailures": 4
+  },
+  "closet": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "pirate": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 7,
+    "guessSuccesses": 3,
+    "guessFailures": 4
+  },
+  "crayons": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 1,
+    "guessSuccesses": 1,
+    "guessFailures": 0
+  },
+  "tuba": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "strawberry lemonade": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 1,
+    "guessSuccesses": 1,
+    "guessFailures": 0
+  },
+  "globe": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "donut": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "goonies": {
+    "presented": 3,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "programming": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 17,
+    "guessSuccesses": 3,
+    "guessFailures": 14
+  },
+  "chair": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "jaywalking": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 12,
+    "guessSuccesses": 3,
+    "guessFailures": 9
+  },
+  "planet": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "chicken": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 3,
+    "guessFailures": 3
+  },
+  "bellhop": {
+    "presented": 3,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
+    "guessFailures": 0
+  },
+  "guillotine": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 3,
+    "guessFailures": 1
+  },
+  "gritty": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 7,
+    "guessSuccesses": 3,
+    "guessFailures": 4
+  },
+  "university": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 12,
+    "guessSuccesses": 3,
+    "guessFailures": 9
+  },
+  "dog": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "pancake": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "lounge singer": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 8,
+    "guessSuccesses": 3,
+    "guessFailures": 5
+  },
+  "sitcom": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 9,
+    "guessSuccesses": 1,
+    "guessFailures": 8
+  },
+  "monkey": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "strawberry": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 3,
+    "guessFailures": 1
+  },
+  "trophy": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "esperanto": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "corner case": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "poetry": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "ruler": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "black widow": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 8,
+    "guessSuccesses": 3,
+    "guessFailures": 5
+  },
+  "forest": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "ear": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "baseball": {
+    "presented": 4,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "cherry": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "titty sphinx": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 7,
+    "guessSuccesses": 3,
+    "guessFailures": 4
+  },
+  "smashburger": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 13,
+    "guessSuccesses": 3,
+    "guessFailures": 10
+  },
+  "carnegie mellon": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 11,
+    "guessSuccesses": 3,
+    "guessFailures": 8
+  },
+  "heavy metal": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 2,
+    "guessFailures": 4
+  },
+  "ghost": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "poodle": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "cupcake": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "database": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "cat stuck in a tree": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 3,
+    "guessFailures": 3
+  },
+  "bus": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "bicycle": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "bread": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "dignity": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "twist of lemon": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 5,
+    "guessSuccesses": 2,
+    "guessFailures": 3
+  },
+  "crab": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
+    "guessFailures": 0
+  },
+  "pittsburgh": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "mustache": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "theorem prover": {
+    "presented": 3,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "wishing well": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 3,
+    "guessFailures": 1
+  },
+  "kirby": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
+    "guessFailures": 0
+  },
+  "muttonchops": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 11,
+    "guessSuccesses": 1,
+    "guessFailures": 10
+  },
+  "collaboration": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "rome": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 3,
+    "guessFailures": 3
+  },
+  "buffalo": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 7,
+    "guessSuccesses": 3,
+    "guessFailures": 4
+  },
+  "the fast and the furious": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 0,
+    "guessFailures": 6
+  },
+  "oprah": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "matzoh": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "horseshoe crab": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 9,
+    "guessSuccesses": 3,
+    "guessFailures": 6
+  },
+  "solar panel": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "celibate": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 11,
+    "guessSuccesses": 1,
+    "guessFailures": 10
+  },
+  "eraserhead baby": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 9,
+    "guessSuccesses": 1,
+    "guessFailures": 8
+  },
+  "soprano": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
+    "guessFailures": 0
+  },
+  "lizard": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 5,
+    "guessSuccesses": 3,
+    "guessFailures": 2
+  },
+  "kickball": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "hater": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "possum": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 11,
+    "guessSuccesses": 3,
+    "guessFailures": 8
+  },
+  "koala": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "beehive": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
+    "guessFailures": 0
+  },
+  "large": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "catfish": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "space pig": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 3,
+    "guessFailures": 3
+  },
+  "cactus": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "boggle": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 11,
+    "guessSuccesses": 3,
+    "guessFailures": 8
+  },
+  "corn": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 3,
+    "guessFailures": 1
+  },
+  "santa": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "partridge in a pear tree": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 5,
+    "guessSuccesses": 3,
+    "guessFailures": 2
+  },
+  "cough": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "light bulb": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "puppy": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "ziti": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "snow white": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 3,
+    "guessFailures": 1
+  },
+  "tangram": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "geode": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 3,
+    "guessFailures": 1
+  },
+  "axolotl": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
+    "guessFailures": 0
+  },
+  "role-playing game": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 1,
+    "guessFailures": 3
+  },
+  "rubber chicken": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 5,
+    "guessSuccesses": 3,
+    "guessFailures": 2
+  },
+  "waveform": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "sleeping beauty": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "appetite": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 1,
+    "guessFailures": 2
+  },
+  "equinox": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "despicable": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "trellis": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 9,
+    "guessSuccesses": 3,
+    "guessFailures": 6
+  },
+  "bomb": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "candlestick": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 1,
+    "guessFailures": 5
+  },
+  "spy vs spy": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "pencil case": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 8,
+    "guessSuccesses": 3,
+    "guessFailures": 5
+  },
+  "waffles": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 9,
+    "guessSuccesses": 3,
+    "guessFailures": 6
+  },
+  "the cheat": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "white hat": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 8,
+    "guessSuccesses": 3,
+    "guessFailures": 5
+  },
+  "barney": {
+    "presented": 3,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 3,
+    "guessFailures": 3
+  },
+  "bellyache": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "spotlight": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 13,
+    "guessSuccesses": 3,
+    "guessFailures": 10
+  },
+  "dongle": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "vanilla ice": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 2,
+    "guessFailures": 1
+  },
+  "record": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "biceps": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "alien": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 9,
+    "guessSuccesses": 3,
+    "guessFailures": 6
+  },
+  "clown": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
+    "guessFailures": 0
+  },
+  "spiral": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "fox": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "random": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "gumby": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 5,
+    "guessSuccesses": 3,
+    "guessFailures": 2
+  },
+  "revolver": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "heart": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "earth": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "electric car": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 7,
+    "guessSuccesses": 3,
+    "guessFailures": 4
+  },
+  "mulan": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 11,
+    "guessSuccesses": 1,
+    "guessFailures": 10
+  },
+  "moths": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "drive": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "quail": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 3,
+    "guessFailures": 1
+  },
+  "disgusted": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 13,
+    "guessSuccesses": 2,
+    "guessFailures": 11
+  },
+  "jumprope": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "sparkplug": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "state fair": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 12,
+    "guessSuccesses": 2,
+    "guessFailures": 10
+  },
+  "explosion": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "lucky charms": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 3,
+    "guessFailures": 1
+  },
+  "raffle": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "padlock": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 7,
+    "guessSuccesses": 3,
+    "guessFailures": 4
+  },
+  "icon": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "three hole punch": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "washing machine": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 3,
+    "guessFailures": 3
+  },
+  "moana": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "whittling": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 10,
+    "guessSuccesses": 1,
+    "guessFailures": 9
+  },
+  "jesus": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 3,
+    "guessFailures": 1
+  },
+  "tam o shanter": {
+    "presented": 2,
+    "chosen": 1,
+    "guessExposures": 8,
+    "guessSuccesses": 3,
+    "guessFailures": 5
+  },
+  "electric guitar": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "asteroid": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "bathtub": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "stork": {
+    "presented": 2,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "mice": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "millipede": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 8,
+    "guessSuccesses": 3,
+    "guessFailures": 5
+  },
+  "roots": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "japan": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "european": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 7,
+    "guessSuccesses": 3,
+    "guessFailures": 4
+  },
+  "napkin": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "feather": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "noon": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "cottage cheese": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 7,
+    "guessSuccesses": 2,
+    "guessFailures": 5
+  },
+  "oyster": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "duck": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "homestar runner": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "snl": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "sphinx": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
+    "guessFailures": 0
+  },
+  "grilled cheese sandwich": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 3,
+    "guessFailures": 3
+  },
+  "racecar": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "tricycle": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 8,
+    "guessSuccesses": 3,
+    "guessFailures": 5
+  },
+  "snowman": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "igloo": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 8,
+    "guessSuccesses": 3,
+    "guessFailures": 5
+  },
+  "bird": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "tiger": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 3,
+    "guessSuccesses": 3,
+    "guessFailures": 0
+  },
+  "map": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "et tu brute": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "kayak": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "hot dog": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "homsar": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "lawyer": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "rainbow trout": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 3,
+    "guessFailures": 1
+  },
+  "colon": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "knitting": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 4,
+    "guessSuccesses": 3,
+    "guessFailures": 1
+  },
+  "colander": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 8,
+    "guessSuccesses": 3,
+    "guessFailures": 5
+  },
+  "aluminum foil": {
+    "presented": 1,
+    "chosen": 0,
+    "guessExposures": 0,
+    "guessSuccesses": 0,
+    "guessFailures": 0
+  },
+  "mercator projection": {
+    "presented": 1,
+    "chosen": 1,
+    "guessExposures": 6,
+    "guessSuccesses": 3,
+    "guessFailures": 3
   }
 }

@@ -24,3 +24,7 @@ preview-zip: preview
 
 build:
 	npx vite build --config vite.config.ts
+
+# run this in tandem with serve-pictionary
+tunnel: 
+	cloudflared tunnel run drawplodocus

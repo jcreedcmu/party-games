@@ -57,19 +57,19 @@ export function applyOp(
       floodFill(data, op.x, op.y, op.color, w, h);
       return true;
     case 'draw-undo':
+      // Undoing past the base of the stack does nothing, matching the
+      // editor's refusal to undo when only the base snapshot remains.
       if (snapshots.length > 1) {
         snapshots.pop();
         const prev = snapshots[snapshots.length - 1];
         const src = prev.data;
         for (let i = 0; i < data.length; i++) data[i] = src[i];
-      } else {
-        snapshots.length = 0;
-        clearImageData(data);
       }
       return false;
     case 'draw-clear':
+      // A clear is an undoable step like any other: the caller snapshots
+      // it, and a following undo pops back to the pre-clear image.
       clearImageData(data);
-      snapshots.length = 0;
       return true;
   }
 }
